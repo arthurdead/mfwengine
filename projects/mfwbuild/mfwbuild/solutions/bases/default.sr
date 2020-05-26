@@ -32,7 +32,7 @@ base_solution
 		thirdparty_folder "${root_folder}/thirdparty"
 		intermediary_folder "${plugin_data_folder}/${solution_name}/${project_name}/${tool_name}_${platform}_${os}_${configuration}"
 	}
-	
+
 	tools {
 		iwyu iwyu
 	$if os == "windows"
@@ -42,7 +42,7 @@ base_solution
 	$else
 		compiler gcc
 		linker ld
-		archiver ar
+		archiver gcc_ar
 	$endif
 	}
 }

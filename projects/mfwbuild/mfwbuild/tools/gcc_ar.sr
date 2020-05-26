@@ -1,0 +1,6 @@
+#include "bases/ar.sr"
+
+gcc_ar : base_tool
+{
+	shell "gcc-ar"
+}

@@ -1,0 +1,17 @@
+base_tool
+{
+	single_input
+
+	patterns {
+		"*.o"
+	}
+
+	output {
+		"",
+	}
+
+	options_map {
+		$(file,always_last)
+		output ""
+	}
+}
