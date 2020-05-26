@@ -40,6 +40,8 @@ cppcheck
 		$(files,folders)
 		ignore "-i"
 		quiet "--quiet"
+		$(needs_equal)
+		template "--template"
 	}
 
 	shell "cppcheck"

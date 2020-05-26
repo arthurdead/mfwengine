@@ -90,6 +90,11 @@ base_project : standards.cpp17 {
 			inline_suppress
 			inconclusive
 			quiet
+		$if tool_name == "cl"
+			template vs
+		$else
+			template gcc
+		$endif
 		}
 	}
 	iwyu {
