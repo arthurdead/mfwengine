@@ -1,0 +1,658 @@
+#include <private/mfw/builder/plugins/plugin_vscode.hpp>
+#include <public/mfw/core/filesystem_interface.hpp>
+
+namespace mfw::builder
+{
+	plugin_vscode::plugin_vscode()
+		: base_plugin{u8"vscode"_s}
+	{
+		info_.process_files_conditions = false;
+		info_.process_options_conditions = false;
+		info_.process_tools_patterns = true;
+		info_.process_sections_args_unmaped = false;
+		info_.process_build_set = true;
+		info_.process_single_input = false;
+		info_.merge_sections_files_options = false;
+		info_.process_out_of_date = false;
+		info_.ignore_output = true;
+		
+		core::interfaces::filesystem::instance().remove({{}, name()});
+	}
+
+	void plugin_vscode::parse_ide(const core::serializable &options, json_workspace_t &json, bool replace)
+	{
+		const core::serializable *build{options.get_child(u8"build"_sv)};
+		if(build) {
+			const core::serializable *command{build->get_child(u8"command"_sv)};
+			if(command) {
+				const core::univalue &value{command->get_value()};
+				json.command = as_string<pstring>(value);
+				if(replace) {
+					builder_funcs().replace_vars(json.command);
+				}
+			}
+		}
+		const core::serializable *debug{options.get_child(u8"debug"_sv)};
+		if(debug) {
+			const core::serializable *type{debug->get_child(u8"type"_sv)};
+			if(type) {
+				const core::univalue &value{type->get_value()};
+				if(value == u8"gdb"_sv) {
+					json.debugger = json_project_t::debugger_type::gdb;
+				} else if(value == u8"lldb"_sv) {
+					json.debugger = json_project_t::debugger_type::lldb;
+				}
+			}
+			const core::serializable *program{debug->get_child(u8"program"_sv)};
+			if(program) {
+				const core::univalue &value{program->get_value()};
+				json.program = as_string<pstring>(value);
+				if(json.cwd.empty()) {
+					pstring folder{json.program};
+					folder.remove_filename();
+					json.cwd = move(folder);
+					if(replace) {
+						builder_funcs().replace_vars(json.cwd);
+					}
+				}
+			}
+			const core::serializable *cwd{debug->get_child(u8"cwd"_sv)};
+			if(cwd) {
+				const core::univalue &value{cwd->get_value()};
+				json.cwd = as_string<pstring>(value);
+				if(replace) {
+					builder_funcs().replace_vars(json.cwd);
+				}
+			}
+			const core::serializable *args{debug->get_child(u8"args"_sv)};
+			if(args) {
+				for(const core::serializable &arg : *args) {
+					const ucstring &name{arg.get_name()};
+					ucstring &str{json.args.emplace_back(name)};
+					if(replace) {
+						builder_funcs().replace_vars(str);
+					}
+				}
+			}
+		}
+		const core::serializable *include_paths{options.get_child(u8"includes_paths"_sv)};
+		if(include_paths) {
+			for(const core::serializable &include : *include_paths) {
+				const ucstring &name{include.get_name()};
+				pstring &str{json.include_paths.emplace_back(name)};
+				if(replace) {
+					builder_funcs().replace_vars(str);
+				}
+			}
+		}
+		const core::serializable *compile_path{options.get_child(u8"compile_commands"_sv)};
+		if(compile_path) {
+			const core::univalue &value{compile_path->get_value()};
+			json.compile_commands = as_string<pstring>(value.get_string());
+			if(replace) {
+				builder_funcs().replace_vars(json.compile_commands);
+			}
+		}
+	}
+
+	bool plugin_vscode::generate(const solution_reference &solution, const project_reference &project, const core::serializable &section)
+	{
+		json_project_t &json{json_projects.back()};
+
+		const ucstring &section_name{section.get_name()};
+		
+		if(section_name == u8"plugin"_sv) {
+			parse_ide(section, json, false);
+			//parse_ide(section, solution_json);
+		}
+		
+		return true;
+	}
+
+	bool plugin_vscode::generate(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const core::serializable &options)
+	{
+		json_project_t &json{json_projects.back()};
+
+		const ucstring &section_name{tool_section.get_name()};
+
+		const tool_reference *tool{tool_section.tool()};
+
+		if(section_name == u8"compiler"_sv) {
+			pstring tool_path{};
+			if(tool->is_shell()) {
+				tool_path = tool->shell();
+			} else {
+				tool_path = tool->path();
+			}
+			json.compiler_path = tool_path;
+			json.compiler_type = json_workspace_t::get_compiler_type(tool_path);
+			solution_json.compiler_path = tool_path;
+			solution_json.compiler_type = json_workspace_t::get_compiler_type(tool_path);
+			json.compiler_options = options;
+			const core::serializable *forced_arg{tool->get_child(u8"forced_includes"_sv)};
+			if(forced_arg) {
+				for(const core::serializable &child : *forced_arg) {
+					const core::serializable *forceds{options.get_child(child.get_name())};
+					if(forceds) {
+						for(const core::serializable &child : *forceds) {
+							const ucstring &name{child.get_name()};
+							json.force_includes.emplace_back(name);
+							//solution_json.force_includes.emplace_back(name);
+						}
+					}
+				}
+			}
+			const core::serializable *defines_arg{tool->get_child(u8"preprocessor_definitions"_sv)};
+			if(defines_arg) {
+				for(const core::serializable &child : *defines_arg) {
+					const core::serializable *defines{options.get_child(child.get_name())};
+					if(defines) {
+						for(const core::serializable &child : *defines) {
+							ucstring &str{json.defines.emplace_back()};
+							str += child.get_name();
+							const core::univalue &value{child.get_value()};
+							if(!value.empty()) {
+								str += u8'=';
+								str += value.get_string();
+							}
+							//solution_json.defines.emplace_back(str);
+						}
+					}
+				}
+			}
+			const core::serializable *includes_arg{tool->get_child(u8"includes_paths"_sv)};
+			if(includes_arg) {
+				for(const core::serializable &child : *includes_arg) {
+					const core::serializable *includes_paths{options.get_child(child.get_name())};
+					if(includes_paths) {
+						for(const core::serializable &child : *includes_paths) {
+							const ucstring &name{child.get_name()};
+							json.include_paths.emplace_back(name);
+							solution_json.include_paths.emplace_back(name);
+						}
+					}
+				}
+			}
+			const core::serializable *standard{tool->get_child(u8"standard"_sv)};
+			if(standard) {
+				const core::univalue &opt_value{standard->get_value()};
+				standard = options.get_child(opt_value.get_string());
+				if(standard) {
+					const core::univalue &value{standard->get_value()};
+					const ucstring &str{value.get_string()};
+					if(str.find(u8"c++"_sv) != ucstring::npos) {
+						json.cpp_standard = str;
+					} else {
+						json.c_standard = str;
+					}
+				}
+			}
+			const core::serializable *plugin{tool_section.plugin_section()};
+			if(plugin) {
+				parse_ide(*plugin, json, true);
+				//parse_ide(*plugin, solution_json);
+			}
+		}
+
+		return true;
+	}
+
+	bool plugin_vscode::generate(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const file_reference &file, const core::serializable &options)
+	{
+		if(tool_section.get_name() != u8"compiler"_sv) {
+			return true;
+		}
+
+		json_project_t &json{json_projects.back()};
+
+		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+
+		pstring link{};
+		link /= as_string<pstring>(solution.get_name());
+		link /= as_string<pstring>(project.get_name());
+		link /= file.filter();
+
+		pstring filepath{file.path()};
+		link /= filepath.filename();
+
+		filesys.create_symlink({filepath}, {{link}, name()});
+
+		return true;
+	}
+	
+	plugin_vscode::json_workspace_t::compiler_type_t plugin_vscode::json_workspace_t::get_compiler_type(const pstring &path)
+	{
+		if(path.empty()) {
+			return compiler_type_t::unknown;
+		}
+		
+		ucstring tmp{as_string<ucstring>(path)};
+		return get_compiler_type(tmp);
+	}
+	
+	plugin_vscode::json_workspace_t::compiler_type_t plugin_vscode::json_workspace_t::get_compiler_type(const ucstring &path)
+	{
+		if(path.empty()) {
+			return compiler_type_t::unknown;
+		} else if(path.find(u8"cl"_sv) != ucstring::npos) {
+			return compiler_type_t::msvc;
+		} else if(path.find(u8"gcc"_sv) != ucstring::npos ||
+					path.find(u8"g++"_sv) != ucstring::npos) {
+			return compiler_type_t::gcc;
+		} else if(path.find(u8"clang"_sv) != ucstring::npos ||
+					path.find(u8"clang++"_sv) != ucstring::npos) {
+			return compiler_type_t::clang;
+		} else {
+			return compiler_type_t::unknown;
+		}
+	}
+	
+	void plugin_vscode::json_workspace_t::write_cpp_properties(json::file &cpp_properties)
+	{
+		if(solution) {
+			cpp_properties.Key(u8"cpp_properties"_sv);
+		}
+		
+		cpp_properties.StartObject();
+		cpp_properties.Key(u8"version"_sv);
+		cpp_properties.Int(4);
+		cpp_properties.Key(u8"configurations"_sv);
+		cpp_properties.StartArray();
+		cpp_properties.StartObject();
+		cpp_properties.Key(u8"name"_sv);
+		if(compiler_type == compiler_type_t::msvc) {
+			cpp_properties.String(u8"Win32"_sv);
+		} else if(compiler_type == compiler_type_t::gcc ||
+					compiler_type == compiler_type_t::clang) {
+			cpp_properties.String(u8"Linux"_sv);
+		} else {
+			cpp_properties.String(u8"${default}"_sv);
+		}
+		cpp_properties.Key(u8"cStandard"_sv);
+		if(c_standard.empty()) {
+			cpp_properties.String(u8"${default}"_sv);
+		} else {
+			cpp_properties.String(c_standard);
+		}
+		cpp_properties.Key(u8"cppStandard"_sv);
+		if(cpp_standard.empty()) {
+			cpp_properties.String(u8"${default}"_sv);
+		} else {
+			cpp_properties.String(cpp_standard);
+		}
+		cpp_properties.Key(u8"intelliSenseMode"_sv);
+		MFW_MESSAGE("sad hardcode")
+		if(compiler_type == compiler_type_t::msvc) {
+			cpp_properties.String(u8"msvc-x64"_sv);
+		} else if(compiler_type == compiler_type_t::gcc) {
+			cpp_properties.String(u8"gcc-x64"_sv);
+		} else if(compiler_type == compiler_type_t::clang) {
+			cpp_properties.String(u8"clang-x64"_sv);
+		} else {
+			cpp_properties.String(u8"${default}"_sv);
+		}
+		cpp_properties.Key(u8"compileCommands"_sv);
+		cpp_properties.String(compile_commands);
+		cpp_properties.Key(u8"compilerArgs"_sv);
+		cpp_properties.StartArray();
+		for(const core::serializable &arg : compiler_options) {
+			const ucstring &name{arg.get_name()};
+			if(arg.empty()) {
+				ucstring tmp{name};
+				const core::univalue &value{arg.get_value()};
+				if(!value.empty()) {
+					tmp += u8' ';
+					tmp += value.get_string();
+				}
+				cpp_properties.String(tmp);
+			} else {
+				for(const core::serializable &arg_value : arg) {
+					ucstring tmp{name};
+					tmp += u8' ';
+					tmp += arg_value.get_name();
+					const core::univalue &value{arg_value.get_value()};
+					if(!value.empty()) {
+						tmp += u8'=';
+						tmp += value.get_string();
+					}
+					cpp_properties.String(tmp);
+				}
+			}
+		}
+		cpp_properties.EndArray();
+		cpp_properties.Key(u8"forcedInclude"_sv);
+		cpp_properties.StartArray();
+		for(const pstring &include : force_includes) {
+			cpp_properties.String(include);
+		}
+		cpp_properties.EndArray();
+		cpp_properties.Key(u8"browse"_sv);
+		cpp_properties.StartObject();
+		cpp_properties.Key(u8"databaseFilename"_sv);
+		pstring database{path};
+		database /= u8".vscode/browse.db"_p;
+		cpp_properties.String(database);
+		cpp_properties.Key(u8"limitSymbolsToIncludedHeaders"_sv);
+		cpp_properties.Bool(true);
+		cpp_properties.Key(u8"path"_sv);
+		cpp_properties.StartArray();
+		for(const pstring &include : include_paths) {
+			ucstring tmp{as_string<ucstring>(include)};
+			tmp += u8"/*"_sv;
+			cpp_properties.String(tmp);
+		}
+		cpp_properties.EndArray();
+		cpp_properties.EndObject();
+		cpp_properties.Key(u8"defines"_sv);
+		cpp_properties.StartArray();
+		for(const ucstring &define : defines) {
+			cpp_properties.String(define);
+		}
+		cpp_properties.EndArray();
+		cpp_properties.Key(u8"compilerPath"_sv);
+		cpp_properties.String(compiler_path);
+		cpp_properties.Key(u8"includePath"_sv);
+		cpp_properties.StartArray();
+		for(const pstring &include : include_paths) {
+			cpp_properties.String(include);
+		}
+		cpp_properties.EndArray();
+		cpp_properties.EndObject();
+		cpp_properties.EndArray();
+		cpp_properties.EndObject();
+	}
+	
+	void plugin_vscode::json_workspace_t::write_tasks(json::file &tasks)
+	{
+		if(solution) {
+			tasks.Key(u8"tasks"_sv);
+		}
+		
+		tasks.StartObject();
+		tasks.Key(u8"version"_sv);
+		tasks.String(u8"2.0.0"_sv);
+		tasks.Key(u8"tasks"_sv);
+		tasks.StartArray();
+		tasks.StartObject();
+		tasks.Key(u8"label"_sv);
+		tasks.String(u8"build"_sv);
+		tasks.Key(u8"type"_sv);
+		tasks.String(u8"shell"_sv);
+		tasks.Key(u8"command"_sv);
+		tasks.String(command);
+		if(problem_matcher.empty()) {
+			if(compiler_type == compiler_type_t::msvc) {
+				problem_matcher.emplace_back(u8"$msCompile"_s);
+			} else if(compiler_type == compiler_type_t::gcc ||
+						compiler_type == compiler_type_t::clang) {
+				problem_matcher.emplace_back(u8"$gcc"_s);
+			}
+		}
+		if(!problem_matcher.empty()) {
+			tasks.Key(u8"problemMatcher"_sv);
+			tasks.StartArray();
+			for(const ucstring &str : problem_matcher) {
+				tasks.String(str);
+			}
+			tasks.EndArray();
+		}
+		tasks.Key(u8"group"_sv);
+		tasks.StartObject();
+		tasks.Key(u8"kind"_sv);
+		tasks.String(u8"build"_sv);
+		tasks.Key(u8"isDefault"_sv);
+		tasks.Bool(true);
+		tasks.EndObject();
+		tasks.EndObject();
+		tasks.EndArray();
+		tasks.EndObject();
+	}
+
+	void plugin_vscode::json_workspace_t::write_launch(json::file &launch)
+	{
+		if(solution) {
+			launch.Key(u8"launch"_sv);
+		}
+		
+		launch.StartObject();
+		launch.Key(u8"version"_sv);
+		launch.String(u8"0.2.0"_sv);
+		launch.Key(u8"configurations"_sv);
+		launch.StartArray();
+		launch.StartObject();
+		launch.Key(u8"name"_sv);
+		launch.String(u8"launch"_sv);
+		launch.Key(u8"program"_sv);
+		launch.String(program);
+		launch.Key(u8"cwd"_sv);
+		launch.String(cwd);
+		launch.Key(u8"args"_sv);
+		launch.StartArray();
+		for(const ucstring &arg : args) {
+			launch.String(arg);
+		}
+		launch.EndArray();
+		launch.Key(u8"type"_sv);
+		if(debugger == debugger_type::gdb) {
+			launch.String(u8"cppdbg"_sv);
+		} else if(debugger == debugger_type::lldb) {
+			launch.String(u8"cpplldb"_sv);
+		} else {
+			launch.String(u8"${default}"_sv);
+		}
+		launch.Key(u8"request"_sv);
+		launch.String(u8"launch"_sv);
+		launch.Key(u8"stopAtEntry"_sv);
+		launch.Bool(false);
+		launch.Key(u8"environment"_sv);
+		launch.StartArray();
+		launch.EndArray();
+		launch.Key(u8"externalConsole"_sv);
+		launch.Bool(false);
+		launch.Key(u8"MIMode"_sv);
+		if(debugger == debugger_type::gdb) {
+			launch.String(u8"gdb"_sv);
+		} else if(debugger == debugger_type::lldb) {
+			launch.String(u8"lldb"_sv);
+		} else {
+			launch.String(u8"${default}"_sv);
+		}
+		launch.Key(u8"setupCommands"_sv);
+		launch.StartArray();
+		if(debugger == debugger_type::gdb) {
+			launch.StartObject();
+			launch.Key(u8"description"_sv);
+			launch.String(u8"Enable pretty-printing for gdb"_sv);
+			launch.Key(u8"text"_sv);
+			launch.String(u8"-enable-pretty-printing"_sv);
+			launch.Key(u8"ignoreFailures"_sv);
+			launch.Bool(true);
+			launch.EndObject();
+		}
+		launch.EndArray();
+		launch.EndObject();
+		launch.EndArray();
+		launch.EndObject();
+	}
+
+	void plugin_vscode::json_workspace_t::write_all()
+	{
+		StartObject();
+		Key(u8"settings"_sv);
+		StartObject();
+		if(solution) {
+			Key(u8"projectManager.projectsLocation"_sv);
+			String(path/u8"projects.json"_p);
+		}
+		Key(u8"files.exclude"_sv);
+		StartObject();
+		for(const pstring &exclude : exclude_files) {
+			Key(exclude);
+			Bool(true);
+		}
+		EndObject();
+		EndObject();
+		Key(u8"folders"_sv);
+		StartArray();
+		for(const folder_t &folder : folders) {
+			StartObject();
+			if(!folder.name.empty()) {
+				Key(u8"name"_sv);
+				String(folder.name);
+			}
+			Key(u8"path"_sv);
+			String(folder.path);
+			EndObject();
+		}
+		EndArray();
+		
+		if(solution) {
+			write_launch(*this);
+			write_tasks(*this);
+			EndObject();
+		} else {
+			EndObject();
+		}
+	}
+	
+	void plugin_vscode::json_project_t::write_all()
+	{
+		super::write_all();
+		
+		write_cpp_properties(cpp_properties);
+		write_launch(launch);
+		write_tasks(tasks);
+	}
+	
+	void plugin_vscode::json_project_t::save()
+	{
+		super::save();
+		
+		pstring cpp_path{path/u8".vscode/c_cpp_properties.json"_p};
+		pstring launch_path{path/u8".vscode/launch.json"_p};
+		pstring tasks_path{path/u8".vscode/tasks.json"_p};
+		
+		cpp_properties.save({cpp_path});
+		//launch.save({launch_path});
+		//tasks.save({tasks_path});
+	}
+
+	void plugin_vscode::json_workspace_t::save()
+	{
+		pstring code_workspace_file{};
+		code_workspace_file /= as_string<pstring>(name);
+		code_workspace_file.replace_extension(u8".code-workspace"_p);
+
+		pstring workspace_path{path/code_workspace_file};
+
+		exclude_files.emplace_back(u8"**/.vscode/**"_p);
+		exclude_files.emplace_back(u8"**/*.code-workspace"_p);
+		if(solution) {
+			exclude_files.emplace_back(u8"**/projects.json"_p);
+		}
+
+		if(!solution) {
+			folder_t &folder{folders.emplace_back()};
+			folder.path = path;
+			folder.name = name;
+		}
+
+		write_all();
+		super::save({workspace_path});
+	}
+
+	bool plugin_vscode::generate(const solution_reference &solution, const project_reference &project)
+	{
+		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+
+		json_project_t &json{json_projects.emplace_back()};
+
+		json.path /= as_string<pstring>(solution.get_name());
+
+		const ucstring &proj_name{project.get_name()};
+		json.name = proj_name;
+		json.path /= as_string<pstring>(proj_name);
+
+		json.path = filesys.resolve({json.path, name()}, false);
+
+		return true;
+	}
+	
+	void plugin_vscode::json_workspace_t::clear()
+	{
+		exclude_files.clear();
+		folders.clear();
+		compiler_path.clear();
+		include_paths.clear();
+		defines.clear();
+		force_includes.clear();
+		compiler_options.clear();
+		compile_commands.clear();
+		c_standard.clear();
+		cpp_standard.clear();
+		program.clear();
+		cwd.clear();
+		args.clear();
+		compiler_type = compiler_type_t::unknown;
+		problem_matcher.clear();
+		command.clear();
+		debugger = debugger_type::unknown;
+		name.clear();
+		path.clear();
+	}
+	
+	void plugin_vscode::cleanup(cleanup_type_t type)
+	{
+		if(type == cleanup_type_t::solution) {
+			json_projects.clear();
+			solution_json.clear();
+		}
+	}
+
+	bool plugin_vscode::generate(const solution_reference &solution)
+	{
+		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+
+		const core::serializable *ide{solution.get_child(u8"plugin"_sv)};
+		if(ide) {
+			parse_ide(*ide, solution_json, true);
+		}
+
+		const ucstring &sln_name{solution.get_name()};
+		solution_json.name = sln_name;
+		solution_json.path = filesys.resolve({sln_name, name()}, false);
+
+		json::file projects_json{};
+		
+		projects_json.StartArray();
+		for(json_project_t &proj : json_projects) {
+			
+			json_workspace_t::folder_t &folder{solution_json.folders.emplace_back()};
+			folder.name = proj.name;
+			folder.path = proj.path;
+			
+			proj.save();
+			
+			projects_json.StartObject();
+			projects_json.Key(u8"name"_sv);
+			projects_json.String(proj.name);
+			projects_json.Key(u8"rootPath"_sv);
+			projects_json.String(proj.path);
+			projects_json.Key(u8"paths"_sv);
+			projects_json.StartArray();
+			projects_json.EndArray();
+			projects_json.Key(u8"group"_sv);
+			projects_json.String(u8""_sv);
+			projects_json.Key(u8"enabled"_sv);
+			projects_json.Bool(true);
+			projects_json.EndObject();
+		}
+		projects_json.EndArray();
+		
+		projects_json.save({solution_json.path/u8"projects.json"_p});
+		
+		solution_json.save();
+
+		return true;
+	}
+};

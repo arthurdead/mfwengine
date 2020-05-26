@@ -1,0 +1,28 @@
+#include "bases/windows_tool.sr"
+
+lib
+{
+	output {
+		"/OUT",
+	}
+	
+	single_input
+	
+	patterns {
+		"*.obj"
+	}
+	
+	options_map {
+		$(needs_equal,file)
+		output "/OUT"
+	}
+
+#if MFW_OS == MFW_OS_LINUX
+	#define MSVCVER "14.26.28801"
+	#define ARCH "x64"
+
+	shell "${HOME}/wine/msvc-wine/dist_release/vc/tools/msvc/MSVCVER/bin/Hostx64/ARCH/lib.exe"
+#else
+	#error
+#endif
+}

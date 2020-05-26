@@ -1,0 +1,70 @@
+#include "cpp_compiler.sr"
+
+base_tool
+{
+	output "${file_basename}.o" {
+		"-o",
+		"--output"
+	}
+	
+	patterns {
+		"*.S",
+	}
+	
+	output_regex {
+		info {
+			"note:"
+			"messages:"
+			"In file included "
+			"In function "
+		}
+		warning {
+			"warning:"
+		}
+		error {
+			"error:"
+		}
+	}
+	
+	includes_paths {
+		"--include-directory"
+		"-i"
+	}
+	
+	preprocessor_definitions {
+		"--define-macro"
+		"-D"
+	}
+	
+	forced_includes {
+		"--include"
+		"-include"
+	}
+	
+	standard "-std"
+	
+	warnings_as_errors "-Werror"
+
+	options_map {
+		$(files,needs_values)
+		forced_includes "--include"
+		$(needs_values)
+		preprocessor_definitions "--define-macro"
+		no_linking "--compile"
+		$(file)
+		output "--output"
+		$(folders)
+		includes_paths "--include-directory"
+		$(needs_equal)
+		standard "-std"
+		warning_errors "-Werror"
+		fatal_errors "-Wfatal-errors"
+		pendatic "-Wpedantic"
+		pendatic_errors "-pedantic-errors"
+		all_warnings "-Wall"
+		extra_warnings "-Wextra"
+		$(remove)
+		nologo
+		char8_t "-fchar8_t"
+	}
+}

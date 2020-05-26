@@ -1,0 +1,8 @@
+#include "bases/engine_solution.sr"
+
+test_sln : base_solution
+{
+	projects {
+		test_proj
+	}
+}

@@ -1,0 +1,30 @@
+#include "bases/default.sr"
+
+test_proj : base_project, output_static
+{
+	compiler {
+		options {
+			includes_paths {
+				"/home/arthurdead/Desktop/temp/code/**",
+			}
+			
+			//"-fpermissive"
+		}
+	}
+	
+	compiler|iwyu {
+		files {
+			test filter {
+				"/home/arthurdead/Desktop/temp/code/**/*.*",
+			}
+		}
+	}
+	
+	linker {
+		options {
+			libraries {
+				dl
+			}
+		}
+	}
+}

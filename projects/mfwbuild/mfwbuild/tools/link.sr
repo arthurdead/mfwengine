@@ -1,0 +1,47 @@
+#include "bases/windows_tool.sr"
+
+link
+{
+	single_input
+
+	output "${file_basename}.exe" {
+		"/OUT"
+	}
+	
+	output_regex {
+		ignore {
+			"Microsoft (R) Incremental Linker Version "
+			"Copyright (C) Microsoft Corporation.  All rights reserved."
+		}
+	#if MFW_OS == MFW_OS_LINUX
+		ignore {
+	#else
+		error {
+	#endif
+			"Internal error during SetupPhase"
+		}
+	}
+	
+	patterns {
+		"*.obj"
+	}
+	
+	options_map {
+		$(needs_equal,file)
+		output "/OUT"
+		$(remove)
+		dynamic_linker
+		$(remove)
+		libraries
+		nologo "/nologo"
+	}
+
+#if MFW_OS == MFW_OS_LINUX
+	#define MSVCVER "14.26.28801"
+	#define ARCH "x64"
+
+	shell "${HOME}/wine/msvc-wine/dist_release/vc/tools/msvc/MSVCVER/bin/Hostx64/ARCH/link.exe"
+#else
+	#error
+#endif
+}

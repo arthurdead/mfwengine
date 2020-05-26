@@ -1,0 +1,6 @@
+#include "bases/unix_cpp_linker.sr"
+
+lld : base_tool
+{
+	shell "ld.lld"
+}

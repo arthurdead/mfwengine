@@ -1,0 +1,33 @@
+base_tool
+{
+	single_input
+	
+	output "a.out" {
+		"-o",
+		"--output"
+	}
+	
+	output_regex {
+		info {
+			"in function "
+		}
+		error {
+			"undefined reference to "
+		}
+	}
+	
+	patterns {
+		"*.o"
+		"*.so"
+		"*.a"
+	}
+	
+	options_map {
+		$(file)
+		output "--output"
+		dynamic_linker "-dynamic-linker"
+		libraries "--library"
+		$(remove)
+		nologo
+	}
+}

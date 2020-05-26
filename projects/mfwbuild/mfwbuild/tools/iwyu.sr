@@ -1,0 +1,27 @@
+#include "bases/unix_cpp_compiler.sr"
+
+iwyu : base_tool
+{
+	patterns {
+		"*.h"
+		"*.hh"
+		"*.hx"
+		"*.hxx"
+		"*.hpp"
+		"*.h++"
+		"*.ipp"
+		"*.tpp"
+	}
+
+	output_regex {
+		warning {
+			" should add these lines:"
+			" should remove these lines:"
+		}
+		info {
+			"The full include-list for "
+		}
+	}
+
+	shell "include-what-you-use"
+}

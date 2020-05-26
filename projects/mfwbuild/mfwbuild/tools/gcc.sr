@@ -1,0 +1,6 @@
+#include "bases/unix_cpp_compiler.sr"
+
+gcc : base_tool
+{
+	shell "gcc"
+}

@@ -1,0 +1,142 @@
+& = snake_scase
+* = FULL_CASE
+% = optional
+
+<&ALL FILES>
+{
+    .hpp = header
+    .cpp = source
+    .inl = template source
+    locations:
+    {&public/private}/mfw/{&this_module}/{&file}.{&ext}
+
+    NO globals
+    NO typedefs
+    NO global space funcs
+    NO global space vars
+    NO global space using with the execption of ::mfw::literals
+    ALWAYS fully classify namespace in macros
+    if you want somenthing not from mfw namespace ALWAYS classify fully
+    NEVER explicit use std namespace unless under certain specific conditions
+    ALWAYS use bracket initializers
+    ALWAYS prefer _view types
+    ALWAYS use .hpp for header files
+    ALWAYS use .cpp for source files
+    ALWAYS use .inl for template source files
+    ALWAYS include the header inside a template source file at the TOP
+    ALWAYS include the template source file inside the header at the BOTTOM
+    ALWAYS include in the global namespace
+    ALL macros are FULL_CASE EVERTHING else is snake_case
+    ALWAYS use the full path in #include with the execption of system/std headers
+    ALWAYS prefer private if possible
+    ALWAYS prefer const if possible
+    ALWAYS specify extern "C/C++" on shared funcs
+    ALWAYS use MFW_SHARED_EXPORT/IMPORT and MFW_CALL_SHARED on shared funcs
+    NEVER export a class only its public funcs
+    NEVER export a private func unles its used by a inline public func
+    NO class public vars
+
+    naming:
+    {
+        class:
+        {&name}
+        
+        struct:
+        {&name_t}
+    
+        vars:
+        public:
+        anything you want
+        
+        private:
+        anything you want
+        
+        funcs:
+        public:
+        {what it does example: parse/generate/convert/to/as/get/set}_{what its doing to}
+        example:
+        generate_project
+        parse_serializable
+        parse_commandline
+        
+        private:
+        anything you want
+    }
+
+    indenting:
+    {
+        1 line funcs:
+        void func() { return; }
+
+        2 lines funcs:
+        void func() {
+            return;
+        }
+
+        3+ lines func inside a header:
+        move to a source/template source file
+
+        3+ lines func inside a source file:
+        void func()
+        {
+            return;
+        }
+    }
+}
+
+<&HEADER FILES>
+{
+    #ifndef __MFW_{*private/public}_{*fullpath}_{H/INL}
+    #define __MFW_{*private/public}_{*fullpath}_{H/INL}
+
+    #pragma once
+
+    #define __MFW_{%module}_PRIVATE_MACRO_SHOULD_NOT_BE_USED
+    #define MFW_{%module}_PUBLIC_MACRO
+
+    #include <{&public/private}/mfw/{&other_module}/{&other_file}.hpp>
+
+    namespace mfw::{&this_module}
+    {
+        {&funcs}
+    
+        {&class} : {&other_class}
+        {
+            {&using/friend}
+            
+        public:
+            {&using/friend/structs}
+            
+            {&funcs}
+            {&getters/setters}
+        
+            {&ctor}
+            {&ctor}
+                : {&other_ctor}{&var} {
+                
+            }
+        
+        private:
+            {&typedefs/using/structs}
+            {&funcs}
+            {&vars}
+        }
+    };
+    
+    #endif
+}
+
+<&SOURCE/TEMPLATE SOURCE FILES>
+{
+    #include <{&public/private}/mfw/{&other_module}/{&other_file}.hpp>
+
+    namespace mfw::{&this_module}
+    {
+        (%namespace __{&filename}_internal
+        {
+            (&funcs/using/structs to be used ONLY on this file)
+        };)
+        
+        (&funcs)
+    };
+}

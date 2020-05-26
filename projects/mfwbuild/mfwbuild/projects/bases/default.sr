@@ -1,0 +1,148 @@
+standards {
+	cpp17 {
+		compiler::options {
+			standard "c++17"
+			char8_t
+		}
+		iwyu::options {
+			"-Xiwyu" "--cxx17ns"
+		}
+	}
+}
+
+base_project : standards.cpp17 {
+	compiler {
+		plugin::compile_commands "${data_folder}/process/${solution_name}/${project_name}/${tool_name}_${output_tool_name}_compile_commands.json"
+		builder {
+		$if configuration == "release"
+			unity_build
+		$endif
+			macros {
+			$if os == "windows"
+				output_ext ".obj"
+			$else
+				output_ext ".o"
+			$endif
+			}
+		}
+		options {
+		$if configuration == "debug"
+			//warning_errors
+			fatal_errors
+			all_warnings
+			pendatic
+			pendatic_errors
+			extra_warnings
+		$endif
+			preprocessor_definitions {
+			$if configuration == "debug"
+				DEBUG,_DEBUG
+			$else
+				NDEBUG,_NDEBUG
+			$endif
+			}
+			nologo
+			no_linking
+			output "${intermediary_folder}/${file_basename}${output_ext}"
+		}
+	}
+	linker {
+		implib {
+		$if platform == "x86_64"
+			arch "x86_64"
+		$elif platform == "x86"
+			arch "i386"
+		$elif platform == "armv7"
+			arch "arm"
+		$elif platform == "armv8"
+			arch "aarch64"
+		$endif
+		}
+		options {
+			nologo
+		$if os == "linux"
+			dynamic_linker "/lib64/ld-linux-x86-64.so.2"
+			libraries::c
+		$endif
+			output "${package_folder}/${project_name}${output_ext}"
+		}
+		files {
+		$if os == "linux"
+			"/usr/lib/crt1.o"
+			"/usr/lib/crti.o"
+			"/usr/lib/crtn.o"
+		$endif
+		}
+	}
+	archiver {
+		options {
+		$if tool_name == "ar"
+			"-r","-c","-s"
+		$endif
+			output "${intermediary_folder}/${project_name}${output_ext}"
+		}
+	}
+	iwyu ignore {
+		options : iwyu.parent.compiler.options
+	}
+}
+
+output_executable|output_shared {
+	archiver ignore
+	compiler::output_tool linker
+}
+
+output_static {
+	linker ignore
+	compiler::output_tool archiver
+}
+
+output_shared {
+	compiler::options::preprocessor_definitions {
+		_SHARED,SHARED
+	}
+	linker {
+		builder::macros {
+		$if os == "windows"
+			output_ext ".dll"
+		$else
+			output_ext ".so"
+		$endif
+		}
+	}
+}
+
+output_static {
+	compiler::options::preprocessor_definitions {
+		_LIB,LIB
+	}
+	archiver {
+		builder::macros {
+		$if os == "windows"
+			output_ext ".lib"
+		$else
+			output_ext ".a"
+		$endif
+		}
+	}
+}
+
+output_executable::linker::builder::macros {
+$if os == "windows"
+	output_ext ".exe"
+$else
+	output_ext ""
+$endif
+}
+
+output_executable_console : output_executable {
+	compiler::options::preprocessor_definitions {
+		_CONSOLE,CONSOLE
+	}
+}
+
+output_executable_windows : output_executable {
+	compiler::options::preprocessor_definitions {
+		_WINDOWS,WINDOWS
+	}
+}

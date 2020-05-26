@@ -1,0 +1,58 @@
+#include "default.sr"
+
+base_project {
+	builder::dependency::compiler {
+		options::preprocessor_definitions {
+			"MFW_DEPENDS_ON_${dependency_name_upper}"
+		}
+		
+		files {
+			"public/${dependency_name}" filter {
+				"${source_folder}/public/mfw/${project_name}/**/*.*"
+			}
+		}
+	}
+	compiler {
+		options {
+			forced_includes {
+				//"${source_folder}/public/mfw/pch.hpp"
+			}
+			preprocessor_definitions {
+				"MFW_BUILDING_${project_name_upper}"
+			}
+		}
+	}
+	compiler|iwyu {
+		options {
+			includes_paths {
+				"${source_folder}"
+				"${thirdparty_folder}"
+			}
+		}
+		files {
+			"${source_folder}/private/mfw/${project_name}/**/*.*"
+			"public/${project_name}" filter {
+				"${source_folder}/public/mfw/${project_name}/**/*.*"
+			}
+			"public" filter {
+				"${source_folder}/public/mfw/*.*"
+			}
+		}
+	}
+}
+
+output_embedded::builder::dependency::compiler::options::preprocessor_definitions {
+	"MFW_${project_name_upper}_BUILD=MFW_BUILD_EMBEDDED"
+}
+
+output_shared::builder::dependency::compiler::options::preprocessor_definitions {
+	"MFW_${project_name_upper}_BUILD=MFW_BUILD_SHARED"
+}
+
+output_static::builder::dependency::compiler::options::preprocessor_definitions {
+	"MFW_${project_name_upper}_BUILD=MFW_BUILD_STATIC"
+}
+
+output_executable::builder::dependency::compiler::options::preprocessor_definitions {
+	"MFW_${project_name_upper}_BUILD=MFW_BUILD_EXECUTABLE"
+}

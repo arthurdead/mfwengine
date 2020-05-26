@@ -1,0 +1,3 @@
+kind "SharedLib"
+
+linksanddepends "renderer"

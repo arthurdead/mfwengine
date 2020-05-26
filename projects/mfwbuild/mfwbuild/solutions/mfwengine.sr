@@ -1,0 +1,9 @@
+#include "bases/engine_solution.sr"
+
+mfwengine : base_solution
+{
+	projects {
+		stl
+		//core
+	}
+}

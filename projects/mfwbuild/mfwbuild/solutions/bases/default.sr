@@ -1,0 +1,48 @@
+base_solution
+{
+	build_set {
+	$if plugin_name == "vscode"
+		os {
+		#if MFW_OS == MFW_OS_LINUX
+			linux
+		#elif MFW_OS == MFW_OS_WINDOWS
+			windows
+		#else
+			#error
+		#endif
+		}
+		configuration::debug
+	$else
+		os {
+			//windows
+			linux
+		}
+		configuration {
+			debug,
+			//release
+		}
+	$endif
+		platform::x86_64
+	}
+
+	builder::macros {
+		root_folder "${path_folder}/../.."
+		source_folder "${root_folder}/source"
+		package_folder "${root_folder}/package"
+		thirdparty_folder "${root_folder}/thirdparty"
+		intermediary_folder "${plugin_data_folder}/${solution_name}/${project_name}/${tool_name}_${platform}_${os}_${configuration}"
+	}
+	
+	tools {
+		iwyu iwyu
+	$if os == "windows"
+		compiler cl
+		linker link
+		archiver lib
+	$else
+		compiler gcc
+		linker ld
+		archiver ar
+	$endif
+	}
+}

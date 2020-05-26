@@ -1,0 +1,13 @@
+base_tool
+{
+	patterns {
+		"*.cpp",
+		"*.c",
+		"*.cc",
+		"*.cx",
+		"*.cxx",
+		"*.c++",
+	}
+	
+	unity_build_ext ".cpp"
+}

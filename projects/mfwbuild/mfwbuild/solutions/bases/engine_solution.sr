@@ -1,0 +1,12 @@
+#include "default.sr"
+
+base_solution {
+	plugin::build {
+	#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
+		#define __MFW_BUILDER_EXECUTABLE "builder_debug"
+	#else
+		#define __MFW_BUILDER_EXECUTABLE "builder_release"
+	#endif
+		command "\"${root_folder}/build_tools/mfwbuilder/__MFW_BUILDER_EXECUTABLE\" --plugins=process --solutions=${solution_name} --path=\"${path_folder}\" --jobs=1"
+	}
+}

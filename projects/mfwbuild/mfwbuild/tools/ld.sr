@@ -1,0 +1,8 @@
+#include "bases/unix_cpp_linker.sr"
+
+ld : base_tool
+{
+	needs_implib
+	
+	shell "ld"
+}

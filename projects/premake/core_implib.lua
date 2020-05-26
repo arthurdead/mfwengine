@@ -1,0 +1,3 @@
+kind "StaticLib"
+
+dependson "core"

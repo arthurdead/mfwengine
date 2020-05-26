@@ -1,0 +1,8 @@
+#include "bases/engine_project.sr"
+
+core : base_project, output_shared
+{
+	compiler::options::preprocessor_definitions {
+		__MFW_DISABLE_ASMJIT
+	}
+}
