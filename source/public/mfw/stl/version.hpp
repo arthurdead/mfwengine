@@ -16,6 +16,7 @@
 #endif
 
 #ifdef MFW_CPP
+	// cppcheck-suppress missingIncludeSystem
 	#include <version>
 #endif
 
@@ -23,7 +24,7 @@
 	#include <features.h>
 #endif
 
-#ifdef __INTELLISENSE__
+#if defined __INTELLISENSE__ || defined __cpp_check
 	#define MFW_INTELLISENSE
 #endif
 
@@ -37,6 +38,8 @@
 #define __MFW_MACRO_CONCATENATE(x, y) __MFW_MACRO_CONCATENATE_IMPL(x, y)
 
 #define __MFW_VERSION_FLAGGED(base, what) (base & base##_##what##_FLAG)
+
+// cppcheck-suppress preprocessorErrorDirective
 #define __MFW_VERSION_IS(base, what) (base == base##_##what)
 
 #define MFW_COMPILER_UNIX_FLAG __MFW_BIT(0)
@@ -54,6 +57,8 @@
 	#define MFW_COMPILER MFW_COMPILER_GCC
 #elif defined _MSC_FULL_VER || defined _MSC_VER || defined _MSVC_LANG || defined _MSC_BUILD
 	#define MFW_COMPILER MFW_COMPILER_MSVC
+#elif defined __cpp_check
+	#define MFW_COMPILER MFW_COMPILER_GCC
 #else
 	#error
 #endif

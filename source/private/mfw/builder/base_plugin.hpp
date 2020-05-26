@@ -53,6 +53,8 @@ namespace mfw::builder
 		
 		virtual void initialize(interfaces::builder_funcs &funcs) { builder_funcs_ = &funcs; }
 		interfaces::builder_funcs &builder_funcs() { return *builder_funcs_; }
+		
+		virtual void insert_help(ucstring &help) {}
 
 		enum cleanup_type_t : uchar_t
 		{

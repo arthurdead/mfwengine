@@ -36,6 +36,7 @@ namespace mfw::core
 		void parse_main() override;
 
 		void error(const ucstring_view &str) override;
+		void error(const ucstring_view &str, const token &tok);
 		using super::error;
 
 		void parse_preprocessor();

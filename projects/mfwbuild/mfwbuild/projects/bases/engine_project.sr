@@ -1,11 +1,29 @@
 #include "default.sr"
 
-base_project {
+standards {
+	cpp17|cpp20 {
+		iwyu::options {
+			"-Xiwyu" "--cxx17ns"
+		}
+	}
+	cpp17 {
+		cppcheck::options {
+			standard "c++17"
+		}
+	}
+	cpp20 {
+		cppcheck::options {
+			standard "c++20"
+		}
+	}
+}
+
+base_project : standards.cpp17 {
 	builder::dependency::compiler {
 		options::preprocessor_definitions {
 			"MFW_DEPENDS_ON_${dependency_name_upper}"
 		}
-		
+
 		files {
 			"public/${dependency_name}" filter {
 				"${source_folder}/public/mfw/${project_name}/**/*.*"
@@ -15,18 +33,16 @@ base_project {
 	compiler {
 		options {
 			forced_includes {
-				//"${source_folder}/public/mfw/pch.hpp"
-			}
-			preprocessor_definitions {
-				"MFW_BUILDING_${project_name_upper}"
+				"${source_folder}/public/mfw/pch.hpp"
 			}
 		}
-	}
-	compiler|iwyu {
 		options {
 			includes_paths {
 				"${source_folder}"
 				"${thirdparty_folder}"
+			}
+			preprocessor_definitions {
+				"MFW_BUILDING_${project_name_upper}"
 			}
 		}
 		files {
@@ -38,6 +54,56 @@ base_project {
 				"${source_folder}/public/mfw/*.*"
 			}
 		}
+	}
+	iwyu ignore
+	cppcheck ignore {
+		options {
+		$if platform == "x86_64"
+			$if os == "linux"
+			platform "unix64"
+			$elif os == "windows"
+			platform "win64"
+			$endif
+		$else
+			$if os == "linux"
+			platform "unix32"
+			$elif os == "windows"
+			platform "win32W"
+			$endif
+		$endif
+			checks {
+				"all"
+				/*
+				"warning"
+				"style"
+				"performance"
+				"portability"
+				"information"
+				"unusedFunction"
+				"missingInclude"
+				*/
+			}
+			output "${intermediary_folder}"
+			preprocessor_definitions {
+				__cpp_check
+			}
+			inline_suppress
+			inconclusive
+			quiet
+		}
+	}
+	iwyu {
+		options : root.compiler.options
+	}
+	cppcheck {
+		options {
+			includes_paths : root.compiler.options.includes_paths
+			preprocessor_definitions : root.compiler.options.preprocessor_definitions
+			forced_includes : root.compiler.options.forced_includes
+		}
+	}
+	iwyu|cppcheck {
+		files : root.compiler.files
 	}
 }
 

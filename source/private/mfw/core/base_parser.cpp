@@ -296,7 +296,7 @@ namespace mfw::core
 		return valid;
 	}
 
-	void base_parser::error(const ucstring_view &)
+	void base_parser::error(const ucstring_view &str)
 	{
 		error_ = true;
 	}

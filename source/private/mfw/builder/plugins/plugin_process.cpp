@@ -21,13 +21,24 @@ namespace mfw::builder
 		info_.ignore_output = false;
 	}
 	
+	void plugin_process::insert_help(ucstring &help)
+	{
+		help += u8R"(
+			$(optional,min=1,description="max number of processes")
+			jobs 1
+			
+			$(optional,count=0,description="print cmdline of each process")
+			printcmdline
+		)"_sv;
+	}
+	
 	void plugin_process::initialize(interfaces::builder_funcs &funcs)
 	{
 		super::initialize(funcs);
 		
 		core::commandline &cmdline{core::commandline::instance()};
 		
-		ssize_t jobs{static_cast<ssize_t>(cmdline.get_int(u8"jobs"_s, 0))};
+		ssize_t jobs{static_cast<ssize_t>(cmdline.get_int(u8"jobs"_s, 1))};
 		if(jobs == -1) {
 			jobs = __MFW_PROCESSES_UNLIMITED;
 		}
@@ -361,8 +372,9 @@ namespace mfw::builder
 				needs_values = true;
 			}
 			if(flags->get_child_bool(u8"folders"_sv) ||
-				flags->get_child_bool(u8"file"_sv) ||
-				flags->get_child_bool(u8"files"_sv)) {
+				flags->get_child_bool(u8"files"_sv) ||
+				flags->get_child_bool(u8"folder"_sv) ||
+				flags->get_child_bool(u8"file"_sv)) {
 				is_file = true;
 			}
 		}
@@ -386,7 +398,13 @@ namespace mfw::builder
 				const ucstring &name{child.get_name()};
 				const core::univalue &value{child.get_value()};
 				__MFW_QUOTE_STR_NAME(arg_name, quote_arg)
-				str += u8' ';
+				char8_t sep{u8' '};
+				if(no_space) {
+					sep = u8'\0';
+				} else if(needs_equal) {
+					sep = info.equal_char;
+				}
+				str += sep;
 				__MFW_QUOTE_STR_VALUE(name, quote_name)
 				__MFW_APPEND_VALUE(u8'=')
 				str += u8' ';

@@ -16,17 +16,56 @@ namespace mfw::core
 		if(!temp.from_string(str)) {
 			return false;
 		}
-		return parse_main(temp);
+		
+		bool parsed{parse_main(temp)};
+		if(!parsed) {
+			const vector<univalue> *arg_vals{cmdline->values(u8"help"_s)};
+			if(arg_vals) {
+				if(!arg_vals->empty()) {
+					log_commandline_validator().error(u8"arg help needs no values"_sv);
+				} else {
+					print(temp);
+				}
+				return false;
+			}
+		}
+		return parsed;
+	}
+
+	bool commandline_validator::get_member_variable(const type_holder &obj, const ucstring_view &name, type_holder &var) const
+	{
+		const type_info &info{obj.info()};
+		if(info.is_exact<univalue>()) {
+			const univalue &value{obj.get_var<const univalue>()};
+			if(value == name) {
+				var.deduce(true);
+			} else {
+				var.deduce(false);
+			}
+			return true;
+		} else {
+			const vector<univalue> *values{obj.get_var<const vector<univalue> *>()};
+			if(contains(*values, name)) {
+				var.deduce(true);
+			} else {
+				var.deduce(false);
+			}
+			return true;
+		}
 	}
 
 	bool commandline_validator::get_variable(const ucstring_view &name, type_holder &result) const
 	{
-		const univalue *value{cmdline->value(ucstring{name})};
-		if(!value) {
+		const vector<univalue> *values{cmdline->values(ucstring{name})};
+		if(!values) {
 			return false;
 		}
 
-		result.deduce(*value);
+		if(values->size() == 1) {
+			result.deduce((*values)[0]);
+		} else {
+			result.deduce(values);
+		}
 		return true;
 	}
 
@@ -204,6 +243,8 @@ namespace mfw::core
 			}
 		}
 
+		fmt += u8'\n';
+
 		log_commandline_validator().add_ident();
 		log_commandline_validator().info(fmt);
 		log_commandline_validator().remove_ident();
@@ -223,7 +264,7 @@ namespace mfw::core
 		}
 
 		for(const pair<ucstring, vector<const serializable *>> &it : later) {
-			log_commandline_validator().info(u8"if {}"_sv, it.first);
+			log_commandline_validator().info(u8"if {}:"_sv, it.first);
 			log_commandline_validator().add_ident();
 			for(const serializable *child : it.second) {
 				print_internal(*child);
@@ -234,6 +275,18 @@ namespace mfw::core
 
 	bool commandline_validator::parse_main(const serializable &ser) const
 	{
+		/*if(ser.has_child(u8"help"_sv)) {
+			const vector<univalue> *arg_vals{cmdline->values(u8"help"_s)};
+			if(arg_vals) {
+				if(!arg_vals->empty()) {
+					log_commandline_validator().error(u8"arg help needs no values"_sv);
+				} else {
+					print(ser);
+				}
+				return false;
+			}
+		}*/
+		
 		for(const serializable &child : ser) {
 			const ucstring &name{child.get_name()};
 
@@ -255,7 +308,12 @@ namespace mfw::core
 					}
 					cmdline->add(name, move(vals));
 				} else {
-					cmdline->add(name);
+					const univalue &value{child.get_value()};
+					if(!value.empty()) {
+						cmdline->add(name, value);
+					} else {
+						cmdline->add(name);
+					}
 				}
 			}
 
@@ -289,7 +347,7 @@ namespace mfw::core
 					__MFW_COUNT_CODE_START(var, op, extra) \
 						if(var##_val == 0) { \
 							if(arg_vals && !arg_vals->empty()) { \
-								log_commandline_validator().error(u8"arg {} needs no values"_sv, name, var##_val); \
+								log_commandline_validator().error(u8"arg {} needs no values"_sv, name); \
 								return false; \
 							} \
 						} else if(var##_val == 1) { \

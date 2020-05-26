@@ -61,6 +61,10 @@ namespace mfw::stl
 			}
 			it++;
 		}
+		
+		if(arg != args.size()) {
+			return false;
+		}
 
 		return true;
 	}

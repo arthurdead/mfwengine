@@ -112,6 +112,21 @@ namespace mfw::core
 			}
 		}
 	}
+	
+	void serializable_parser::error(const ucstring_view &err, const token &tok)
+	{
+		pstring file{filename()};
+
+		ucstring tmp{};
+		format(tmp, err, tok);
+
+		ucstring str{};
+		format(str, u8"{}:{}:{}: {}"_sv, file, tok.line, tok.offset, tmp);
+
+		super::error(str);
+
+		log_serializable_parser().error(str);
+	}
 
 	void serializable_parser::error(const ucstring_view &err)
 	{
@@ -247,7 +262,7 @@ namespace mfw::core
 				context.last = true;
 				context.invert();
 			} else {
-				error(u8"unknown dynamicprocessor directive: {}"_sv, token_().as_string());
+				error(u8"unknown dynamicprocessor directive: {}"_sv, token_());
 				return;
 			}
 		}
@@ -273,7 +288,7 @@ namespace mfw::core
 	bool serializable_parser::handle_include(bool optional, bool root, univalue &tmp)
 	{
 		if(!expect({token::type::identifier}, tmp)) {
-			error(u8"expected identifier but found: {}"_sv, token_().as_string());
+			error(u8"expected identifier but found: {}"_sv, token_());
 			return false;
 		}
 
@@ -349,7 +364,7 @@ namespace mfw::core
 				if(expect({token::type::identifier, u8"pragma"_uv})) {
 					univalue name{};
 					if(!expect({token::type::identifier}, name)) {
-						error(u8"expected identifier but found: {}"_sv, token_().as_string());
+						error(u8"expected identifier but found: {}"_sv, token_());
 						return;
 					}
 
@@ -358,7 +373,7 @@ namespace mfw::core
 						if(expect({token::type::identifier}, tmp)) {
 							args.emplace_back(move(tmp));
 						} else {
-							error(u8"expected function or identifier but found: {}"_sv, token_().as_string());
+							error(u8"expected function or identifier but found: {}"_sv, token_());
 							return;
 						}
 					}
@@ -410,7 +425,7 @@ namespace mfw::core
 					return;
 				} else if(expect({token::type::identifier, u8"define"_uv})) {
 					if(!expect({token::type::identifier}, tmp)) {
-						error(u8"expected identifier but found: {}"_sv, token_().as_string());
+						error(u8"expected identifier but found: {}"_sv, token_());
 						return;
 					}
 
@@ -428,7 +443,7 @@ namespace mfw::core
 					defines.insert_or_assign(def_name, value);
 				} else if(expect({token::type::identifier, u8"undef"_uv})) {
 					if(!expect({token::type::identifier}, tmp)) {
-						error(u8"expected identifier but found: {}"_sv, token_().as_string());
+						error(u8"expected identifier but found: {}"_sv, token_());
 						return;
 					}
 
@@ -468,7 +483,7 @@ namespace mfw::core
 				}
 
 				if(!expect({token::type::identifier}, tmp)) {
-					error(u8"expected identifier but found: {}"_sv, token_().as_string());
+					error(u8"expected identifier but found: {}"_sv, token_());
 					return;
 				}
 
@@ -488,7 +503,7 @@ namespace mfw::core
 				}
 
 				if(!expect({token::type::identifier}, tmp)) {
-					error(u8"expected identifier but found: {}"_sv, token_().as_string());
+					error(u8"expected identifier but found: {}"_sv, token_());
 					return;
 				}
 
@@ -626,7 +641,7 @@ namespace mfw::core
 			}
 
 			if(!valid1 && !valid2) {
-				error(u8"unknown preprocessor directive: {}"_sv, token_().as_string());
+				error(u8"unknown preprocessor directive: {}"_sv, token_());
 				return;
 			}
 		}
@@ -840,6 +855,8 @@ namespace mfw::core
 				child->set_condition(if_context.check);
 			}
 		}
+		
+		bool was_newline{false};
 
 		if(expect({token::type::colon})) {
 			while(true) {
@@ -848,7 +865,7 @@ namespace mfw::core
 				}
 
 				if(!read_identifier(tmp, this)) {
-					error(u8"expected identifier but found: {}"_sv, token_().as_string());
+					error(u8"expected identifier but found: {}"_sv, token_());
 					return false;
 				}
 
@@ -874,6 +891,7 @@ namespace mfw::core
 				} else if(expect({token::type::semicolon})) {
 					break;
 				} else if(expect({token::type::newline})) {
+					was_newline = true;
 					break;
 				} else {
 					const token &tok{token_()};
@@ -882,10 +900,14 @@ namespace mfw::core
 						extype == token::extended_type::bracket_left) {
 						break;
 					}
-					error(u8"expected comma or newline or semicolon but found: {}"_sv, token_().as_string());
+					error(u8"expected comma or newline or semicolon or key open but found: {}"_sv, token_());
 					return false;
 				}
 			}
+		}
+		
+		if(was_newline) {
+			advance(-1);
 		}
 
 		parse_key_end(context, &childs, tmp, true);
@@ -942,7 +964,7 @@ namespace mfw::core
 				expect({token::extended_type::bracket_left}) ||
 				expect({token::extended_type::lesser}) ||
 				expect({token::extended_type::parenthesis_left})) {
-			error(u8"unexpected opening: {}"_sv, peek(-1).as_string());
+			error(u8"unexpected opening: {}"_sv, peek(-1));
 			return;
 		}
 
@@ -987,7 +1009,7 @@ namespace mfw::core
 
 		if(!expect({token::type::identifier}, tmp)) {
 		//if(!read_identifier(tmp)) {
-			error(u8"expected identifier but found: {}"_sv, token_().as_string());
+			error(u8"expected identifier but found: {}"_sv, token_());
 			return;
 		}
 
@@ -1059,7 +1081,7 @@ namespace mfw::core
 		bool opened{parse_key_open(context, *childs, valtype)};
 		if(!opened) {
 			if(!foundval && valtype != value_type::none) {
-				error(u8"expected identifier or opening but found: {}"_sv, token_().as_string());
+				error(u8"expected identifier or opening but found: {}"_sv, token_());
 				return;
 			}
 
@@ -1138,7 +1160,7 @@ namespace mfw::core
 			expect({token::extended_type::lesser}) ||
 			expect({token::extended_type::parenthesis_left})) {
 			if(separator) {
-				error(u8"unexpected opening: {}"_sv, peek(-1).as_string());
+				error(u8"unexpected opening: {}"_sv, peek(-1));
 				return false;
 			}
 
@@ -1183,7 +1205,7 @@ namespace mfw::core
 
 		if(expect({context.close_type()})) {
 			if(parents.size() == 1) {
-				error(u8"unexpected closing: {}"_sv, peek(-1).as_string());
+				error(u8"unexpected closing: {}"_sv, peek(-1));
 				return false;
 			}
 

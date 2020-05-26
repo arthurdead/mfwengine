@@ -53,7 +53,8 @@ namespace mfw::core
 	MFW_CORE_API bool MFW_CORE_CALL commandline::validate(const ucstring_view &str) const
 	{
 		commandline_validator validator{};
-		return validator.parse(*this, str, const_cast<serializable &>(help));
+		bool parsed{validator.parse(*this, str, const_cast<serializable &>(help))};
+		return parsed;
 	}
 
 	MFW_CORE_API void MFW_CORE_CALL commandline::print_help() const
@@ -156,6 +157,10 @@ namespace mfw::core
 
 	MFW_CORE_API void MFW_CORE_CALL commandline::add(const ucstring &name, const univalue &val)
 	{
+		if(val.empty()) {
+			add(name);
+			return;
+		}
 		vector<univalue> values{};
 		values.emplace_back(val);
 		add(name, move(values));

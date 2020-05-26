@@ -61,37 +61,22 @@ namespace mfw::builder
 
 	core::exit_status builder::start()
 	{
-		ucstring help{u8R"(
-
-		$(optional,count=0,description="prints help text")
-		help
-
-		$(required,count=1,description="root path to mfwbuild files")
-		path
-
-		$(required,min=1,description="list of solutions to build")
-		solutions
-		
-		$(optional,min=1,description="list of sections to build")
-		sections
-
-		$(required,min=1,description="list of plugins to use while building")
-		plugins
-
-		$(optional,count=0,description="ignores cache")
-		regen_cache
-		
-		$(optional,count=1,description="list symbols of file")
-		list_symbols
-
-		)"_s};
+		ucstring_view help{};
+		bool valid{false};
 
 		const core::commandline &cmdline{core::commandline::instance()};
 
-		bool valid{cmdline.validate(help)};
-		if(cmdline.has(u8"help"_s)) {
-			cmdline.print_help();
-			return core::exit_status::success;
+		help = u8R"(
+			$(optional,count=1,description="list symbols of file")
+			list_symbols
+			
+			$(required,min=1,description="list of plugins to use while building")
+			plugins
+		)"_sv;
+
+		valid = cmdline.validate(help);
+		if(!valid) {
+			return core::exit_status::fatal;
 		}
 		
 		const core::univalue *list_symbols{cmdline.value(u8"list_symbols"_s)};
@@ -111,6 +96,49 @@ namespace mfw::builder
 			return core::exit_status::success;
 		}
 		
+		if(!parse_plugins()) {
+			return core::exit_status::fatal;
+		}
+		
+		help = u8R"(
+			$(optional,min=1,description="list of sections to build")
+			sections
+
+			$(optional,count=0,description="ignores cache")
+			regen_cache
+		)"_sv;
+		
+		valid = cmdline.validate(help);
+		if(!valid) {
+			return core::exit_status::fatal;
+		}
+		
+		ucstring tmp_help{};
+		
+		for(base_plugin *plugin : plugins) {
+			tmp_help += u8"$if plugins."_sv;
+			tmp_help += plugin->name();
+			tmp_help += u8'\n';
+			plugin->insert_help(tmp_help);
+			tmp_help += u8"$endif"_sv;
+		}
+		
+		if(!tmp_help.empty()) {
+			valid = cmdline.validate(tmp_help);
+			if(!valid) {
+				return core::exit_status::fatal;
+			}
+		}
+		
+		help = u8R"(
+			$(required,count=1,description="root path to mfwbuild files")
+			path
+
+			$(required,min=1,description="list of solutions to build")
+			solutions
+		)"_sv;
+		
+		valid = cmdline.validate(help);
 		if(!valid) {
 			return core::exit_status::fatal;
 		}
@@ -143,10 +171,6 @@ namespace mfw::builder
 			for(const core::univalue &value : *values_sections) {
 				sections.emplace_back(value.get_string());
 			}
-		}
-
-		if(!parse_plugins()) {
-			return core::exit_status::fatal;
 		}
 
 		if(!parse_solutions()) {
@@ -1254,7 +1278,6 @@ namespace mfw::builder
 		if(opt_flags) {
 			result.child->flags().merge(*opt_flags);
 		}
-		result.child->merge(option, __builder_internal::merge_replace_vars);
 		
 		return true;
 	}
@@ -1299,29 +1322,39 @@ namespace mfw::builder
 				core::serializable &child{*result.child};
 				
 				bool remap_values{true};
+				bool is_folders{false};
 				
 				core::serializable *flags{child.get_flags()};
 				if(flags) {
 					if(flags->get_child_bool(u8"folders"_sv)) {
-						__builder_internal::files tmp{};
-
-						parse_folders(child, &tmp, false, flags->get_child(u8"removed"_sv), flags);
-
-						child.remove_all();
-
-						child.merge(tmp);
-						
+						is_folders = true;
 						remap_values = false;
 					}
 				}
 				
-				if(remap_values) {
-					for(const core::serializable &it : option) {
+				for(const core::serializable &it : option) {
+					if(began_gen) {
+						if(!it.passes_condition(this)) {
+							continue;
+						}
+					}
+					
+					if(remap_values) {
 						remap_result_t tmp{};
 						if(!remap_value(it, result.map, child, tmp, info)) {
 							return false;
 						}
+					} else if(!is_folders) {
+						child.child(it.get_name());
 					}
+				}
+				
+				if(is_folders) {
+					__builder_internal::files tmp{};
+
+					parse_folders(option, &tmp, false, flags->get_child(u8"removed"_sv), flags);
+
+					child.merge(tmp);
 				}
 			}
 

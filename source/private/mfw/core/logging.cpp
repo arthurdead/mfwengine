@@ -437,6 +437,9 @@ namespace mfw::core
 			
 			if(fixedstr.empty()) {
 				return;
+			} else if(fixedstr.size() == 1 && fixedstr[0] == u8'\n') {
+				print_console(u8"\n"_sv, true);
+				return;
 			}
 
 			if(!ignore_insert) {

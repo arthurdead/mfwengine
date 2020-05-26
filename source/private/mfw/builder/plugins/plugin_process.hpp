@@ -85,6 +85,8 @@ namespace mfw::builder
 	private:
 		void initialize(interfaces::builder_funcs &funcs) override;
 	
+		void insert_help(ucstring &help) override;
+	
 		void cleanup(cleanup_type_t type) override;
 	
 		bool generate(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const core::serializable &options) override;

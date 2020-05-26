@@ -1,0 +1,46 @@
+cppcheck
+{
+	equal_char '='
+
+	patterns {
+		"*.cpp",
+		"*.c",
+		"*.cc",
+		"*.cx",
+		"*.cxx",
+		"*.c++",
+		"*.h"
+		"*.hh"
+		"*.hx"
+		"*.hxx"
+		"*.hpp"
+		"*.h++"
+		"*.ipp"
+		"*.tpp"
+	}
+
+	options_map {
+		$(folders,needs_values)
+		includes_paths "-I"
+		$(files,needs_values,needs_equal)
+		forced_includes "--include"
+		$(needs_equal)
+		platform "--platform"
+		$(needs_equal)
+		standard "--std"
+		$(folder,needs_equal)
+		output "--cppcheck-build-dir"
+		$(needs_equal,needs_values)
+		checks "--enable"
+		preprocessor_definitions "-D"
+		$(needs_equal,needs_values)
+		suppress "--suppress"
+		inconclusive "--inconclusive"
+		inline_suppress "--inline-suppr"
+		$(files,folders)
+		ignore "-i"
+		quiet "--quiet"
+	}
+
+	shell "cppcheck"
+}

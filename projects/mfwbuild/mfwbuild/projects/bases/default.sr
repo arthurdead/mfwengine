@@ -4,13 +4,15 @@ standards {
 			standard "c++17"
 			char8_t
 		}
-		iwyu::options {
-			"-Xiwyu" "--cxx17ns"
+	}
+	cpp20 {
+		compiler::options {
+			standard "c++2a"
 		}
 	}
 }
 
-base_project : standards.cpp17 {
+base_project {
 	compiler {
 		plugin::compile_commands "${data_folder}/process/${solution_name}/${project_name}/${tool_name}_${output_tool_name}_compile_commands.json"
 		builder {
@@ -81,9 +83,6 @@ base_project : standards.cpp17 {
 		$endif
 			output "${intermediary_folder}/${project_name}${output_ext}"
 		}
-	}
-	iwyu ignore {
-		options : iwyu.parent.compiler.options
 	}
 }
 
