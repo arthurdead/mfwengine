@@ -14,8 +14,8 @@ base_solution
 		configuration::debug
 	$else
 		os {
-			//windows
-			linux
+			windows
+			//linux
 		}
 		configuration {
 			debug,
@@ -34,7 +34,6 @@ base_solution
 	}
 
 	tools {
-		iwyu iwyu
 	$if os == "windows"
 		compiler cl
 		linker link

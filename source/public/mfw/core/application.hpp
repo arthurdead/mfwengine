@@ -65,6 +65,8 @@ namespace mfw::core
 		uint8_t values[4];
 	};
 	
+	pstring executable_path();
+	
 #if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
 	bool core_load_library(ucstring_view name);
 	exit_status core_update();

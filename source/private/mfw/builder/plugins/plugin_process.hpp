@@ -42,7 +42,6 @@ namespace mfw::builder
 			vector<ucstring> warning_regex{};
 			vector<ucstring> error_regex{};
 			vector<ucstring> ignore_regex{};
-			ucstring kill_proc{};
 			
 			bool needs_implib{false};
 			
@@ -117,6 +116,8 @@ namespace mfw::builder
 		};
 		
 		ptr_vector<compile_command_t> compile_commands{};
+		
+		bool only_compile_commands{false};
 		
 		enum class sec_flags : uchar_t
 		{

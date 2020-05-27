@@ -55,7 +55,9 @@ base_project : standards.cpp17 {
 			}
 		}
 	}
+	iwyu_tool ignore
 	iwyu ignore
+	clang_check ignore
 	cppcheck ignore {
 		options {
 		$if platform == "x86_64"
@@ -97,6 +99,30 @@ base_project : standards.cpp17 {
 		$endif
 		}
 	}
+	clang_check {
+		analyze
+	}
+	iwyu_tool {
+		format iwyu
+	}
+	#define __MFW_COMPILE_COMMANDS_FOLDER "${data_folder}/process/${solution_name}/${project_name}/${compiler}_${platform}_${os}_${configuration}"
+	#define __MFW_COMPILE_COMMANDS_FILE "__MFW_COMPILE_COMMANDS_FOLDER/compile_commands.json"
+	compiler::plugin {
+		compile_commands __MFW_COMPILE_COMMANDS_FILE
+	}
+	cppcheck::options {
+		project __MFW_COMPILE_COMMANDS_FILE
+	}
+	iwyu_tool|clang_check {
+		options {
+			compile_commands __MFW_COMPILE_COMMANDS_FOLDER
+		}
+	}
+	cppcheck|clang_check|iwyu_tool {
+		pre_generate {
+			"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --plugins=\"process\" --path=\"${path_folder}\" --only_compile_commands"
+		}
+	}
 	iwyu {
 		options : root.compiler.options
 	}
@@ -107,7 +133,7 @@ base_project : standards.cpp17 {
 			forced_includes : root.compiler.options.forced_includes
 		}
 	}
-	iwyu|cppcheck {
+	iwyu|iwyu_tool|cppcheck|clang_check {
 		files : root.compiler.files
 	}
 }

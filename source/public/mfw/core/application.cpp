@@ -88,6 +88,22 @@ namespace mfw::core
 		}
 	}
 	
+	pstring executable_path()
+	{
+	#if MFW_OS == MFW_OS_WINDOWS
+		wchar_t exefile[MAX_PATH]{L'\0'};
+		size_t len{GetModuleFileNameW(nullptr, exefile, size(exefile))};
+	#elif MFW_OS == MFW_OS_LINUX
+		char exefile[PATH_MAX]{'\0'};
+		ssize_t len{readlink("/proc/self/exe", exefile, size(exefile))};
+	#else
+		#error
+	#endif
+	
+		pstring exepath{MFW_PATH_FROM_CHARARRAY(exefile, len)};
+		return exepath;
+	}
+	
 	bool core_load_library(ucstring_view name)
 	{
 		return
@@ -214,7 +230,7 @@ namespace mfw::core
 			#error
 		#endif
 
-			pstring exepath{MFW_PATH_FROM_CHARARRAY(exefile, len)};
+			pstring exepath{executable_path()};
 			exepath.remove_filename();
 			__application_internal::core_filesystem_instance().initialize(exepath);
 

@@ -14,7 +14,6 @@ standards {
 
 base_project {
 	compiler {
-		plugin::compile_commands "${data_folder}/process/${solution_name}/${project_name}/${tool_name}_${output_tool_name}_compile_commands.json"
 		builder {
 		$if configuration == "release"
 			unity_build
@@ -47,6 +46,11 @@ base_project {
 			no_linking
 			output "${intermediary_folder}/${file_basename}${output_ext}"
 		}
+	$if tool_name == "vscode"
+		pre_generate {
+			"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --plugins=\"process\" --path=\"${path_folder}\" --only_compile_commands"
+		}
+	$endif
 	}
 	linker {
 		implib {

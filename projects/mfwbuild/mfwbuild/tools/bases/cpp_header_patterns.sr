@@ -1,0 +1,12 @@
+base_tool {
+	patterns {
+		"*.h"
+		"*.hh"
+		"*.hx"
+		"*.hxx"
+		"*.hpp"
+		"*.h++"
+		"*.ipp"
+		"*.tpp"
+	}
+}

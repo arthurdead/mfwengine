@@ -17,11 +17,11 @@
 base_tool
 {
 	equal_char ':'
-	
+
 	non_fatal_codes {
 		3,2
 	}
-	
+
 	$(separator=';')
 	environment
 	{
@@ -32,14 +32,14 @@ base_tool
 			"SDKINCLUDE\\um"
 			"SDKINCLUDE\\winrt"
 		}
-		
+
 		LIB|LIBPATH {
 			"MSVCDIR\\lib\\ARCH"
 			"SDKLIB\\ucrt\\ARCH"
 			"SDKLIB\\um\\ARCH"
 		}
 	}
-	
+
 #if MFW_OS == MFW_OS_LINUX
 	output_regex::ignore {
 		"fsync: up and running."
@@ -49,22 +49,23 @@ base_tool
 		"Unhandled exception: page fault on read access to "
 		"Unhandled Exception:"
 	}
-	
+
 	environment {
 		WINEPATH {
 			"BINDIR"
 			"SDKBINDIR"
 			"MSVCDIR\\bin\\Hostx64\\x64"
 		}
-		
+
 		WINEDEBUG "-all"
+
+		WINEDLLOVERRIDES "vcruntime140_1=n"
 	}
 
 	subprocess
 	{
 		shell "wine"
 		drive "Z:"
-		kill_process "VCTIP.EXE"
 	}
 #endif
 }

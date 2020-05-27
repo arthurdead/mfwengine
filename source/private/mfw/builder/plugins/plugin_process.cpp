@@ -29,6 +29,9 @@ namespace mfw::builder
 			
 			$(optional,count=0,description="print cmdline of each process")
 			printcmdline
+			
+			$(optional,count=0,description="only generate the compile commands dont actually run any tool")
+			only_compile_commands
 		)"_sv;
 	}
 	
@@ -44,6 +47,7 @@ namespace mfw::builder
 		}
 		max_processes_ = jobs;
 		printcmdline = cmdline.get_bool(u8"printcmdline"_s);
+		only_compile_commands = cmdline.get_bool(u8"only_compile_commands"_s);
 	}
 
 	bool plugin_process::execute_tool(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const tool_info_t &info, const file_reference &file, const core::serializable &options)
@@ -98,6 +102,8 @@ namespace mfw::builder
 		if(!tool) {
 			return true;
 		}
+		
+		compile_command_t &compile{compile_commands.emplace_back()};
 
 		tool_info_t &tool_info{toolsinfos.emplace_back()};
 		
@@ -259,12 +265,6 @@ namespace mfw::builder
 			if(drive) {
 				const core::univalue &value{drive->get_value()};
 				tool_info.drive = value.get_string();
-			}
-			
-			drive = subprocess->get_child(u8"kill_process"_sv);
-			if(drive) {
-				const core::univalue &value{drive->get_value()};
-				tool_info.kill_proc = value.get_string();
 			}
 		} else {
 			if(tool->is_shell()) {
@@ -744,7 +744,7 @@ namespace mfw::builder
 			for(const file_reference *file : files) {
 				pstring file_path{file->path()};
 				
-				if(info.needs_implib) {
+				if(info.needs_implib && !only_compile_commands) {
 					if(file->get_flag_bool(u8"delay"_sv)) {
 						gen_lib_vars_t gen_vars{};
 						gen_vars.arch = info.implib.arch;
@@ -797,7 +797,7 @@ namespace mfw::builder
 			add_file_to_str(unity_file_path, str, info);
 		}
 
-		if(unity_build) {
+		if(unity_build && !only_compile_commands) {
 			vector<byte> unity_build_file{};
 
 			for(const file_reference *file : files) {
@@ -920,26 +920,30 @@ namespace mfw::builder
 			vars.file = files[0];
 		}
 
-		if(!multi_process()) {
-			proc_info_t proc_info{};
-			proc_info.setup(move(vars), str, info);
-			
-			if(!proc_info.start(log())) {
-				return false;
-			}
-			
-			return process_done(proc_info.proc, vars, info);
+		if(only_compile_commands) {
+			return true;
 		} else {
-			proc_info_t &proc_info{processes.emplace_back()};
-			proc_info.setup(move(vars), str, info);
-			
-			if(!hit_process_limit()) {
+			if(!multi_process()) {
+				proc_info_t proc_info{};
+				proc_info.setup(move(vars), str, info);
+				
 				if(!proc_info.start(log())) {
 					return false;
 				}
+				
+				return process_done(proc_info.proc, vars, info);
+			} else {
+				proc_info_t &proc_info{processes.emplace_back()};
+				proc_info.setup(move(vars), str, info);
+				
+				if(!hit_process_limit()) {
+					if(!proc_info.start(log())) {
+						return false;
+					}
+				}
+				
+				return true;
 			}
-			
-			return true;
 		}
 	}
 	
@@ -1086,9 +1090,12 @@ namespace mfw::builder
 	void plugin_process::cleanup(cleanup_type_t type)
 	{
 		processes.clear();
-		compile_commands.clear();
 		toolsinfos.clear();
 		compiler.clear();
+		
+		if(type == cleanup_type_t::solution) {
+			compile_commands.clear();
+		}
 	}
 	
 	bool plugin_process::running(bool &err)
@@ -1124,17 +1131,6 @@ namespace mfw::builder
 			
 			if(proc.running()) {
 				running = true;
-				
-				const ucstring &kill_proc{proc_info.vars.tool_info->kill_proc};
-				if(!kill_proc.empty() && !proc_info.killed) {
-					vector<core::process> procs{};
-					if(core::process::find(kill_proc, procs)) {
-						for(core::process &proc : procs) {
-							proc.kill();
-						}
-						proc_info.killed = true;
-					}
-				}
 			} else {
 				if(!process_done(proc, vars, tool_info)) {
 					err = true;
@@ -1210,18 +1206,6 @@ namespace mfw::builder
 	
 	bool plugin_process::generate(const solution_reference &solution, const project_reference &project)
 	{
-		compile_command_t &compile{compile_commands.emplace_back()};
-		
-		/*if(compile.path.empty()) {
-			compile.path /= solution.get_name();
-			compile.path /= project.get_name();
-			compile.path /= u8"compile_commands.json"_p;
-			
-			core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
-		
-			compile.path = filesys.resolve({compile.path, name()}, false);
-		}*/
-		
 		return true;
 	}
 	

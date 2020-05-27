@@ -1,13 +1,6 @@
+#include "cpp_source_patterns.sr"
+
 base_tool
 {
-	patterns {
-		"*.cpp",
-		"*.c",
-		"*.cc",
-		"*.cx",
-		"*.cxx",
-		"*.c++",
-	}
-	
 	unity_build_ext ".cpp"
 }

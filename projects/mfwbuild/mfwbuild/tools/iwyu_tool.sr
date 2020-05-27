@@ -1,0 +1,26 @@
+#include "bases/cpp_source_patterns.sr"
+
+iwyu_tool : base_tool
+{
+	single_input
+
+	equal_char '='
+
+	options_map {
+		format "--output-format"
+		$(file)
+		compile_commands "-p"
+	}
+
+	output_regex {
+		warning {
+			" should add these lines:"
+			" should remove these lines:"
+		}
+		info {
+			"The full include-list for "
+		}
+	}
+
+	shell "iwyu-tool"
+}

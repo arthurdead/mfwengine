@@ -1,18 +1,8 @@
 #include "bases/unix_cpp_compiler.sr"
+#include "bases/cpp_header_patterns.sr"
 
 iwyu : base_tool
 {
-	patterns {
-		"*.h"
-		"*.hh"
-		"*.hx"
-		"*.hxx"
-		"*.hpp"
-		"*.h++"
-		"*.ipp"
-		"*.tpp"
-	}
-
 	output_regex {
 		warning {
 			" should add these lines:"

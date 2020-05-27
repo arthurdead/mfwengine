@@ -1,23 +1,9 @@
-cppcheck
+#include "bases/cpp_source_patterns.sr"
+#include "bases/cpp_header_patterns.sr"
+
+cppcheck : base_tool
 {
 	equal_char '='
-
-	patterns {
-		"*.cpp",
-		"*.c",
-		"*.cc",
-		"*.cx",
-		"*.cxx",
-		"*.c++",
-		"*.h"
-		"*.hh"
-		"*.hx"
-		"*.hxx"
-		"*.hpp"
-		"*.h++"
-		"*.ipp"
-		"*.tpp"
-	}
 
 	options_map {
 		$(folders,needs_values)
@@ -42,6 +28,8 @@ cppcheck
 		quiet "--quiet"
 		$(needs_equal)
 		template "--template"
+		$(needs_equal,file)
+		project "--project"
 	}
 
 	shell "cppcheck"

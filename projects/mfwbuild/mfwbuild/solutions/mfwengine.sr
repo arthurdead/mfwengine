@@ -4,6 +4,6 @@ mfwengine : base_solution
 {
 	projects {
 		stl
-		//core
+		core
 	}
 }

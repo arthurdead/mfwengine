@@ -1,0 +1,16 @@
+#include "bases/cpp_source_patterns.sr"
+
+clang_check : base_tool
+{
+	single_input
+
+	equal_char '='
+
+	options_map {
+		$(file,needs_equal)
+		compile_commands "-p"
+		analyze "--analyze"
+	}
+
+	shell "clang-check"
+}

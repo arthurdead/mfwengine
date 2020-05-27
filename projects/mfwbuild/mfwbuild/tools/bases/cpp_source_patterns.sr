@@ -1,0 +1,10 @@
+base_tool {
+	patterns {
+		"*.cpp",
+		"*.c",
+		"*.cc",
+		"*.cx",
+		"*.cxx",
+		"*.c++",
+	}
+}

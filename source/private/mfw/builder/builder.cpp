@@ -150,6 +150,9 @@ namespace mfw::builder
 		root_dir = filesys.clean({root_dir});
 
 		add_variable(u8"path_folder"_s, as_string<ucstring>(root_dir));
+		
+		pstring exepath{core::executable_path()};
+		add_variable(u8"mfwbuilder"_s, as_string<ucstring>(exepath));
 
 		filesys.add_searchpath({root_dir, u8"path"_sv});
 		filesys.add_searchpath({u8"mfwbuild"_p, u8"mfwbuild"_sv}, {{}, u8"path"_sv});
@@ -160,7 +163,7 @@ namespace mfw::builder
 		filesys.add_searchpath({u8"builder"_p, u8"builder"_sv}, {{}, u8"data"_sv});
 		filesys.add_searchpath({u8"plugins"_p, u8"plugins"_sv}, {{}, u8"mfwbuild"_sv});
 
-		add_variable(u8"data_folder"_s, as_string<ucstring>(root_dir/u8"data"_p));
+		add_variable(u8"data_folder"_s, as_string<ucstring>(root_dir/u8"mfwbuild/data"_p));
 
 		filesys.set_working_dir({{}, u8"data"_sv});
 
@@ -1395,17 +1398,27 @@ namespace mfw::builder
 
 		for(const core::serializable &child : execute) {
 			if(child.passes_condition(this)) {
-				str += child.get_name();
+				ucstring name{child.get_name()};
+				replace_vars(name);
+				str += name;
 				str += u8' ';
 				const core::univalue &value{child.get_value()};
 				if(!value.empty()) {
-					str += value.get_string();
+					ucstring value_str{value.get_string()};
+					replace_vars(value_str);
+					str += value_str;
 					str += u8' ';
 				}
 			}
 		}
+		
+		if(str.empty()) {
+			return true;
+		}
 
 		str.pop_back();
+		
+		replace_all(str, u8"\""_sv, u8"\\\""_sv);
 
 		shell_proc.set_args(str);
 
