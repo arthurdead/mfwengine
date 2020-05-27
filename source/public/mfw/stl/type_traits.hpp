@@ -23,6 +23,7 @@ namespace mfw::stl
 	using ::MFW_STD_NAMESPACE::underlying_type_t;
 	using ::MFW_STD_NAMESPACE::remove_reference_t;
 	using ::MFW_STD_NAMESPACE::remove_const_t;
+	using ::MFW_STD_NAMESPACE::remove_cv_t;
 	using ::MFW_STD_NAMESPACE::remove_pointer_t;
 	using ::MFW_STD_NAMESPACE::remove_all_extents_t;
 	using ::MFW_STD_NAMESPACE::add_lvalue_reference_t;
@@ -119,11 +120,17 @@ namespace mfw::stl
 	struct type_identity { using type = T; };
 	template <typename T>
 	using type_identity_t = typename type_identity<T>::type;
-		#if MFW_COMPILER_FLAGGED(UNIX)
+		#if MFW_LIBCPP_FLAGGED(UNIX)
 	template <typename T>
 	using remove_cvref_t = ::MFW_STD_NAMESPACE::__remove_cvref_t<T>;
 		#else
-			#error
+	template <typename T>
+	struct remove_cvref
+	{
+		using type = remove_cv_t<remove_reference_t<T>>;
+	};
+	template <typename T>
+	using remove_cvref_t = typename remove_cvref<T>::type;
 		#endif
 	#endif
 #else
@@ -131,7 +138,7 @@ namespace mfw::stl
 #endif
 
 	template <typename ...Args>
-	class type_identity_multiple
+	struct type_identity_multiple
 	{
 		//using type = tuple<Args...>;
 		using type = void_t<>;

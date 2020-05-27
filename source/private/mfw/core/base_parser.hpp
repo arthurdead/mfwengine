@@ -63,11 +63,11 @@ namespace mfw::core
 		bool read_array(univalue &index, const interfaces::expression_parser_callbacks *callbacks);
 		bool read_identifier(univalue &id, const interfaces::expression_parser_callbacks *callbacks);
 		bool read_function(vector<univalue> &args, const interfaces::accessor_parser_callbacks *callbacks)
-		{ return read_function(args, reinterpret_cast<const interfaces::expression_parser_callbacks *>(callbacks)); }
+		{ return read_function(args, static_cast<const interfaces::expression_parser_callbacks *>(callbacks)); }
 		bool read_array(univalue &index, const interfaces::accessor_parser_callbacks *callbacks)
-		{ return read_array(index, reinterpret_cast<const interfaces::expression_parser_callbacks *>(callbacks)); }
+		{ return read_array(index, static_cast<const interfaces::expression_parser_callbacks *>(callbacks)); }
 		bool read_identifier(univalue &id, const interfaces::accessor_parser_callbacks *callbacks)
-		{ return read_array(id, reinterpret_cast<const interfaces::expression_parser_callbacks *>(callbacks)); }
+		{ return read_array(id, static_cast<const interfaces::expression_parser_callbacks *>(callbacks)); }
 		bool read_line(ucstring &str);
 		bool read_line(univalue &str);
 		bool read_line(token_vec_t &subtokens);

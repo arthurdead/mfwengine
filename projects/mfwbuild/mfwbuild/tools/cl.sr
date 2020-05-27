@@ -26,26 +26,28 @@ cl : base_tool
 		extra_warnings
 		nologo "/nologo"
 		char8_t "/Zc:char8_t"
+		$(needs_values)
+		disable_warnings "/wd"
 	}
-	
+
 	preprocessor_definitions {
 		"/D"
 	}
-	
+
 	includes_paths {
 		"/I"
 	}
-	
+
 	forced_includes {
 		"/FI"
 	}
-	
+
 	output "${file_basename}.obj" {
 		"/Fo"
 	}
-	
+
 	standard "/std"
-	
+
 	warnings_as_errors "/WX"
 
 	output_regex {
@@ -64,7 +66,7 @@ cl : base_tool
 			"Microsoft (R) C/C++ Optimizing Compiler Version "
 			"Copyright (C) Microsoft Corporation.  All rights reserved."
 		}
-		
+
 	#if MFW_OS == MFW_OS_LINUX
 		ignore {
 	#else
@@ -75,7 +77,7 @@ cl : base_tool
 			"(compiler file "
 		}
 	}
-	
+
 #if MFW_OS == MFW_OS_LINUX
 	#define MSVCVER "14.26.28801"
 	#define ARCH "x64"

@@ -20,6 +20,9 @@ namespace mfw::core
 	{
 		class serializable_parser_callbacks
 		{
+		protected:
+			virtual ~serializable_parser_callbacks() = default;
+			
 		public:
 			virtual const serializable *get_inherit(const ucstring_view &name) const = 0;
 		};
@@ -29,7 +32,7 @@ namespace mfw::core
 	{
 	public:
 		serializable() = default;
-		~serializable() = default;
+		virtual ~serializable() = default;
 
 		serializable &operator=(serializable &&other) = default;
 		serializable(serializable &&other) = default;
@@ -95,12 +98,12 @@ namespace mfw::core
 			}
 			return flags_ptr->get_child(str);
 		}
-		bool get_flag_bool(const ucstring_view &name) const {
+		bool get_flag_bool(const ucstring_view &name_) const {
 			const serializable *flags_ptr{get_flags()};
 			if(!flags_ptr) {
 				return false;
 			}
-			return flags_ptr->get_child_bool(name);
+			return flags_ptr->get_child_bool(name_);
 		}
 
 		bool has_condition() const { return !condition.empty(); }
@@ -126,8 +129,8 @@ namespace mfw::core
 			return child->get_value_bool();
 		}
 
-		bool has_flag(const ucstring_view &name) const { return (has_flags() && get_flags()->has_child(name)); }
-		void add_flag(const ucstring_view &name) { flags().child(name); }
+		bool has_flag(const ucstring_view &name_) const { return (has_flags() && get_flags()->has_child(name_)); }
+		void add_flag(const ucstring_view &name_) { flags().child(name_); }
 
 		serializable &copy(const serializable &other) {
 			serializable &child_{child(other.get_name())};

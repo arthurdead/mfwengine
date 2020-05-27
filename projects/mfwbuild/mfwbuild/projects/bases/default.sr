@@ -41,14 +41,27 @@ base_project {
 			$else
 				NDEBUG,_NDEBUG
 			$endif
+			$if os == "windows"
+				_WIN32_WINNT_WIN10_TH2 _WIN32_WINNT_WIN10
+				_WIN32_WINNT_WIN10_RS1 _WIN32_WINNT_WIN10
+				_WIN32_WINNT_WIN10_RS2 _WIN32_WINNT_WIN10
+				_WIN32_WINNT_WIN10_RS3 _WIN32_WINNT_WIN10
+				_WIN32_WINNT_WIN10_RS4 _WIN32_WINNT_WIN10
+				_WIN32_WINNT_WIN10_RS5 _WIN32_WINNT_WIN10
+			$endif
 			}
 			nologo
 			no_linking
 			output "${intermediary_folder}/${file_basename}${output_ext}"
+			disable_warnings {
+			$if os == "windows"
+				"4577","4530","4820"
+			$endif
+			}
 		}
-	$if tool_name == "vscode"
+	$if plugin_name == "vscode"
 		pre_generate {
-			"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --plugins=\"process\" --path=\"${path_folder}\" --only_compile_commands"
+			"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --plugins=\"process\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" --only_compile_commands"
 		}
 	$endif
 	}

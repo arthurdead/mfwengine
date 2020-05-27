@@ -2,6 +2,8 @@
 
 #if MFW_OS_IS(LINUX)
 	#include <malloc.h>
+#elif MFW_OS_IS(WINDOWS)
+	#include <Windows.h>
 #endif
 
 #if MFW_STD_FLAGGED(HEADERS_CONFORMING)
@@ -101,24 +103,22 @@ namespace mfw::stl
 		} catch(...) {
 			return false;
 		}
-		switch(prefix) {
-			//case 0:
-			case -128:
-			case -2:
-			case -35: {
-				return false;
-			}
+		if(//prefix == 0 ||
+			prefix == -128 ||
+			prefix == -2 ||
+			prefix == -35) {
+			return false;
 		}
 
 	#if MFW_OS_IS(WINDOWS)
-		__try {
+		/*__try {
 			if(IsBadReadPtr(ptr, size) ||
 			IsBadWritePtr(const_cast<void *>(ptr), size)) {
 				return false;
 			}
 		} __except(true) {
 			return false;
-		}
+		}*/
 	#endif
 
 		return true;

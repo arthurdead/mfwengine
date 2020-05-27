@@ -165,6 +165,9 @@ namespace mfw::core
 	{
 		class rttr
 		{
+		protected:
+			virtual ~rttr() = default;
+			
 		public:
 			static MFW_CORE_API rttr & MFW_CORE_CALL instance();
 

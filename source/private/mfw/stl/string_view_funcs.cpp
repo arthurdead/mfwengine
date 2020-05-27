@@ -74,14 +74,14 @@ namespace mfw::stl
 				return false;
 			}
 			
-			char8_t *end{nullptr};
-			const char8_t *start{src.cbegin()};
+			ucchar_t *end{nullptr};
+			const ucchar_t *start{&(*src.cbegin())};
 			T ff{func(c_str(start), &c_str(end))};
 			if(end == start) {
 				dst = numeric_limits<T>::max();
 				return false;
 			} else {
-				if(end != src.cend()) {
+				if(end != &(*src.cend())) {
 					MFW_MESSAGE("TODO")
 				}
 				dst = ff;
@@ -148,7 +148,7 @@ namespace mfw::stl
 	MFW_STL_API void MFW_STL_CALL to_upper(ucstring_view src, ucstring &dst)
 	{
 		dst = src;
-		transform(dst.begin(), dst.end(), dst.begin(), static_cast<int(*)(int)>(::MFW_STD_NAMESPACE::toupper));
+		transform(dst.begin(), dst.end(), dst.begin(), static_cast<int32_t(*)(int32_t)>(::MFW_STD_NAMESPACE::toupper));
 	}
 #else
 	#error

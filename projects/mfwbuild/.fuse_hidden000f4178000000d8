@@ -1,0 +1,17 @@
+[core/commandline_internal] string:
+[core/commandline_internal]    --path="/run/media/arthurdead/New Volume/mfwengine/projects/mfwbuild" --plugins="process" --solutions="mfwengine" --regen_cache 
+[core/commandline_internal] map:
+[core/commandline_internal]   regen_cache
+[core/commandline_internal]   solutions = mfwengine
+[core/commandline_internal]   path = /run/media/arthurdead/New Volume/mfwengine/projects/mfwbuild
+[core/commandline_internal]   plugins = process
+[process] generating mfwengine:
+[process]   generating stl:
+[process]     [windows/debug/x86_64]:
+[process]       generating compiler:
+[process]         generating float_funcs.cpp:
+[process]           exit_code 2:
+[process]             float_funcs.cpp
+[process]             Z:/run/media/arthurdead/New Volume/mfwengine/source\public/mfw/stl/defines.hpp(84): warning C4668: 'MFW_CONFIGURATION_1' is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
+[process]             Z:/run/media/arthurdead/New Volume/mfwengine/source\public/mfw/stl/type_traits.hpp(126): fatal error C1189: #error: 
+[core/application] exited with code: 1 [warnings: 1, errors: 2]

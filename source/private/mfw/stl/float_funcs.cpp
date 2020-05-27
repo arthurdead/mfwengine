@@ -17,7 +17,7 @@ namespace mfw::stl
 		{
 			dst.clear();
 			int32_t size{snprintf(nullptr, 0, fmt, src)};
-			dst.resize(size);
+			dst.resize(static_cast<size_t>(size));
 			snprintf(c_str(dst), size+1, fmt, src);
 		}
 
@@ -26,7 +26,7 @@ namespace mfw::stl
 		{
 			dst.clear();
 			int32_t size{swprintf(nullptr, 0, fmt, src)};
-			dst.resize(size);
+			dst.resize(static_cast<size_t>(size));
 			swprintf(c_str(dst), size+1, fmt, src);
 		}
 	}

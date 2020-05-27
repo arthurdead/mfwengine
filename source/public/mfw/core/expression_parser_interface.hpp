@@ -15,6 +15,9 @@ namespace mfw::core
 	{
 		class expression_parser_callbacks : public accessor_parser_callbacks
 		{
+		protected:
+			~expression_parser_callbacks() override = default;
+			
 		public:
 			
 		};

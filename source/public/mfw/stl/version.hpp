@@ -16,7 +16,6 @@
 #endif
 
 #ifdef MFW_CPP
-	// cppcheck-suppress missingIncludeSystem
 	#include <version>
 #endif
 
@@ -37,19 +36,14 @@
 #define __MFW_MACRO_CONCATENATE_IMPL(x, y) x##y
 #define __MFW_MACRO_CONCATENATE(x, y) __MFW_MACRO_CONCATENATE_IMPL(x, y)
 
-#define __MFW_VERSION_FLAGGED(base, what) (base & base##_##what##_FLAG)
-
-// cppcheck-suppress preprocessorErrorDirective
-#define __MFW_VERSION_IS(base, what) (base == base##_##what)
-
 #define MFW_COMPILER_UNIX_FLAG __MFW_BIT(0)
 #define __MFW_COMPILER_FLAGS_LAST_BIT 0
 #define MFW_COMPILER_MSVC (__MFW_BIT(__MFW_COMPILER_FLAGS_LAST_BIT+1))
 #define MFW_COMPILER_CLANG (MFW_COMPILER_UNIX_FLAG|__MFW_BIT(__MFW_COMPILER_FLAGS_LAST_BIT+2))
 #define MFW_COMPILER_GCC (MFW_COMPILER_UNIX_FLAG|__MFW_BIT(__MFW_COMPILER_FLAGS_LAST_BIT+3))
 
-#define MFW_COMPILER_FLAGGED(what) __MFW_VERSION_FLAGGED(MFW_COMPILER, what)
-#define MFW_COMPILER_IS(what) __MFW_VERSION_IS(MFW_COMPILER, what)
+#define MFW_COMPILER_FLAGGED(what) (MFW_COMPILER & MFW_COMPILER_##what##_FLAG)
+#define MFW_COMPILER_IS(what) (MFW_COMPILER == MFW_COMPILER_##what)
 
 #if defined __clang__ || defined __clang_major__ || defined __clang_minor__ || defined __clang_patchlevel__ || defined __clang_version__
 	#define MFW_COMPILER MFW_COMPILER_CLANG
@@ -95,9 +89,10 @@
 #define MFW_CONFIGURATION_RELEASE 0
 #define MFW_CONFIGURATION_DEBUG 1
 
-#define MFW_CONFIGURATION_IS(what) __MFW_VERSION_IS(MFW_CONFIGURATION, what)
+#define MFW_CONFIGURATION_IS(what) (MFW_CONFIGURATION == MFW_CONFIGURATION_##what)
 
 #if defined _DEBUG || defined DEBUG
+	#undef DEBUG
 	#define MFW_CONFIGURATION MFW_CONFIGURATION_DEBUG
 #elif defined _NDEBUG || defined NDEBUG
 	#define MFW_CONFIGURATION MFW_CONFIGURATION_RELEASE
@@ -115,8 +110,8 @@
 #define MFW_PROCESSOR_ARMV7 (MFW_PROCESSOR_ARM_FLAG|MFW_PROCESSOR_32BITS_FLAG|__MFW_BIT(__MFW_PROCESSOR_FLAGS_LAST_BIT+3))
 #define MFW_PROCESSOR_ARMV8 (MFW_PROCESSOR_ARM_FLAG|MFW_PROCESSOR_64BITS_FLAG|__MFW_BIT(__MFW_PROCESSOR_FLAGS_LAST_BIT+4))
 
-#define MFW_PROCESSOR_FLAGGED(what) __MFW_VERSION_FLAGGED(MFW_PROCESSOR, what)
-#define MFW_PROCESSOR_IS(what) __MFW_VERSION_IS(MFW_PROCESSOR, what)
+#define MFW_PROCESSOR_FLAGGED(what) (MFW_PROCESSOR & MFW_PROCESSOR_##what##_FLAG)
+#define MFW_PROCESSOR_IS(what) (MFW_PROCESSOR == MFW_PROCESSOR_##what)
 
 #if defined _M_X64 || defined _M_AMD64 || defined __x86_64__ || defined __x86_64 || defined __amd64 || defined __amd64__
 	#define MFW_PROCESSOR MFW_PROCESSOR_X86_64
@@ -127,11 +122,12 @@
 #define MFW_OS_WINDOWS 0
 #define MFW_OS_LINUX 1
 
-#define MFW_OS_IS(what) __MFW_VERSION_IS(MFW_OS, what)
+#define MFW_OS_IS(what) (MFW_OS == MFW_OS_##what)
 
 #if defined __linux__ || defined linux || defined __linux || defined __gnu_linux__ || defined __GNU__ || defined __unix__ || defined __unix
 	#define MFW_OS MFW_OS_LINUX
 #elif defined _WIN64 || defined WIN64 || defined _WIN32 || defined WIN32 || defined _WINDOWS || defined WINDOWS || defined __WIN32__ || defined __WINDOWS__
+	#undef WINDOWS
 	#define MFW_OS MFW_OS_WINDOWS
 #else
 	#error
@@ -140,7 +136,7 @@
 #define MFW_PLATFORM_DESKTOP 0
 #define MFW_PLATFORM_MOBILE 1
 
-#define MFW_PLATFORM_IS(what) __MFW_VERSION_IS(MFW_PLATFORM, what)
+#define MFW_PLATFORM_IS(what) (MFW_PLATFORM == MFW_PLATFORM_##what)
 
 #if MFW_OS_IS(WINDOWS)
 	#define MFW_PLATFORM MFW_PLATFORM_DESKTOP
@@ -157,9 +153,10 @@
 #define MFW_CHARACTERSET_MULTIBYTE 0
 #define MFW_CHARACTERSET_UNICODE 1
 
-#define MFW_CHARACTERSET_IS(what) __MFW_VERSION_IS(MFW_CHARACTERSET, what)
+#define MFW_CHARACTERSET_IS(what) (MFW_CHARACTERSET == MFW_CHARACTERSET_##what)
 
 #if defined _UNICODE || defined UNICODE
+	#undef UNICODE
 	#define MFW_CHARACTERSET MFW_CHARACTERSET_UNICODE
 #elif defined _MBCS || defined MBCS
 	#define MFW_CHARACTERSET MFW_CHARACTERSET_MULTIBYTE
@@ -185,8 +182,8 @@
 	#define MFW_BUILD_EXECUTABLE_WINDOWS (MFW_BUILD_SHARED_FLAG|MFW_BUILD_EXECUTABLE_FLAG|__MFW_BIT(__MFW_BUILD_FLAGS_LAST_BIT+5))
 #endif
 
-#define MFW_BUILD_FLAGGED(what) __MFW_VERSION_FLAGGED(MFW_BUILD, what)
-#define MFW_BUILD_IS(what) __MFW_VERSION_IS(MFW_BUILD, what)
+#define MFW_BUILD_FLAGGED(what) (MFW_BUILD & MFW_BUILD_##what##_FLAG)
+#define MFW_BUILD_IS(what) (MFW_BUILD == MFW_BUILD_##what)
 
 #if defined _LIB || defined LIB
 	#define MFW_BUILD MFW_BUILD_STATIC
@@ -217,8 +214,8 @@
 #define MFW_LIBC_GNU (MFW_LIBC_UNIX_FLAG|__MFW_LIBC_ISO_FLAGS|__MFW_BIT(__MFW_LIBC_FLAGS_LAST_BIT+3))
 #define MFW_LIBC_MUSL (MFW_LIBC_UNIX_FLAG|__MFW_LIBC_ISO_FLAGS|__MFW_BIT(__MFW_LIBC_FLAGS_LAST_BIT+4))
 
-#define MFW_LIBC_FLAGGED(what) __MFW_VERSION_FLAGGED(MFW_LIBC, what)
-#define MFW_LIBC_IS(what) __MFW_VERSION_IS(MFW_LIBC, what)
+#define MFW_LIBC_FLAGGED(what) (MFW_LIBC & MFW_LIBC_##what##_FLAG)
+#define MFW_LIBC_IS(what) (MFW_LIBC == MFW_LIBC_##what)
 
 #if defined __MUSL__ || defined __MUSL_VER_MAJOR__ || defined __MUSL_VER_MINOR__ || defined __MUSL_VER_PATCH__
 	#define MFW_LIBC MFW_LIBC_MUSL
@@ -240,8 +237,8 @@
 	#define MFW_LIBCPP_GNU (MFW_LIBCPP_UNIX_FLAG|__MFW_LIBCPP_ISO_FLAGS|__MFW_BIT(__MFW_LIBCPP_FLAGS_LAST_BIT+3))
 	#define MFW_LIBCPP_LLVM (MFW_LIBCPP_UNIX_FLAG|__MFW_LIBCPP_ISO_FLAGS|__MFW_BIT(__MFW_LIBCPP_FLAGS_LAST_BIT+4))
 
-	#define MFW_LIBCPP_FLAGGED(what) __MFW_VERSION_FLAGGED(MFW_LIBCPP, what)
-	#define MFW_LIBCPP_IS(what) __MFW_VERSION_IS(MFW_LIBCPP, what)
+	#define MFW_LIBCPP_FLAGGED(what) (MFW_LIBCPP & MFW_LIBCPP_##what##_FLAG)
+	#define MFW_LIBCPP_IS(what) (MFW_LIBCPP == MFW_LIBCPP_##what)
 
 	#if defined _LIBCPP_VERSION || defined _LIBCPP_ABI_VERSION
 		#define MFW_LIBCPP MFW_LIBCPP_LLVM
@@ -265,8 +262,8 @@
 	#define MFW_STD_GNU (MFW_STD_UNIX_FLAG|__MFW_STD_ISO_FLAGS|__MFW_BIT(__MFW_STD_FLAGS_LAST_BIT+4))
 	#define MFW_STD_LLVM (MFW_STD_UNIX_FLAG|__MFW_STD_ISO_FLAGS|__MFW_BIT(__MFW_STD_FLAGS_LAST_BIT+5))
 
-	#define MFW_STD_FLAGGED(what) __MFW_VERSION_FLAGGED(MFW_STD, what)
-	#define MFW_STD_IS(what) __MFW_VERSION_IS(MFW_STD, what)
+	#define MFW_STD_FLAGGED(what) (MFW_STD & MFW_STD_##what##_FLAG)
+	#define MFW_STD_IS(what) (MFW_STD == MFW_STD_##what)
 
 	#if MFW_HAS_INCLUDE(<EASTL/version.h>)
 		#define MFW_STD MFW_STD_EA
@@ -319,8 +316,8 @@ namespace MFW_STD_NAMESPACE {}
 	#define MFW_CPP_EXPERIMENTAL_FLAG __MFW_BIT(0)
 	#define __MFW_CPP_FLAGS_LAST_BIT 0
 	
-	//#define MFW_CPP_IS_SUPPORTED(what) (defined(MFW_CPP_##what##_SUPPORTED))
-	#define MFW_CPP_IS_EXPERIMENTAL(what) (MFW_CPP_IS_SUPPORTED(what) && (MFW_CPP_##what##_SUPPORTED & MFW_CPP_EXPERIMENTAL_FLAG))
+	#define MFW_CPP_IS_SUPPORTED(what) (defined(MFW_CPP_##what##_SUPPORTED))
+	#define MFW_CPP_IS_EXPERIMENTAL(what) (defined(MFW_CPP_##what##_SUPPORTED) && (MFW_CPP_##what##_SUPPORTED & MFW_CPP_EXPERIMENTAL_FLAG))
 
 	#if MFW_HAS_FEATURE(cxx_rtti) || defined __cpp_rtti || defined __GXX_RTTI || defined _CPPRTTI
 		#define MFW_CPP_RTTI_SUPPORTED (__MFW_BIT(__MFW_CPP_FLAGS_LAST_BIT+1))

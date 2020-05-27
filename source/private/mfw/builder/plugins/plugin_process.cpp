@@ -894,23 +894,13 @@ namespace mfw::builder
 			if(unity_build) {
 				compile_command_t::command_t &cmd{compile.files.emplace_back()};
 				
-				ucstring filepath_str{as_string<ucstring>(unity_file_path)};
-				if(!info.drive.empty()) {
-					filepath_str.insert(0, info.drive);
-				}
-				
-				cmd.file = filepath_str;
+				cmd.file = unity_file_path;
 				cmd.command = command;
 			} else {
 				for(const file_reference *file : files) {
 					compile_command_t::command_t &cmd{compile.files.emplace_back()};
 					
-					ucstring filepath_str{as_string<ucstring>(file->path())};
-					if(!info.drive.empty()) {
-						filepath_str.insert(0, info.drive);
-					}
-					
-					cmd.file = filepath_str;
+					cmd.file = file->path();
 					cmd.command = command;
 				}
 			}

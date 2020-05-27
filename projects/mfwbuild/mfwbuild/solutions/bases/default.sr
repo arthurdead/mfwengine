@@ -3,6 +3,7 @@ base_solution
 	build_set {
 	$if plugin_name == "vscode"
 		os {
+		/*
 		#if MFW_OS == MFW_OS_LINUX
 			linux
 		#elif MFW_OS == MFW_OS_WINDOWS
@@ -10,6 +11,8 @@ base_solution
 		#else
 			#error
 		#endif
+		*/
+			windows
 		}
 		configuration::debug
 	$else

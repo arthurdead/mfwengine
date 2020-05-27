@@ -59,9 +59,14 @@ namespace mfw::stl
 	using uchar_t = unsigned char;
 	using schar_t = signed char;
 
+#if MFW_LIBC_FLAGGED(UNIX)
+	using ::ssize_t;
+#else
+	using ssize_t = make_signed_t<::MFW_STD_NAMESPACE::size_t>;
+#endif
+
 #if MFW_STD_FLAGGED(API_CONFORMING)
 	using ::MFW_STD_NAMESPACE::size_t;
-	using ::ssize_t;
 	using ::MFW_STD_NAMESPACE::ptrdiff_t;
 	using ::MFW_STD_NAMESPACE::int16_t;
 	using ::MFW_STD_NAMESPACE::uint16_t;

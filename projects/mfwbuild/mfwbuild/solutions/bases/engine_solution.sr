@@ -2,6 +2,6 @@
 
 base_solution {
 	plugin::build {
-		command "\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --jobs=1"
+		command "\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" --jobs=6"
 	}
 }

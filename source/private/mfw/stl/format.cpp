@@ -1,5 +1,11 @@
 #include <public/mfw/stl/format.hpp>
 
+#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+	#include <cstdio>
+#else
+	#error
+#endif
+
 namespace mfw::stl
 {
 	namespace __format_internal
@@ -23,12 +29,22 @@ namespace mfw::stl
 
 	MFW_STL_API void MFW_STL_CALL format(ucstring &buffer, ucstring_view fmtstr, va_list args)
 	{
+	#if MFW_LIBC_FLAGGED(UNIX)
 		__format_internal::format_3(buffer, fmtstr, vsprintf, args);
+	#else
+		//__format_internal::format_4(buffer, fmtstr, vsprintf_s, args);
+		MFW_DEBUGBREAK();
+	#endif
 	}
 
 	MFW_STL_API void MFW_STL_CALL format(uwstring &buffer, uwstring_view fmtstr, va_list args)
 	{
+	#if MFW_LIBC_FLAGGED(UNIX)
 		__format_internal::format_4(buffer, fmtstr, vswprintf, args);
+	#else
+		//__format_internal::format_4(buffer, fmtstr, vswprintf_s, args);
+		MFW_DEBUGBREAK();
+	#endif
 	}
 
 	MFW_STL_API bool MFW_STL_CALL format(ucstring &str, ucstring_view fmtstr, const vector<ucstring> &args)

@@ -6,11 +6,11 @@ base_tool
 		"-o",
 		"--output"
 	}
-	
+
 	patterns {
 		"*.S",
 	}
-	
+
 	output_regex {
 		info {
 			"note:"
@@ -25,24 +25,24 @@ base_tool
 			"error:"
 		}
 	}
-	
+
 	includes_paths {
 		"--include-directory"
 		"-i"
 	}
-	
+
 	preprocessor_definitions {
 		"--define-macro"
 		"-D"
 	}
-	
+
 	forced_includes {
 		"--include"
 		"-include"
 	}
-	
+
 	standard "-std"
-	
+
 	warnings_as_errors "-Werror"
 
 	options_map {
@@ -66,5 +66,7 @@ base_tool
 		$(remove)
 		nologo
 		char8_t "-fchar8_t"
+		$(needs_values,no_space)
+		disable_warnings "-Wno-"
 	}
 }

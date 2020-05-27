@@ -329,9 +329,10 @@ namespace mfw::builder
 		cpp_properties.Key(u8"browse"_sv);
 		cpp_properties.StartObject();
 		cpp_properties.Key(u8"databaseFilename"_sv);
-		pstring database{path};
+		/*pstring database{path};
 		database /= u8".vscode/browse.db"_p;
-		cpp_properties.String(database);
+		cpp_properties.String(database);*/
+		cpp_properties.String(u8""_sv);
 		cpp_properties.Key(u8"limitSymbolsToIncludedHeaders"_sv);
 		cpp_properties.Bool(true);
 		cpp_properties.Key(u8"path"_sv);

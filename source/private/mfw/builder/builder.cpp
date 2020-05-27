@@ -1397,18 +1397,20 @@ namespace mfw::builder
 		ucstring str{};
 
 		for(const core::serializable &child : execute) {
-			if(child.passes_condition(this)) {
-				ucstring name{child.get_name()};
-				replace_vars(name);
-				str += name;
+			if(!child.passes_condition(this)) {
+				continue;
+			}
+			
+			ucstring name{child.get_name()};
+			replace_vars(name);
+			str += name;
+			str += u8' ';
+			const core::univalue &value{child.get_value()};
+			if(!value.empty()) {
+				ucstring value_str{value.get_string()};
+				replace_vars(value_str);
+				str += value_str;
 				str += u8' ';
-				const core::univalue &value{child.get_value()};
-				if(!value.empty()) {
-					ucstring value_str{value.get_string()};
-					replace_vars(value_str);
-					str += value_str;
-					str += u8' ';
-				}
 			}
 		}
 		

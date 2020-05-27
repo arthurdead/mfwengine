@@ -14,6 +14,9 @@ namespace mfw::core
 	{
 		class accessor_parser_callbacks
 		{
+		protected:
+			virtual ~accessor_parser_callbacks() = default;
+			
 		public:
 			virtual bool get_variable(const ucstring_view &, type_holder &) const { return false; }
 			virtual bool get_function(const ucstring_view &, const vector<univalue> &, type_holder &) const { return false; }

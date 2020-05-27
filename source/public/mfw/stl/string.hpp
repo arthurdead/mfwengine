@@ -65,10 +65,10 @@ namespace MFW_STD_NAMESPACE
 		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::pstring &str) const
 		{
 			MFW_MESSAGE("remove this later")
-		#if MFW_COMPILER_FLAGGED(UNIX)
+		#if MFW_LIBCPP_FLAGGED(UNIX)
 			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), str.native().length() * sizeof(::mfw::stl::upchar_t));
 		#else
-			#error
+			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), str.native().length() * sizeof(::mfw::stl::upchar_t));
 		#endif
 		}
 	};
@@ -81,10 +81,10 @@ namespace MFW_STD_NAMESPACE
 		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::ucstring &str) const
 		{
 			MFW_MESSAGE("remove this later")
-		#if MFW_COMPILER_FLAGGED(UNIX)
+		#if MFW_LIBCPP_FLAGGED(UNIX)
 			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), str.length() * sizeof(::mfw::stl::ucchar_t));
 		#else
-			#error
+			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), str.length() * sizeof(::mfw::stl::ucchar_t));
 		#endif
 		}
 	};
@@ -96,10 +96,10 @@ namespace MFW_STD_NAMESPACE
 		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::uwstring &str) const
 		{
 			MFW_MESSAGE("remove this later")
-		#if MFW_COMPILER_FLAGGED(UNIX)
+		#if MFW_LIBCPP_FLAGGED(UNIX)
 			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), str.length() * sizeof(::mfw::stl::uwchar_t));
 		#else
-			#error
+			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), str.length() * sizeof(::mfw::stl::uwchar_t));
 		#endif
 		}
 	};
