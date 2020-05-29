@@ -16,18 +16,30 @@ namespace mfw::stl
 		void to_string(S src, ucstring &dst, const char *fmt)
 		{
 			dst.clear();
+		#if MFW_COMPILER_FLAGGED(MSVC)
+			MFW_WARNING_SUPPRESS(4774)
+		#endif
 			int32_t size{snprintf(nullptr, 0, fmt, src)};
 			dst.resize(static_cast<size_t>(size));
-			snprintf(c_str(dst), size+1, fmt, src);
+		#if MFW_COMPILER_FLAGGED(MSVC)
+			MFW_WARNING_SUPPRESS(4774)
+		#endif
+			snprintf(c_str(dst), static_cast<size_t>(size+1), fmt, src);
 		}
 
 		template <typename S>
 		void to_string(S src, uwstring &dst, const wchar_t *fmt)
 		{
 			dst.clear();
+		#if MFW_COMPILER_FLAGGED(MSVC)
+			MFW_WARNING_SUPPRESS(4774)
+		#endif
 			int32_t size{swprintf(nullptr, 0, fmt, src)};
 			dst.resize(static_cast<size_t>(size));
-			swprintf(c_str(dst), size+1, fmt, src);
+		#if MFW_COMPILER_FLAGGED(MSVC)
+			MFW_WARNING_SUPPRESS(4774)
+		#endif
+			swprintf(c_str(dst), static_cast<size_t>(size+1), fmt, src);
 		}
 	}
 

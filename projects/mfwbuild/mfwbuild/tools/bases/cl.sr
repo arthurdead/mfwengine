@@ -1,0 +1,102 @@
+#include "cpp_compiler.sr"
+
+base_tool
+{
+	options_map {
+		$(files,needs_values)
+		forced_includes "/FI"
+		$(needs_values)
+		preprocessor_definitions "/D"
+		no_linking "/c"
+		$(file,no_space)
+		output "/Fo"
+		$(folders)
+		includes_paths "/I"
+		$(needs_equal)
+		standard "/std" {
+			"c++20" "c++latest"
+			"c++2a" "c++latest"
+		}
+		warning_errors "/WX"
+		$(remove)
+		fatal_errors
+		pendatic "/permissive-"
+		$(remove)
+		pendatic_errors
+		all_warnings "/Wall"
+		$(remove)
+		extra_warnings
+		nologo "/nologo"
+		char8_t "/Zc:char8_t"
+		$(needs_values,no_space)
+		disable_warnings "/wd"
+		$(remove)
+		shared
+		$(remove)
+		pic
+		$(remove)
+		pie
+		$(remove)
+		lib_directories
+		$(remove)
+		libraries
+	}
+
+	builder::macros {
+		is_unix_compiler false
+		is_cl true
+		is_gcc false
+		is_clang false
+	}
+
+	preprocessor_definitions {
+		"/D"
+	}
+
+	includes_paths {
+		"/I"
+	}
+
+	forced_includes {
+		"/FI"
+	}
+
+	output "${file_basename}.obj" {
+		"/Fo"
+	}
+
+	standard "/std"
+
+	warnings_as_errors "/WX"
+
+	output_regex {
+		info {
+			"note: "
+		}
+		warning {
+			"warning"
+		}
+		error {
+			"error"
+			"fatal error"
+		}
+		ignore {
+			"Please choose the Technical Support command on the Visual C++"
+			"Help menu, or open the Technical Support help file for more information"
+			"To work around this problem, try simplifying or changing the program near the locations listed above."
+			"If possible please provide a repro here: https://developercommunity.visualstudio.com"
+			"Microsoft (R) C/C++ Optimizing Compiler Version "
+			"Copyright (C) Microsoft Corporation.  All rights reserved."
+		}
+
+	#if MFW_OS == MFW_OS_LINUX
+		ignore {
+	#else
+		error {
+	#endif
+			"INTERNAL COMPILER ERROR in "
+			"Internal compiler error."
+			"(compiler file "
+		}
+	}
+}

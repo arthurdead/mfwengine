@@ -6,6 +6,11 @@ base_tool
 		"*.o"
 	}
 
+	builder::macros {
+		output_ext ".a"
+		is_ar true
+	}
+
 	output {
 		"",
 	}
@@ -13,5 +18,7 @@ base_tool
 	options_map {
 		$(file,always_last)
 		output ""
+		$(remove)
+		nologo
 	}
 }

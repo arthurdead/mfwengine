@@ -6,7 +6,7 @@
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/defines.hpp>
 
-#if MFW_COMPILER_IS(MSVC)
+#if MFW_COMPILER_FLAGGED(MSVC)
 	MFW_WARNING_DISABLE(4275) //non - DLL-interface class 'class_1' used as base for DLL-interface class 'class_2'
 	MFW_WARNING_DISABLE(4625) //'derived class' : copy constructor was implicitly defined as deleted because a base class copy constructor is inaccessible or deleted
 	MFW_WARNING_DISABLE(4626) //'derived class' : assignment operator was implicitly defined as deleted because a base class assignment operator is inaccessible or deleted
@@ -29,20 +29,26 @@
 		MFW_WARNING_DISABLE(6031) //return value ignored: <function> could return unexpected value
 		MFW_WARNING_DISABLE(28193) //The variable holds a value that must be examined
 	#endif
-#elif MFW_COMPILER_FLAGGED(UNIX)
-	#if MFW_COMPILER_IS(CLANG)
-		MFW_WARNING_DISABLE("-Wc++98-compat-pedantic")
-		MFW_WARNING_DISABLE("-Wnewline-eof")
-		MFW_WARNING_DISABLE("-Wreserved-id-macro")
+#endif
+
+#if MFW_COMPILER_FLAGGED(UNIX)
+	#if MFW_COMPILER_FLAGGED(CLANG)
+		MFW_WARNING_DISABLE_UNIX("-Wc++98-compat")
+		MFW_WARNING_DISABLE_UNIX("-Wc++98-compat-pedantic")
+		MFW_WARNING_DISABLE_UNIX("-Wnewline-eof")
+		MFW_WARNING_DISABLE_UNIX("-Wreserved-id-macro")
+		MFW_WARNING_DISABLE_UNIX("-Wc++98-c++11-c++14-compat")
 		#ifdef __MFW_DISABLE_COMPILE_MESSAGES
-			MFW_WARNING_DISABLE("-W#pragma-messages")
+			MFW_WARNING_DISABLE_UNIX("-W#pragma-messages")
 		#endif
 	#endif
 	#if MFW_CONFIGURATION_IS(DEBUG)
-		MFW_WARNING_DISABLE("-Wunused-function")
-		MFW_WARNING_DISABLE("-Wunused-variable")
-		MFW_WARNING_DISABLE("-Wunused-parameter")
-		MFW_WARNING_DISABLE("-Wunused-local-typedef")
+		MFW_WARNING_DISABLE_UNIX("-Wunused-function")
+		MFW_WARNING_DISABLE_UNIX("-Wunused-variable")
+		MFW_WARNING_DISABLE_UNIX("-Wunused-parameter")
+		#if MFW_COMPILER_FLAGGED(CLANG)
+			MFW_WARNING_DISABLE_UNIX("-Wunused-local-typedef")
+		#endif
 	#endif
 #endif
 

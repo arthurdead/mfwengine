@@ -1,0 +1,10 @@
+base_project
+{
+	clang_check ignore {
+		options {
+			analyze
+			#include "compile_commands.sr"
+		}
+		#include "compile_commands_generate.sr"
+	}
+}

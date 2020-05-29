@@ -1,33 +1,16 @@
 #include "default.sr"
 
-standards {
-	cpp17|cpp20 {
-		iwyu::options {
-			"-Xiwyu" "--cxx17ns"
-		}
-	}
-	cpp17 {
-		cppcheck::options {
-			standard "c++17"
-		}
-	}
-	cpp20 {
-		cppcheck::options {
-			standard "c++20"
-		}
-	}
-}
-
-base_project : standards.cpp17 {
+base_project {
 	builder::dependency::compiler {
 		options::preprocessor_definitions {
 			"MFW_DEPENDS_ON_${dependency_name_upper}"
 		}
-
 		files {
+		$if !is_self
 			"public/${dependency_name}" filter {
-				"${source_folder}/public/mfw/${project_name}/**/*.*"
+				"${source_folder}/public/mfw/${dependency_name}/**/*.*"
 			}
+		$endif
 		}
 	}
 	compiler {
@@ -35,121 +18,53 @@ base_project : standards.cpp17 {
 			forced_includes {
 				"${source_folder}/public/mfw/pch.hpp"
 			}
-		}
-		options {
 			includes_paths {
 				"${source_folder}"
 				"${thirdparty_folder}"
 			}
 			preprocessor_definitions {
 				"MFW_BUILDING_${project_name_upper}"
+				//__MFW_ENABLE_CUSTOM_ALLOCATORS
 			}
 		}
 		files {
+			"public" filter {
+				/*
+			$if is_gcc
+				"${source_folder}/public/mfw/pch.hpp" dynamic {
+					output "${source_folder}/public/mfw/pch.hpp.gch/${project_name}_${os}_${configuration}_${platform}.gch"
+				}
+			$endif
+				*/
+				"${source_folder}/public/mfw/*.*"
+			}
 			"${source_folder}/private/mfw/${project_name}/**/*.*"
 			"public/${project_name}" filter {
 				"${source_folder}/public/mfw/${project_name}/**/*.*"
 			}
-			"public" filter {
-				"${source_folder}/public/mfw/*.*"
-			}
 		}
 	}
-	iwyu_tool ignore
-	iwyu ignore
-	clang_check ignore
-	cppcheck ignore {
-		options {
-		$if platform == "x86_64"
-			$if os == "linux"
-			platform "unix64"
-			$elif os == "windows"
-			platform "win64"
-			$endif
-		$else
-			$if os == "linux"
-			platform "unix32"
-			$elif os == "windows"
-			platform "win32W"
-			$endif
-		$endif
-			checks {
-				"all"
-				/*
-				"warning"
-				"style"
-				"performance"
-				"portability"
-				"information"
-				"unusedFunction"
-				"missingInclude"
-				*/
-			}
-			output "${intermediary_folder}"
-			preprocessor_definitions {
-				__cpp_check
-			}
-			inline_suppress
-			inconclusive
-			quiet
-		$if tool_name == "cl"
-			template vs
-		$else
-			template gcc
-		$endif
-		}
-	}
-	clang_check {
-		analyze
-	}
-	iwyu_tool {
-		format iwyu
-	}
-	#define __MFW_COMPILE_COMMANDS_FOLDER "${data_folder}/process/${solution_name}/${project_name}/${compiler}_${platform}_${os}_${configuration}"
-	#define __MFW_COMPILE_COMMANDS_FILE "__MFW_COMPILE_COMMANDS_FOLDER/compile_commands.json"
 	compiler::plugin {
-		compile_commands __MFW_COMPILE_COMMANDS_FILE
-	}
-	cppcheck::options {
-		project __MFW_COMPILE_COMMANDS_FILE
-	}
-	iwyu_tool|clang_check {
-		options {
-			compile_commands __MFW_COMPILE_COMMANDS_FOLDER
-		}
-	}
-	cppcheck|clang_check|iwyu_tool {
-		pre_generate {
-			"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --plugins=\"process\" --path=\"${path_folder}\" --only_compile_commands"
-		}
-	}
-	iwyu {
-		options : root.compiler.options
-	}
-	cppcheck {
-		options {
-			includes_paths : root.compiler.options.includes_paths
-			preprocessor_definitions : root.compiler.options.preprocessor_definitions
-			forced_includes : root.compiler.options.forced_includes
-		}
-	}
-	iwyu|iwyu_tool|cppcheck|clang_check {
-		files : root.compiler.files
+		#include "compile_commands.sr"
 	}
 }
 
 output_embedded::builder::dependency::compiler::options::preprocessor_definitions {
-	"MFW_${project_name_upper}_BUILD=MFW_BUILD_EMBEDDED"
+	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EMBEDDED"
 }
 
 output_shared::builder::dependency::compiler::options::preprocessor_definitions {
-	"MFW_${project_name_upper}_BUILD=MFW_BUILD_SHARED"
+	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_SHARED"
 }
 
 output_static::builder::dependency::compiler::options::preprocessor_definitions {
-	"MFW_${project_name_upper}_BUILD=MFW_BUILD_STATIC"
+	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_STATIC"
 }
 
-output_executable::builder::dependency::compiler::options::preprocessor_definitions {
-	"MFW_${project_name_upper}_BUILD=MFW_BUILD_EXECUTABLE"
+output_executable_console::builder::dependency::compiler::options::preprocessor_definitions {
+	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE"
+}
+
+output_executable_windows::builder::dependency::compiler::options::preprocessor_definitions {
+	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE_WINDOWS"
 }

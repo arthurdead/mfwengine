@@ -1,20 +1,27 @@
 #include "bases/windows_tool.sr"
+#include "bases/wine_tool.sr"
 
 lib
 {
 	output {
 		"/OUT",
 	}
-	
+
+	builder::macros {
+		output_ext ".lib"
+		is_ar false
+	}
+
 	single_input
-	
+
 	patterns {
 		"*.obj"
 	}
-	
+
 	options_map {
 		$(needs_equal,file)
 		output "/OUT"
+		nologo "/nologo"
 	}
 
 #if MFW_OS == MFW_OS_LINUX

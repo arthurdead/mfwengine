@@ -69,7 +69,8 @@ namespace mfw::builder
 		bool open_cached_file_project(const ucstring &name, const pstring &filter, root_file_base &root_file, bool &cached);
 		bool save_cached_file_project(const ucstring &name, const pstring &filter, const core::serializable &main_section);
 
-		static bool output_exists(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options);
+		static pstring get_output_path(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged);
+		static bool output_exists(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged);
 		static const core::univalue *find_output_option(const core::serializable &options, const core::serializable &names);
 
 		struct remap_result_t
@@ -80,6 +81,7 @@ namespace mfw::builder
 		bool remap_value(const core::serializable &option, const core::serializable *map, core::serializable &options, remap_result_t &result, const base_plugin::plugin_info_t &info);
 		bool process_options(const tool_reference *tool, core::serializable &options, core::serializable &mapped_options, const base_plugin::plugin_info_t &info);
 
+		bool process_dependency(const core::serializable &src, core::serializable &dst, bool self);
 		bool process_section(const core::serializable &src, core::serializable &dst);
 
 		enum class builder_sec_type : uchar_t
@@ -93,8 +95,21 @@ namespace mfw::builder
 
 		bool get_variable(const ucstring_view &name, core::type_holder &var) const override;
 
-		void add_variable(const ucstring &name, const ucstring &value);
-		void remove_variable(const ucstring &name);
+		void add_variable(const ucstring &name, const ucstring &value) override;
+		void remove_variable(const ucstring &name) override;
+		
+		struct scope_variable
+		{
+			scope_variable(const ucstring &name_, const ucstring &value) {
+				builder::instance().add_variable(name_, value);
+				name = name_;
+			}
+			~scope_variable() {
+				builder::instance().remove_variable(name);
+			}
+			
+			ucstring name{};
+		};
 
 		tool_section_reference *find_or_create_tool_section(project_reference &project, const ucstring &name, const solution_reference &solution);
 
@@ -263,7 +278,8 @@ namespace mfw::builder
 		ptr_vector<solution_reference> solutions{};
 		ptr_vector<tool_reference> tools{};
 		
-		vector<ucstring> sections{};
+		vector<ucstring> selected_sections{};
+		vector<ucstring> selected_projects{};
 
 		file_timestamp_builder timestamp_builder{};
 

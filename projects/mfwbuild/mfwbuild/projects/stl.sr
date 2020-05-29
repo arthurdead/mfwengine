@@ -1,6 +1,6 @@
 #include "bases/engine_project.sr"
 
-stl : base_project, output_static
+stl : base_project, standards.cpp20, output_static
 {
-	
+
 }

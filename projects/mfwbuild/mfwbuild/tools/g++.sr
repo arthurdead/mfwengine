@@ -1,0 +1,6 @@
+#include "bases/gcc.sr"
+
+"g++" : base_tool
+{
+	shell "g++"
+}

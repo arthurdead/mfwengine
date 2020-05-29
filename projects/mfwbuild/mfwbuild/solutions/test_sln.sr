@@ -1,8 +1,10 @@
-#include "bases/engine_solution.sr"
-
-test_sln : base_solution
+test_sln
 {
 	projects {
 		test_proj
+	}
+
+	tools {
+		compiler gcc
 	}
 }

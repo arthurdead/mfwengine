@@ -1,0 +1,9 @@
+#include "unix_cpp_compiler.sr"
+
+base_tool
+{
+	builder::macros {
+		is_gcc true
+		is_clang false
+	}
+}

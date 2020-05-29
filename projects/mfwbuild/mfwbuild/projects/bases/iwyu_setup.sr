@@ -1,0 +1,4 @@
+iwyu {
+	options : root.compiler.options
+	files : root.compiler.files
+}

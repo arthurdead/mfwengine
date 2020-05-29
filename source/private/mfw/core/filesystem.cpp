@@ -34,11 +34,15 @@ namespace mfw::core
 		using stl::filesystem::create_symlink;
 		using stl::filesystem::remove_all;
 		using stl::filesystem::weakly_canonical;
+		using stl::filesystem::is_symlink;
 
 		static pstring &clean_path(pstring &fullpath)
 		{
 			fullpath.make_preferred();
-			fullpath = weakly_canonical(fullpath);
+			MFW_MESSAGE("why does this resolve symlinks")
+			if(!is_symlink(fullpath)) {
+				fullpath = weakly_canonical(fullpath);
+			}
 			return fullpath;
 		}
 
@@ -54,7 +58,7 @@ namespace mfw::core
 		static bool matches_file_pattern(const upchar_t *file, const upchar_t *pattern)
 		{
 		#if MFW_OS == MFW_OS_LINUX
-			return (fnmatch(c_str(pattern), c_str(file), FNM_CASEFOLD) == 0);
+			return (fnmatch(c_str(pattern), c_str(file), FNM_CASEFOLD|FNM_EXTMATCH) == 0);
 		#else
 			#error
 		#endif
@@ -335,11 +339,7 @@ namespace mfw::core
 		} else {
 			search_map_t::const_iterator search_it{};
 			if(name.empty()) {
-			#if 0
-				search_it = searchmap.find(u8"executable"_s);
-			#else
 				search_it = searchmap.end();
-			#endif
 			} else {
 				search_it = searchmap.find(name);
 			}
@@ -360,6 +360,7 @@ namespace mfw::core
 					it++;
 				}
 			} else {
+			#if 0
 				const pstring &file{get_working_dir()};
 				if(!dir.empty()) {
 					tmp = file / dir;
@@ -370,6 +371,8 @@ namespace mfw::core
 				if(__filesystem_internal::check_if_exists(tmp, exists)) {
 					paths.emplace_back(tmp);
 				}
+			#endif
+				return false;
 			}
 		}
 
@@ -382,9 +385,9 @@ namespace mfw::core
 		resolve(search, resolved, false);
 
 		if(resolved.empty()) {
-			return false;
+			return __filesystem_internal::matches_file_pattern(search.dir(), pattern);
 		}
-
+		
 		for(const pstring &file : resolved) {
 			if(!__filesystem_internal::matches_file_pattern(file, pattern)) {
 				return false;
@@ -402,7 +405,7 @@ namespace mfw::core
 		if(resolved.empty()) {
 			return false;
 		}
-
+		
 		for(const pstring &file : resolved) {
 			__filesystem_internal::do_file_glob(file, files);
 		}
@@ -765,8 +768,13 @@ namespace mfw::core
 		}
 
 	#if MFW_OS == MFW_OS_LINUX
+		#ifdef __MFW_USE_LARGE_FILES_API
 		struct stat64 buffer{};
 		stat64(c_str(resolved), &buffer);
+		#else
+		struct stat buffer{};
+		stat(c_str(resolved), &buffer);
+		#endif
 		return buffer.st_mtim.tv_sec;
 	#else
 		#error

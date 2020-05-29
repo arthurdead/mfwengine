@@ -156,7 +156,7 @@ void MFW_CALL_CDECL operator delete[](void *ptr, void *) noexcept __MFW_EXTERNAL
 			using ::MFW_STD_NAMESPACE::align_val_t;
 			using ::MFW_STD_NAMESPACE::nothrow_t;
 			using ::MFW_STD_NAMESPACE::nothrow;
-			#if MFW_CPP_COMPARE(>, 17)
+			#ifdef MFW_CPP_DESTROYING_DELETE_SUPPORTED
 			using ::MFW_STD_NAMESPACE::destroying_delete_t;
 			using ::MFW_STD_NAMESPACE::destroying_delete;
 			#endif

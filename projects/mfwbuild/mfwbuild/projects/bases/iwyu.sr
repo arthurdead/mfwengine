@@ -1,0 +1,12 @@
+standards {
+	cpp17|cpp20 {
+		iwyu::options {
+			"-Xiwyu" "--cxx17ns"
+		}
+	}
+}
+
+base_project
+{
+	iwyu ignore
+}

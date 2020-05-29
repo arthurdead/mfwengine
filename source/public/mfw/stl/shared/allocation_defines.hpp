@@ -51,7 +51,7 @@
 	#ifdef __MFW_ENABLE_CUSTOM_ALLOCATORS
 namespace MFW_STD_NAMESPACE
 {
-		#if MFW_COMPILER _IS(MSVC)
+		#if MFW_COMPILER_IS(MSVC)
 			#if MFW_PROCESSOR_FLAGGED(64BITS)
 	using size_t = unsigned long long;
 			#elif MFW_PROCESSOR_FLAGGED(32BITS)

@@ -1,41 +1,8 @@
-#include "bases/windows_tool.sr"
+#include "bases/link.sr"
+#include "bases/wine_tool.sr"
 
-link
+link : base_tool
 {
-	single_input
-
-	output "${file_basename}.exe" {
-		"/OUT"
-	}
-	
-	output_regex {
-		ignore {
-			"Microsoft (R) Incremental Linker Version "
-			"Copyright (C) Microsoft Corporation.  All rights reserved."
-		}
-	#if MFW_OS == MFW_OS_LINUX
-		ignore {
-	#else
-		error {
-	#endif
-			"Internal error during SetupPhase"
-		}
-	}
-	
-	patterns {
-		"*.obj"
-	}
-	
-	options_map {
-		$(needs_equal,file)
-		output "/OUT"
-		$(remove)
-		dynamic_linker
-		$(remove)
-		libraries
-		nologo "/nologo"
-	}
-
 #if MFW_OS == MFW_OS_LINUX
 	#define MSVCVER "14.26.28801"
 	#define ARCH "x64"

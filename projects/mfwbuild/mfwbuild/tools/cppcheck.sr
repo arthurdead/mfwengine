@@ -29,7 +29,7 @@ cppcheck : base_tool
 		$(needs_equal)
 		template "--template"
 		$(needs_equal,file)
-		project "--project"
+		compile_commands "--project"
 	}
 
 	shell "cppcheck"

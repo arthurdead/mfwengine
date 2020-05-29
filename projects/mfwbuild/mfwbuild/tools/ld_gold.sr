@@ -1,0 +1,6 @@
+#include "bases/unix_cpp_linker.sr"
+
+ld_gold : base_tool
+{
+	shell "ld.gold"
+}

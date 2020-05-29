@@ -32,6 +32,18 @@ namespace mfw::builder
 	private:
 		bool timestamp_changed(core::serializable &timestamp, const core::searchpath &output_dir);
 		bool timestamps_changed(core::serializable &timestamps, const core::searchpath &output_dir);
+		
+		static bool is_cpp_source(const pstring &ext);
+		static bool is_cpp_header(const pstring &ext);
+		static bool is_cpp_file(const pstring &ext) {
+			return (is_cpp_source(ext) || is_cpp_header(ext));
+		}
+		static bool is_serializable_file(const pstring &ext) {
+			return (ext == u8".sr"_p);
+		}
+		static bool file_supports_includes(const pstring &ext) {
+			return (is_serializable_file(ext) || is_cpp_file(ext));
+		}
 
 		struct file_data_t //: use_allocator<file_data_t>
 		{

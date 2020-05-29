@@ -1,5 +1,5 @@
 #if MFW_OS == MFW_OS_LINUX
-	#define BASE "z:\\home\\arthurdead\\wine\\msvc-wine\\dist_release"
+	#define BASE "z:\home\arthurdead\wine\msvc-wine\dist_release"
 #else
 	#error
 #endif
@@ -7,12 +7,12 @@
 #define MSVCVER "14.26.28801"
 #define SDKVER "10.0.19041.0"
 #define ARCH "x64"
-#define SDK "kits\\10"
-#define MSVCDIR "BASE\\vc\\tools\\msvc\\MSVCVER"
-#define SDKINCLUDE "BASE\\SDK\\include\\SDKVER"
-#define SDKLIB "BASE\\SDK\\lib\\SDKVER"
-#define BINDIR "BASE\\vc\\tools\\msvc\\MSVCVER\\bin\\Hostx64\\ARCH"
-#define SDKBINDIR "BASE\\SDK\\bin\\SDKVER\\x64"
+#define SDK "kits\10"
+#define MSVCDIR "BASE\vc\tools\msvc\MSVCVER"
+#define SDKINCLUDE "BASE\SDK\include\SDKVER"
+#define SDKLIB "BASE\SDK\lib\SDKVER"
+#define BINDIR "BASE\vc\tools\msvc\MSVCVER\bin\Hostx64\ARCH"
+#define SDKBINDIR "BASE\SDK\bin\SDKVER\x64"
 
 base_tool
 {
@@ -26,46 +26,17 @@ base_tool
 	environment
 	{
 		INCLUDE {
-			"MSVCDIR\\include"
-			"SDKINCLUDE\\shared"
-			"SDKINCLUDE\\ucrt"
-			"SDKINCLUDE\\um"
-			"SDKINCLUDE\\winrt"
+			"MSVCDIR\include"
+			"SDKINCLUDE\shared"
+			"SDKINCLUDE\ucrt"
+			"SDKINCLUDE\um"
+			"SDKINCLUDE\winrt"
 		}
 
 		LIB|LIBPATH {
-			"MSVCDIR\\lib\\ARCH"
-			"SDKLIB\\ucrt\\ARCH"
-			"SDKLIB\\um\\ARCH"
+			"MSVCDIR\lib\ARCH"
+			"SDKLIB\ucrt\ARCH"
+			"SDKLIB\um\ARCH"
 		}
 	}
-
-#if MFW_OS == MFW_OS_LINUX
-	output_regex::ignore {
-		"fsync: up and running."
-		"wine: Read access denied for device "
-		"wine: Unhandled page fault on execute access to "
-		"wine: Unhandled page fault on read access to "
-		"Unhandled exception: page fault on read access to "
-		"Unhandled Exception:"
-	}
-
-	environment {
-		WINEPATH {
-			"BINDIR"
-			"SDKBINDIR"
-			"MSVCDIR\\bin\\Hostx64\\x64"
-		}
-
-		WINEDEBUG "-all"
-
-		WINEDLLOVERRIDES "vcruntime140_1=n"
-	}
-
-	subprocess
-	{
-		shell "wine"
-		drive "Z:"
-	}
-#endif
 }

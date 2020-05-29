@@ -20,7 +20,9 @@
 	#endif
 	#include <rttidata.h>
 #elif MFW_OS == MFW_OS_LINUX
+	#ifdef __MFW_USE_IBERTY
 	#include <libiberty/demangle.h>
+	#endif
 	#include <cxxabi.h>
 	#if MFW_COMPILER == MFW_COMPILER_CLANG
 		MFW_WARNING_PUSH()
@@ -133,10 +135,12 @@ namespace mfw::core
 			if(bool_cast(flags & undecorate_flags::no_arguments)) { ret |= UNDNAME_NO_ARGUMENTS; }
 			if(bool_cast(flags & undecorate_flags::no_special_syms)) { ret |= UNDNAME_NO_SPECIAL_SYMS; }
 		#elif MFW_OS == MFW_OS_LINUX
+			#ifdef __MFW_USE_IBERTY
 			if(bool_cast(flags & undecorate_flags::name_only)) { ret |= DMGL_ANSI|DMGL_TYPES; }
 			if(bool_cast(flags & undecorate_flags::complete)) { ret |= DMGL_PARAMS|DMGL_ANSI|DMGL_TYPES; }
 			if(bool_cast(flags & undecorate_flags::no_arguments)) { ret &= ~DMGL_PARAMS; }
 			if(bool_cast(flags & undecorate_flags::no_func_return)) { ret |= DMGL_RET_DROP; }
+			#endif
 		#else
 			#error
 		#endif
@@ -157,6 +161,7 @@ namespace mfw::core
 		using base_class_array = base_class_info[];
 		using ::abi::adjust_pointer;
 		using ::abi::vtable_prefix;
+		using ::abi::__cxa_demangle;
 	#else
 		#error
 	#endif
@@ -248,11 +253,18 @@ namespace mfw::core
 
 		return true;
 	#elif MFW_OS == MFW_OS_LINUX
+		#ifdef __MFW_USE_IBERTY
 		cplus_demangle_set_style(gnu_v3_demangling);
 		char *ret{cplus_demangle_v3(c_str(decorated), DMGL_GNU_V3|__debugging_internal::undflags_translate(flags))};
 		if(!ret) {
 			return false;
 		}
+		#else
+		char *ret{__debugging_internal::__cxa_demangle(c_str(decorated), nullptr, 0, nullptr)};
+		if(!ret) {
+			return false;
+		}
+		#endif
 
 		undecorated = uc_str(ret);
 

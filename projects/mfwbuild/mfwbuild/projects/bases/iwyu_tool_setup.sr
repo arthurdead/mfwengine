@@ -1,0 +1,3 @@
+iwyu_tool {
+	files : root.compiler.files
+}

@@ -1,29 +1,13 @@
-#include "bases/default.sr"
-
-test_proj : base_project, output_static
+test_proj
 {
 	compiler {
 		options {
-			includes_paths {
-				"/home/arthurdead/Desktop/temp/code/**",
-			}
-			
-			//"-fpermissive"
+			"-c"
+			output "/home/arthurdead/Desktop/temp/code/main.o"
 		}
-	}
-	
-	compiler|iwyu {
 		files {
-			test filter {
-				"/home/arthurdead/Desktop/temp/code/**/*.*",
-			}
-		}
-	}
-	
-	linker {
-		options {
-			libraries {
-				dl
+			"/home/arthurdead/Desktop/temp/code/main.cpp" {
+				output "/home/arthurdead/Desktop/temp/code/test.o"
 			}
 		}
 	}

@@ -1,0 +1,3 @@
+clang_check {
+	files : root.compiler.files
+}

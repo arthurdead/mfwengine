@@ -103,6 +103,9 @@ namespace mfw::builder
 		help = u8R"(
 			$(optional,min=1,description="list of sections to build")
 			sections
+			
+			$(optional,min=1,description="list of projects to build")
+			projects
 
 			$(optional,count=0,description="ignores cache")
 			regen_cache
@@ -172,7 +175,14 @@ namespace mfw::builder
 		const vector<core::univalue> *values_sections{cmdline.values(u8"sections"_s)};
 		if(values_sections) {
 			for(const core::univalue &value : *values_sections) {
-				sections.emplace_back(value.get_string());
+				selected_sections.emplace_back(value.get_string());
+			}
+		}
+		
+		const vector<core::univalue> *values_projects{cmdline.values(u8"projects"_s)};
+		if(values_projects) {
+			for(const core::univalue &value : *values_projects) {
+				selected_projects.emplace_back(value.get_string());
 			}
 		}
 
@@ -371,7 +381,7 @@ namespace mfw::builder
 
 		if(cached) {
 			if(root_file.from_file(cache_search)) {
-				base_cached_file &main_section{reinterpret_cast<base_cached_file &>(*root_file.get_child(name))};
+				base_cached_file &main_section{*reinterpret_cast<base_cached_file *>(root_file.get_child(name))};
 				main_section.loaded_from_cache_ = true;
 			} else {
 				cached = false;
@@ -480,17 +490,20 @@ namespace mfw::builder
 			return false;
 		}
 
-		tool_reference &tool_main{reinterpret_cast<tool_reference &>(*tool_root.get_child(name))};
+		tool_reference *tool_main{reinterpret_cast<tool_reference *>(tool_root.get_child(name))};
+		if(!tool_main) {
+			return false;
+		}
 
-		if(!parse_tool(tool_main)) {
+		if(!parse_tool(*tool_main)) {
 			return false;
 		}
 
 		if(!cached) {
-			save_cached_file_tool(name, tool_main);
+			save_cached_file_tool(name, *tool_main);
 		}
 
-		tools.emplace_back(move(tool_main));
+		tools.emplace_back(move(*tool_main));
 		return true;
 	}
 
@@ -544,9 +557,55 @@ namespace mfw::builder
 
 		return true;
 	}
+	
+	bool builder::process_dependency(const core::serializable &src, core::serializable &dst, bool self)
+	{
+		for(const core::serializable &it : src) {
+			ucstring condition{it.get_condition()};
+			
+			if(!condition.empty()) {
+				size_t index{condition.find(u8"is_self"_sv)};
+				if(index != ucstring::npos) {
+					bool negate{false};
+					if(condition[index > 0 ? index-1 : 0] == u8'!') {
+						negate = true;
+					}
+					if(condition.compare(negate ? 1 : 0, ucstring::npos, u8"is_self"_sv) != 0) {
+						ucstring repl{};
+						repl += u8'(';
+						if(negate) {
+							repl += u8'!';
+						}
+						repl += u8"is_self) && ("_sv;
+						replace_all(condition, repl, {});
+						condition.pop_back();
+					} else if(self == negate) {
+						continue;
+					}
+				}
+			}
+			
+			ucstring name{it.get_name()};
+			replace_vars(name);
+			core::univalue value{it.get_value()};
+			replace_vars(value);
+			
+			core::serializable &child{dst.child(name)};
+			child.set_value(value);
+			child.set_condition(condition);
+			
+			if(!process_dependency(it, child, self)) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
 
 	bool builder::parse_dependency(project_reference &project, const project_reference &other)
 	{
+		bool self{&project == &other};
+		
 		const builder_section_reference *sec{other.builder_section()};
 		if(sec) {
 			MFW_MESSAGE("remove dependency later")
@@ -557,8 +616,16 @@ namespace mfw::builder
 				to_upper(other_name, other_name);
 				add_variable(u8"dependency_name_upper"_s, other_name);
 				add_variable(u8"dependency_filter"_s, as_string<ucstring>(other.filter()));
-
-				project.merge(*dependency, __builder_internal::merge_replace_vars);
+				
+				core::serializable parsed{};
+				began_gen = true;
+				bool did{process_dependency(*dependency, parsed, self)};
+				began_gen = false;
+				if(!did) {
+					return false;
+				}
+				
+				project.merge(parsed, false);
 			}
 		}
 		return true;
@@ -569,8 +636,14 @@ namespace mfw::builder
 		if(!parse_dependency(project, other)) {
 			return false;
 		}
+		
+		const ucstring &proj_name{project.get_name()};
 
 		for(const project_reference *it : other.depends) {
+			const ucstring &name{it->get_name()};
+			if(name == proj_name) {
+				continue;
+			}
 			if(!parse_dependencies(project, *it)) {
 				return false;
 			}
@@ -599,10 +672,15 @@ namespace mfw::builder
 			}
 		}
 
+		const ucstring &proj_name{project.get_name()};
+
 		const core::serializable *depends{sec.get_child(u8"depends"_sv)};
 		if(depends) {
 			for(const core::serializable &it : *depends) {
 				const ucstring &name{it.get_name()};
+				if(name == proj_name) {
+					continue;
+				}
 				project_reference *other{find_or_load_project(name, solution)};
 				if(!other) {
 					log_builder().error(u8"project {} missing dependency {}"_sv, project.get_name(), name);
@@ -771,19 +849,27 @@ namespace mfw::builder
 			}
 
 			core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
-
+			
 			vector<pstring> files_paths{};
-			filesys.glob({name}, files_paths);
 
-			if(files_paths.empty()) {
-				files_paths.emplace_back(name);
+			pstring name_path{filesys.resolve({name}, false)};
+			if(!name_path.empty()) {
+				filesys.glob({name_path}, files_paths);
+				
+				if(files_paths.empty()) {
+					files_paths.emplace_back(name_path);
+				}
+			} else {
+				files_paths.emplace_back(as_string<pstring>(name));
 			}
 
 			const ucstring &condition{child.get_condition()};
 
 			for(pstring &path : files_paths) {
+				if(!filesys.is_directory({path})) {
+					continue;
+				}
 				ucstring str{as_string<ucstring>(path)};
-
 				if(tmp_remove) {
 					target->erase(str);
 					if(!removed) {
@@ -804,15 +890,14 @@ namespace mfw::builder
 	{
 		for(const core::serializable &child : files) {
 			ucstring name{child.get_name()};
-			ucstring value{child.get_value().get_string()};
 			replace_vars(name);
+			ucstring value{child.get_value().get_string()};
 			replace_vars(value);
 
 			parse_files_flags tmp_flags{flags};
 
 			if(!child.empty()) {
-				if(value == u8"folder"_sv ||
-					value == u8"filter"_sv) {
+				if(value == u8"folder"_sv || value == u8"filter"_sv) {
 					parse_files(child, target, (filter/name), flags, removed, parent, tool_section);
 					continue;
 				} else if(name == u8"remove"_sv) {
@@ -821,35 +906,41 @@ namespace mfw::builder
 				} else if(name == u8"delay"_sv) {
 					parse_files(child, target, filter, flags|parse_files_flags::delay, removed, parent, tool_section);
 					continue;
-				} else if(name == u8"dynamic"_sv) {
+				} else if(name == u8"dynamic"_sv || name == u8"force"_sv) {
 					parse_files(child, target, filter, flags|parse_files_flags::dynamic, removed, parent, tool_section);
 					continue;
 				}
-			} else {
-				if(value == u8"remove"_sv) {
-					tmp_flags |= parse_files_flags::remove;
-				} else if(value == u8"delay"_sv) {
-					tmp_flags |= parse_files_flags::delay;
-				} else if(value == u8"dynamic"_sv) {
-					tmp_flags |= parse_files_flags::dynamic;
-				}
 			}
-
+			
 			if(began_gen) {
 				if(!child.passes_condition(this)) {
 					continue;
 				}
 			}
+			
+			if(value == u8"remove"_sv) {
+				tmp_flags |= parse_files_flags::remove;
+			} else if(value == u8"delay"_sv) {
+				tmp_flags |= parse_files_flags::delay;
+			} else if(value == u8"dynamic"_sv || value == u8"force"_sv) {
+				tmp_flags |= parse_files_flags::dynamic;
+			} else if(value == u8"folder"_sv || value == u8"filter"_sv) {
+				continue;
+			}
 
 			core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 
-			name = as_string<ucstring>(filesys.resolve({name}, false));
-
 			vector<pstring> files_paths{};
-			filesys.glob({name}, files_paths);
 
-			if(files_paths.empty()) {
-				files_paths.emplace_back(name);
+			pstring name_path{filesys.resolve({name}, false)};
+			if(!name_path.empty()) {
+				filesys.glob({name_path}, files_paths);
+				
+				if(files_paths.empty()) {
+					files_paths.emplace_back(name_path);
+				}
+			} else {
+				files_paths.emplace_back(as_string<pstring>(name));
 			}
 			
 			const ucstring &condition{child.get_condition()};
@@ -888,9 +979,13 @@ namespace mfw::builder
 					if(bool_cast(tmp_flags & parse_files_flags::delay)) {
 						file_main.add_flag(u8"delay"_sv);
 					}
+					if(bool_cast(tmp_flags & parse_files_flags::dynamic)) {
+						file_main.add_flag(u8"dynamic"_sv);
+					}
 					
 					file_main.set_value(as_string<core::univalue>(tmp_filter));
 					file_main.set_condition(condition);
+					file_main.merge(child, true, __builder_internal::merge_replace_vars);
 				}
 			}
 		}
@@ -1035,6 +1130,8 @@ namespace mfw::builder
 			}
 		}
 		
+		bool no_timestamp{tool_section.get_value() == u8"ignore"_sv};
+		
 		core::searchpath timestamp_dir{{}, u8"builder"_sv};
 		timestamp_dir.path /= u8"projects"_p;
 		timestamp_dir.path /= project.get_name();
@@ -1059,7 +1156,9 @@ namespace mfw::builder
 					file_reference &file_main{reinterpret_cast<file_reference &>(child)};
 					file_main.flags_ |= file_reference::flags::out_of_date;
 
-					build_file_timestamp(file_main, timestamp_dir);
+					if(!no_timestamp) {
+						build_file_timestamp(file_main, timestamp_dir);
+					}
 
 					if(!child.empty() && solution.tools_.empty()) {
 						pstring filter{file_main.filter()};
@@ -1090,10 +1189,10 @@ namespace mfw::builder
 				for(core::serializable &child : *files) {
 					file_reference &file_main{reinterpret_cast<file_reference &>(child)};
 
-					if(!file_out_of_date(file_main, timestamp_dir)) {
-						file_main.flags_ &= ~file_reference::flags::out_of_date;
-					} else {
+					if(no_timestamp || file_out_of_date(file_main, timestamp_dir)) {
 						file_main.flags_ |= file_reference::flags::out_of_date;
+					} else {
+						file_main.flags_ &= ~file_reference::flags::out_of_date;
 					}
 				}
 			}
@@ -1102,34 +1201,43 @@ namespace mfw::builder
 		return true;
 	}
 
-	bool builder::output_exists(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options)
+	pstring builder::get_output_path(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged)
 	{
 		const tool_reference *tool{tool_section.tool()};
 
-		if(!tool) {
-			return false;
-		}
-
 		pstring path{};
+
+		if(!tool) {
+			return path;
+		}
 
 		const core::serializable *args{tool->output_args()};
 		if(args) {
-			const core::univalue *output{find_output_option(file_options, *args)};
-			if(!output) {
-				output = find_output_option(options, *args);
+			const core::univalue *output{nullptr};
+			if(merged) {
+				output = find_output_option(file_options, *args);
+			} else {
+				output = find_output_option(file_options, *args);
+				if(!output) {
+					output = find_output_option(options, *args);
+				}
 			}
 			if(output) {
 				const ucstring &str{output->get_string()};
 				path = as_string<pstring>(str);
 			}
 		}
+		
 		if(path.empty()) {
 			path = tool->output_default_path();
 		}
+		
+		return path;
+	}
 
-		if(path.empty()) {
-			return false;
-		}
+	bool builder::output_exists(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged)
+	{
+		pstring path{get_output_path(tool_section, options, file_options, merged)};
 
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 		if(filesys.exists({path})) {
@@ -1204,7 +1312,8 @@ namespace mfw::builder
 			var.deduce(value);
 			return true;
 		}
-		return false;
+		var.deduce(false);
+		return true;
 	}
 
 	void builder::add_variable(const ucstring &name, const ucstring &value)
@@ -1220,11 +1329,29 @@ namespace mfw::builder
 		}
 	}
 
+	void builder::generate_builder_section(const builder_section_reference &sec, builder_sec_type type)
+	{
+		const core::serializable *macros{sec.macros()};
+		if(macros) {
+			for(const core::serializable &it : *macros) {
+				if(began_gen) {
+					if(!it.passes_condition(this)) {
+						continue;
+					}
+				}
+				const ucstring &name{it.get_name()};
+				core::univalue value{it.get_value()};
+				replace_vars(value);
+				add_variable(name, value.get_string());
+			}
+		}
+	}
+
 	bool builder::remap_value(const core::serializable &option, const core::serializable *map, core::serializable &options, remap_result_t &result, const base_plugin::plugin_info_t &info)
 	{
 		const ucstring &condition{option.get_condition()};
 		
-		if(began_gen) {
+		if(began_gen && !info.process_options_conditions) {
 			if(!condition.empty()) {
 				core::univalue res{};
 				if(!core::parse_expression(condition, res, this)) {
@@ -1261,20 +1388,25 @@ namespace mfw::builder
 			}
 		}
 		
+		core::univalue value{option.get_value()};
+		replace_vars(value);
+		
 		if(!result.map || info.process_sections_args_unmaped) {
 			result.child = &options.child(name);
 		} else if(result.map) {
 			core::univalue map_value{result.map->get_value()};
 			replace_vars(map_value);
 			result.child = &options.child(map_value.get_string());
+			
+			const core::serializable *mapped_value{result.map->get_child(value.get_string())};
+			if(mapped_value) {
+				value = mapped_value->get_value();
+			}
 		}
 		
 		if(map_flags) {
 			result.child->flags().merge(*map_flags);
 		}
-		
-		core::univalue value{option.get_value()};
-		replace_vars(value);
 
 		result.child->set_value(value);
 		result.child->set_condition(condition);
@@ -1285,36 +1417,16 @@ namespace mfw::builder
 		return true;
 	}
 
-	void builder::generate_builder_section(const builder_section_reference &sec, builder_sec_type type)
-	{
-		const core::serializable *macros{sec.macros()};
-		if(macros) {
-			for(const core::serializable &it : *macros) {
-				if(began_gen) {
-					if(!it.passes_condition(this)) {
-						continue;
-					}
-				}
-				const ucstring &name{it.get_name()};
-				core::univalue value{it.get_value()};
-				replace_vars(value);
-				add_variable(name, value.get_string());
-			}
-		}
-	}
-
 	bool builder::process_options(const tool_reference *tool, core::serializable &options, core::serializable &mapped_options, const base_plugin::plugin_info_t &info)
 	{
+		const core::serializable *map{nullptr};
+		if(tool) {
+			map = tool->options_map();
+		}
+		
 		core::serializable::iterator option_it{options.begin()};
 		while(option_it != options.end()) {
 			core::serializable &option{*option_it};
-
-			MFW_MESSAGE("i am completely lost here")
-
-			const core::serializable *map{nullptr};
-			if(tool) {
-				map = tool->options_map();
-			}
 
 			remap_result_t result{};
 			if(!remap_value(option, map, mapped_options, result, info)) {
@@ -1336,18 +1448,18 @@ namespace mfw::builder
 				}
 				
 				for(const core::serializable &it : option) {
-					if(began_gen) {
-						if(!it.passes_condition(this)) {
-							continue;
-						}
-					}
-					
 					if(remap_values) {
 						remap_result_t tmp{};
 						if(!remap_value(it, result.map, child, tmp, info)) {
 							return false;
 						}
 					} else if(!is_folders) {
+						if(began_gen && !info.process_options_conditions) {
+							if(!it.passes_condition(this)) {
+								continue;
+							}
+						}
+						
 						child.child(it.get_name());
 					}
 				}
@@ -1394,13 +1506,13 @@ namespace mfw::builder
 
 	bool builder::execute_shell_str(const core::serializable &execute, core::log_context &log)
 	{
-		ucstring str{};
-
 		for(const core::serializable &child : execute) {
 			if(!child.passes_condition(this)) {
 				continue;
 			}
 			
+			ucstring str{};
+				
 			ucstring name{child.get_name()};
 			replace_vars(name);
 			str += name;
@@ -1412,48 +1524,61 @@ namespace mfw::builder
 				str += value_str;
 				str += u8' ';
 			}
+			
+			if(str.empty()) {
+				continue;
+			}
+
+			str.pop_back();
+			
+			replace_all(str, u8"\""_sv, u8"\\\""_sv);
+
+			shell_proc.set_args(str);
+			
+			const core::serializable *flags{child.get_flags()};
+			if(flags) {
+				const core::serializable *message{flags->get_child(u8"message"_sv)};
+				if(message) {
+					const core::univalue &value{message->get_value()};
+					log.info(value.get_string());
+				}
+			}
+
+			bool started{shell_proc.start(true)};
+			if(!started) {
+				log.error(u8"program failed to execute"_sv);
+				log.add_ident();
+				log.error(u8"workingdir: {}\npath: {}\nargs: {}"_sv, shell_proc.workingdir(), shell_proc.path(), shell_proc.args());
+				log.remove_ident();
+				return false;
+			}
+
+			const ucstring &output{shell_proc.output()};
+			int32_t exit_code{shell_proc.exit_code()};
+
+			bool success{exit_code == 0};
+
+			if(success) {
+				log.set_severity(core::log_severity::success);
+			} else {
+				log.set_severity(core::log_severity::error);
+			}
+
+			if(!output.empty()) {
+				log.print(u8"exit_code {}:"_sv, exit_code);
+				log.add_ident();
+				log.print(output);
+				log.remove_ident();
+			} else if(!success) {
+				log.print(u8"exit_code {}:"_sv, exit_code);
+			}
+			
+			if(!success) {
+				return false;
+			}
 		}
-		
-		if(str.empty()) {
-			return true;
-		}
 
-		str.pop_back();
-		
-		replace_all(str, u8"\""_sv, u8"\\\""_sv);
-
-		shell_proc.set_args(str);
-
-		bool started{shell_proc.start(true)};
-		if(!started) {
-			log.error(u8"program failed to execute"_sv);
-			log.add_ident();
-			log.error(u8"workingdir: {}\npath: {}\nargs: {}"_sv, shell_proc.workingdir(), shell_proc.path(), shell_proc.args());
-			log.remove_ident();
-			return false;
-		}
-
-		const ucstring &output{shell_proc.output()};
-		int32_t exit_code{shell_proc.exit_code()};
-
-		bool success{exit_code == 0};
-
-		if(success) {
-			log.set_severity(core::log_severity::success);
-		} else {
-			log.set_severity(core::log_severity::error);
-		}
-
-		if(!output.empty()) {
-			log.print(u8"exit_code {}:"_sv, exit_code);
-			log.add_ident();
-			log.print(output);
-			log.remove_ident();
-		} else if(!success) {
-			log.print(u8"exit_code {}:"_sv, exit_code);
-		}
-
-		return success;
+		return true;
 	}
 	
 	bool builder::process_section(const core::serializable &src, core::serializable &dst)
@@ -1583,6 +1708,10 @@ namespace mfw::builder
 					add_variable(u8"file_basename"_s, u8"single_input"_s);
 				}
 			}
+			
+			if(!plugin->populate_vars(solution, project, tool_section)) {
+				return false;
+			}
 
 			core::serializable section_opts{};
 			if(options) {
@@ -1591,10 +1720,13 @@ namespace mfw::builder
 				}
 			}
 
-			const core::serializable *pre_generate{tool_section.get_child(u8"pre_generate"_sv)};
-			if(pre_generate) {
-				if(!execute_shell_str(*pre_generate, log)) {
-					return false;
+			builder_sec = tool_section.builder_section();
+			if(builder_sec) {
+				const core::serializable *pre_generate{builder_sec->get_child(u8"pre_generate"_sv)};
+				if(pre_generate) {
+					if(!execute_shell_str(*pre_generate, log)) {
+						return false;
+					}
 				}
 			}
 
@@ -1607,6 +1739,8 @@ namespace mfw::builder
 				return true;
 			}
 
+			const core::serializable *patterns{tool->get_child(u8"patterns"_sv)};
+
 			for(const core::serializable &child : *files) {
 				const file_reference &file_main{reinterpret_cast<const file_reference &>(child)};
 
@@ -1614,6 +1748,9 @@ namespace mfw::builder
 				add_variable(u8"file_filter"_s, as_string<ucstring>(filter));
 
 				pstring fullpath{file_main.path()};
+				replace_vars(fullpath);
+				const_cast<file_reference &>(file_main).set_name(as_string<ucstring>(fullpath));
+				
 				pstring filename{fullpath.filename()};
 				pstring basename{filename};
 				basename.replace_extension();
@@ -1624,8 +1761,9 @@ namespace mfw::builder
 					continue;
 				}
 
-				if(!info.process_tools_patterns && tool) {
-					const core::serializable *patterns{tool->get_child(u8"patterns"_sv)};
+				bool dynamic{file_main.get_flag_bool(u8"dynamic"_sv)};
+
+				if((!info.process_tools_patterns && tool) && !dynamic) {
 					if(patterns && !patterns->empty()) {
 						bool found{false};
 						for(const core::serializable &pat : *patterns) {
@@ -1644,17 +1782,18 @@ namespace mfw::builder
 				}
 
 				core::serializable file_options{};
+				
+				bool do_merge{info.merge_sections_files_options && !actually_do_single_input};
+				
 				if(!process_options(tool, const_cast<file_reference &>(file_main), file_options, info)) {
 					return false;
 				}
-
-				bool merged{false};
-				if(info.merge_sections_files_options && !actually_do_single_input) {
-					file_options.merge(section_opts, __builder_internal::merge_replace_vars);
-					merged = true;
+				
+				if(do_merge) {
+					file_options.merge(section_opts, false, __builder_internal::merge_replace_vars);
 				}
 
-				bool out_exists{info.ignore_output || output_exists(tool_section, section_opts, file_options)};
+				bool out_exists{info.ignore_output || output_exists(tool_section, section_opts, file_options, do_merge)};
 				bool file_out_of_date{
 					section_out_of_date ||
 					bool_cast(file_main.flags_ & file_reference::flags::out_of_date) ||
@@ -1676,29 +1815,8 @@ namespace mfw::builder
 						if(!plugin->generate(solution, project, tool_section, file_main, file_options)) {
 							return false;
 						}
-					} else if(tool && !info.ignore_output) {
-						pstring output_path{};
-
-						const core::serializable *args{tool->output_args()};
-						if(args) {
-							const core::univalue *output{nullptr};
-							if(!merged) {
-								output = find_output_option(section_opts, *args);
-								if(!output) {
-									output = find_output_option(file_options, *args);
-								}
-							} else {
-								output = find_output_option(file_options, *args);
-							}
-							if(output) {
-								const ucstring &str{output->get_string()};
-								output_path = as_string<pstring>(str);
-							}
-						}
-
-						if(output_path.empty()) {
-							output_path = tool->output_default_path();
-						}
+					} else if(tool && !info.ignore_output && !dynamic) {
+						pstring output_path{get_output_path(tool_section, section_opts, file_options, do_merge)};
 
 						if(!output_path.empty()) {
 							replace_vars(output_path);
@@ -1708,7 +1826,6 @@ namespace mfw::builder
 								if(!out_sec) {
 									return false;
 								} else {
-									core::interfaces::filesystem::instance().create_directories({output_path});
 									out_sec->add_file(output_path, file_main.get_flags(), file_main.filter(), file_main.get_condition());
 								}
 							}
@@ -1743,10 +1860,12 @@ namespace mfw::builder
 				return false;
 			}
 
-			const core::serializable *post_generate{tool_section.get_child(u8"post_generate"_sv)};
-			if(post_generate) {
-				if(!execute_shell_str(*post_generate, log)) {
-					return false;
+			if(builder_sec) {
+				const core::serializable *post_generate{builder_sec->get_child(u8"post_generate"_sv)};
+				if(post_generate) {
+					if(!execute_shell_str(*post_generate, log)) {
+						return false;
+					}
 				}
 			}
 			
@@ -1835,11 +1954,6 @@ namespace mfw::builder
 		add_variable(u8"project_name_upper"_s, proj_name);
 		add_variable(u8"project_filter"_s, as_string<ucstring>(project.filter()));
 
-		const builder_section_reference *sec{project.builder_section()};
-		if(sec) {
-			generate_builder_section(*sec, builder_sec_type::project);
-		}
-
 		size_t ident{log.get_ident()};
 
 		for(const core::serializable &child : project) {
@@ -1868,6 +1982,18 @@ namespace mfw::builder
 			}
 		}
 		
+		const builder_section_reference *builder_sec{project.builder_section()};
+		if(builder_sec) {
+			generate_builder_section(*builder_sec, builder_sec_type::project);
+
+			const core::serializable *pre_generate{builder_sec->get_child(u8"pre_generate"_sv)};
+			if(pre_generate) {
+				if(!execute_shell_str(*pre_generate, log)) {
+					return false;
+				}
+			}
+		}
+		
 		if(!plugin->generate(solution, project)) {
 			return false;
 		}
@@ -1882,8 +2008,8 @@ namespace mfw::builder
 			bool in_cmdline{false};
 			bool generate_sec{true};
 			
-			if(!sections.empty()) {
-				if(!contains(sections, sec_name)) {
+			if(!selected_sections.empty()) {
+				if(!contains(selected_sections, sec_name)) {
 					generate_sec = false;
 				} else {
 					in_cmdline = true;
@@ -1908,6 +2034,15 @@ namespace mfw::builder
 				return false;
 			}
 		}
+		
+		if(builder_sec) {
+			const core::serializable *post_generate{builder_sec->get_child(u8"post_generate"_sv)};
+			if(post_generate) {
+				if(!execute_shell_str(*post_generate, log)) {
+					return false;
+				}
+			}
+		}
 
 		return true;
 	}
@@ -1923,10 +2058,23 @@ namespace mfw::builder
 			log.info(u8"no projects provided"_sv);
 			return false;
 		}
+		
+		if(!solution.loaded_from_cache_) {
+			remove_variable(u8"project_name"_s);
+			remove_variable(u8"project_name_upper"_s);
+			remove_variable(u8"project_filter"_s);
+		}
 
-		const builder_section_reference *sec{solution.builder_section()};
-		if(sec) {
-			generate_builder_section(*sec, builder_sec_type::solution);
+		const builder_section_reference *builder_sec{solution.builder_section()};
+		if(builder_sec) {
+			generate_builder_section(*builder_sec, builder_sec_type::solution);
+			
+			const core::serializable *pre_generate{builder_sec->get_child(u8"pre_generate"_sv)};
+			if(pre_generate) {
+				if(!execute_shell_str(*pre_generate, log)) {
+					return false;
+				}
+			}
 		}
 
 		const core::serializable *build_set_list{solution.build_set()};
@@ -2062,6 +2210,15 @@ namespace mfw::builder
 		if(!plugin->generate(solution)) {
 			return false;
 		}
+		
+		if(builder_sec) {
+			const core::serializable *post_generate{builder_sec->get_child(u8"post_generate"_sv)};
+			if(post_generate) {
+				if(!execute_shell_str(*post_generate, log)) {
+					return false;
+				}
+			}
+		}
 
 		return true;
 	}
@@ -2113,11 +2270,17 @@ namespace mfw::builder
 			size_t ident{vars.ident}; \
 			const solution_reference &solution{*vars.solution}; \
 			for(const project_reference &project_main : projects) { \
+				const ucstring &name{project_main.get_name()}; \
 				if(!project_main.passes_condition(this)) { \
 					continue; \
 				} \
+				if(!selected_projects.empty()) { \
+					if(!contains(selected_projects, name)) { \
+						continue; \
+					} \
+				} \
 				log.set_ident(ident); \
-				log.info(u8"generating {}:"_sv, project_main.get_name()); \
+				log.info(u8"generating {}:"_sv, name); \
 				log.add_ident();
 
 	#define __MFW_SET_LOOP_IMPLEMENT_FUNC_BEGIN(...) \

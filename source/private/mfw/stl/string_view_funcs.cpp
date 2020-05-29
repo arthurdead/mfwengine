@@ -88,6 +88,12 @@ namespace mfw::stl
 				return true;
 			}
 		}
+		
+		template <typename T>
+		T toupper(T c)
+		{
+			return static_cast<T>(::MFW_STD_NAMESPACE::toupper(static_cast<int32_t>(c)));
+		}
 	}
 
 	MFW_STL_API bool MFW_STL_CALL to_int(ucstring_view src, int8_t &dst, int32_t base)
@@ -148,7 +154,7 @@ namespace mfw::stl
 	MFW_STL_API void MFW_STL_CALL to_upper(ucstring_view src, ucstring &dst)
 	{
 		dst = src;
-		transform(dst.begin(), dst.end(), dst.begin(), static_cast<int32_t(*)(int32_t)>(::MFW_STD_NAMESPACE::toupper));
+		transform(dst.begin(), dst.end(), dst.begin(), static_cast<ucchar_t(*)(ucchar_t)>(__string_view_funcs_internal::toupper));
 	}
 #else
 	#error

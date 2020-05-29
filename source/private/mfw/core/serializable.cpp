@@ -216,7 +216,7 @@ namespace mfw::core
 		}
 	}
 
-	MFW_CORE_API void MFW_CORE_CALL serializable::merge(const serializable &other, const merge_str_process_t &func)
+	MFW_CORE_API void MFW_CORE_CALL serializable::merge(const serializable &other, bool replace, const merge_str_process_t &func)
 	{
 		if(other.empty()) {
 			return;
@@ -240,7 +240,10 @@ namespace mfw::core
 
 			const serializable *flags{otherchild.get_flags()};
 
-			bool forcecreate{(!othercond.empty() && othercond != get_condition()) || !!flags};
+			bool forcecreate{!othercond.empty() && othercond != get_condition()};
+			/*if(!replace && flags) {
+				forcecreate = true;
+			}*/
 			bool created{false};
 
 			serializable *child{nullptr};
@@ -263,9 +266,11 @@ namespace mfw::core
 				child->set_condition(othercond);
 			}
 
-			child->set_value(othervalue);
+			if(replace || created) {
+				child->set_value(othervalue);
+			}
 
-			child->merge(otherchild, func);
+			child->merge(otherchild, replace, func);
 
 			//child->merge_child(0, *child, otherchild);
 

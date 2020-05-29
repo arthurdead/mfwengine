@@ -1,0 +1,8 @@
+#include "bases/engine_project.sr"
+
+launcher : base_project, standards.cpp20, output_executable_console
+{
+	builder::depends {
+		core
+	}
+}

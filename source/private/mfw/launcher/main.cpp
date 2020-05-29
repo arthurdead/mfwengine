@@ -7,7 +7,7 @@ extern "C" {
 
 bool application_load_libraries()
 {
-	for(::mfw::ucstring_view it : {
+	/*for(::mfw::ucstring_view it : {
 		u8"renderer"_sv,
 		u8"engine"_sv,
 		//u"scripting"_sv,
@@ -15,7 +15,7 @@ bool application_load_libraries()
 		if(::mfw::core::core_load_library(it)) {
 			return false;
 		}
-	}
+	}*/
 	
 	return true;
 }

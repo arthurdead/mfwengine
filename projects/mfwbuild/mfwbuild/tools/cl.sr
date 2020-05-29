@@ -1,83 +1,9 @@
-#include "bases/cpp_compiler.sr"
+#include "bases/cl.sr"
 #include "bases/windows_tool.sr"
+#include "bases/wine_tool.sr"
 
 cl : base_tool
 {
-	options_map {
-		$(files,needs_values)
-		forced_includes "/FI"
-		$(needs_values)
-		preprocessor_definitions "/D"
-		no_linking "/c"
-		$(file,no_space)
-		output "/Fo"
-		$(folders)
-		includes_paths "/I"
-		$(needs_equal)
-		standard "/std"
-		warning_errors "/WX"
-		$(remove)
-		fatal_errors
-		pendatic "/permissive-"
-		$(remove)
-		pendatic_errors
-		all_warnings "/Wall"
-		$(remove)
-		extra_warnings
-		nologo "/nologo"
-		char8_t "/Zc:char8_t"
-		$(needs_values)
-		disable_warnings "/wd"
-	}
-
-	preprocessor_definitions {
-		"/D"
-	}
-
-	includes_paths {
-		"/I"
-	}
-
-	forced_includes {
-		"/FI"
-	}
-
-	output "${file_basename}.obj" {
-		"/Fo"
-	}
-
-	standard "/std"
-
-	warnings_as_errors "/WX"
-
-	output_regex {
-		warning {
-			"warning"
-		}
-		error {
-			"error"
-			"fatal error"
-		}
-		ignore {
-			"Please choose the Technical Support command on the Visual C++"
-			"Help menu, or open the Technical Support help file for more information"
-			"To work around this problem, try simplifying or changing the program near the locations listed above."
-			"If possible please provide a repro here: https://developercommunity.visualstudio.com"
-			"Microsoft (R) C/C++ Optimizing Compiler Version "
-			"Copyright (C) Microsoft Corporation.  All rights reserved."
-		}
-
-	#if MFW_OS == MFW_OS_LINUX
-		ignore {
-	#else
-		error {
-	#endif
-			"INTERNAL COMPILER ERROR in "
-			"Internal compiler error."
-			"(compiler file "
-		}
-	}
-
 #if MFW_OS == MFW_OS_LINUX
 	#define MSVCVER "14.26.28801"
 	#define ARCH "x64"

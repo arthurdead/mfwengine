@@ -1,7 +1,24 @@
 #include "bases/engine_project.sr"
 
-core : base_project, output_shared
+core : base_project, standards.cpp20, output_shared
 {
+	builder {
+		dependency {
+			linker::options::libraries {
+			$if os == "linux"
+				dl
+			$endif
+			}
+		}
+		depends {
+			stl
+		}
+	}
+	linker::options::libraries {
+	$if os == "linux"
+		//iberty
+	$endif
+	}
 	compiler::options::preprocessor_definitions {
 		__MFW_DISABLE_ASMJIT
 	}

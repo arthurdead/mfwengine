@@ -1,0 +1,8 @@
+cppcheck {
+	options {
+		includes_paths : root.compiler.options.includes_paths
+		preprocessor_definitions : root.compiler.options.preprocessor_definitions
+		forced_includes : root.compiler.options.forced_includes
+	}
+	files : root.compiler.files
+}

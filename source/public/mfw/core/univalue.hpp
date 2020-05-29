@@ -312,25 +312,28 @@ namespace mfw
 
 	namespace stl
 	{
-		#define __MFW_STL_C_STR \
-			overload_cast_static(const char *, , stl::c_str, const ucstring &)
-
 		/*inline const char *c_str(const univalue &src)
 		{
 			const ucstring &str{src.get_string()};
-			return __MFW_STL_C_STR(str);
+			return c_str(str);
 		}*/
 
 		inline void to_string(const core::univalue &src, ucstring &dst) { dst = src.get_string(); }
 		inline void to_string(const core::univalue &src, pstring &dst)
 		{
+		#ifndef __MFW_STD_FILESYSTEM_WIDE_CHAR
 			const ucstring &str{src.get_string()};
-			const upnchar_t *begin{__MFW_STL_C_STR(str)};
+			const upnchar_t *begin{c_str(str)};
 			const upnchar_t *end{begin+src->length()};
 			dst.assign(begin, end);
+		#else
+			MFW_MESSAGE("fix this")
+			MFW_DEBUGBREAK();
+		#endif
 		}
 	}
 }
 
+#include <public/mfw/stl/impl/string_funcs_core.ipp>
 
 #endif

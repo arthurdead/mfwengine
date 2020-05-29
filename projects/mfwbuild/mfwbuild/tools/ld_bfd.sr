@@ -1,0 +1,6 @@
+#include "bases/unix_cpp_linker.sr"
+
+ld_bfd : base_tool
+{
+	shell "ld.bfd"
+}

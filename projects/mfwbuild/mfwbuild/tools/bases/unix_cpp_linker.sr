@@ -1,33 +1,48 @@
+#include "unix_linker_patterns.sr"
+
 base_tool
 {
 	single_input
-	
+	needs_implib
+
 	output "a.out" {
 		"-o",
 		"--output"
 	}
-	
+
+	builder::macros {
+		is_unix_linker true
+	}
+
 	output_regex {
 		info {
 			"in function "
 		}
+		warning {
+			"warning: "
+		}
 		error {
 			"undefined reference to "
+			"cannot open output file"
+			"read in flex scanner failed"
+			"final link failed: "
+			"can not be used when making a shared object"
+			"error: "
 		}
 	}
-	
-	patterns {
-		"*.o"
-		"*.so"
-		"*.a"
-	}
-	
+
 	options_map {
 		$(file)
 		output "--output"
+		$(file)
 		dynamic_linker "-dynamic-linker"
-		libraries "--library"
+		$(needs_values,no_space)
+		libraries "-l"
 		$(remove)
 		nologo
+		shared "-shared"
+		$(folders,no_space)
+		lib_directories "-L"
+		pie "-pie"
 	}
 }

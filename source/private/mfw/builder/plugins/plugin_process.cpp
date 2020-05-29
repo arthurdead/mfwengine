@@ -96,6 +96,78 @@ namespace mfw::builder
 		return true;
 	}
 
+	bool plugin_process::populate_vars(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section)
+	{
+		return true;
+	}
+	
+	bool plugin_process::compiler_tool_info_t::setup(const tool_info_t &tool_info, const tool_section_reference &tool_section, const core::serializable &options_)
+	{
+		if(!super::setup(tool_info, tool_section, options_)) {
+			return false;
+		}
+		
+		compiler_info_t info{};
+		
+		const tool_reference *tool{tool_section.tool()};
+		
+		pstring tool_path{tool->path()};
+		if(!tool_path.empty()) {
+			info = get_compiler_info(tool_path);
+		} else {
+			info = get_compiler_info(tool->shell());
+		}
+		
+		if(info & compiler_info_t::flags_t::unix_) {
+			core::process proc{};
+			proc.set_path(tool_path);
+			proc.set_args(u8"-print-search-dirs"_s);
+			proc.start(true);
+			
+			const ucstring &output{proc.output()};
+			if(output.empty() || proc.exit_code() != 0) {
+				return false;
+			}
+			
+			constexpr ucstring_view find_str{u8"libraries: ="_sv};
+			
+			size_t start{output.find(find_str)};
+			if(start == ucstring::npos) {
+				return false;
+			}
+			
+			start += find_str.length();
+			
+			ucstring lib_str{output.substr(start, ucstring::npos)};
+			
+			start = 0;
+			while(true) {
+				size_t i{lib_str.find(u8':', start)};
+				if(i == ucstring::npos) {
+					break;
+				}
+				
+				size_t len{i-start};
+				
+				ucstring str{lib_str.substr(start, len)};
+				if(str.back() == u8'/') {
+					str.pop_back();
+				}
+				
+				compiler_lib_dirs += u8"-L"_sv;
+				compiler_lib_dirs += move(str);
+				compiler_lib_dirs += u8' ';
+				
+				start++;
+				start += len;
+			}
+			
+			compiler_lib_dirs.pop_back();
+		}
+		
+		return true;
+	}
+
 	bool plugin_process::generate(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const core::serializable &options)
 	{
 		const tool_reference *tool{tool_section.tool()};
@@ -117,9 +189,94 @@ namespace mfw::builder
 		
 		const ucstring &tool_name{tool_info.name};
 	
+		const core::serializable *subprocess{tool->get_child(u8"subprocess"_sv)};
+		if(subprocess) {
+			const core::serializable *path{subprocess->get_child(u8"path"_sv)};
+			if(path) {
+				const core::univalue &value{path->get_value()};
+				tool_info.path = as_string<pstring>(value);
+			} else {
+				path = subprocess->get_child(u8"shell"_sv);
+				if(!path) {
+					return false;
+				}
+				
+				const core::univalue &value{path->get_value()};
+				tool_info.cmd = value.get_string();
+			}
+			
+			tool_info.base_args += u8'"';
+			if(tool->is_shell()) {
+				ucstring cmd{tool->shell()};
+				tool_info.base_args += cmd;
+			} else {
+				pstring tool_path{tool->path()};
+				tool_info.base_args += as_string<ucstring>(tool_path);
+			}
+			tool_info.base_args += u8'"';
+			tool_info.base_args += u8' ';
+			
+			const core::serializable *drive{subprocess->get_child(u8"drive"_sv)};
+			if(drive) {
+				const core::univalue &value{drive->get_value()};
+				tool_info.drive = value.get_string();
+			}
+		} else {
+			if(tool->is_shell()) {
+				tool_info.cmd = tool->shell();
+			} else {
+				tool_info.path = tool->path();
+			}
+		}
+		
+		const core::serializable *environment{tool->get_child(u8"environment"_sv)};
+		if(environment) {
+			ucchar_t def_sep{core::environment_var::default_sep};
+			
+			const core::serializable *default_sep{environment->get_flag(u8"separator"_sv)};
+			if(default_sep) {
+				const core::univalue &value{default_sep->get_value()};
+				def_sep = value.get_string()[0];
+			}
+			
+			for(const core::serializable &child : *environment) {
+				const ucstring &name{child.get_name()};
+				
+				ucchar_t sep{def_sep};
+				
+				default_sep = child.get_flag(u8"separator"_sv);
+				if(default_sep) {
+					const core::univalue &value{default_sep->get_value()};
+					sep = value.get_string()[0];
+				}
+				
+				core::environment_var var{name, sep};
+				if(child.empty()) {
+					const core::univalue &value{child.get_value()};
+					var.set(value.get_string());
+				} else {
+					for(const core::serializable &child_value : child) {
+						const ucstring &value{child_value.get_name()};
+						var.append(value);
+					}
+				}
+				var.commit();
+			}
+		}
+	
 		if(tool_name == u8"compiler"_sv) {
 			if(!compiler.setup(tool_info, tool_section, options)) {
 				return false;
+			}
+		} else if(tool_name == u8"linker"_sv) {
+			linker_info_t lnkinf{};
+			if(!tool_info.path.empty()) {
+				lnkinf = get_linker_info(tool_info.path);
+			} else {
+				lnkinf = get_linker_info(tool_info.cmd);
+			}
+			if(lnkinf & linker_info_t::flags_t::unix_) {
+				tool_info.is_unix_linker = true;
 			}
 		}
 	
@@ -196,81 +353,6 @@ namespace mfw::builder
 					const ucstring &name{child.get_name()};
 					tool_info.ignore_regex.emplace_back(name);
 				}
-			}
-		}
-		
-		const core::serializable *environment{tool->get_child(u8"environment"_sv)};
-		if(environment) {
-			ucchar_t def_sep{core::environment_var::default_sep};
-			
-			const core::serializable *default_sep{environment->get_flag(u8"separator"_sv)};
-			if(default_sep) {
-				const core::univalue &value{default_sep->get_value()};
-				def_sep = value.get_string()[0];
-			}
-			
-			for(const core::serializable &child : *environment) {
-				const ucstring &name{child.get_name()};
-				
-				ucchar_t sep{def_sep};
-				
-				default_sep = child.get_flag(u8"separator"_sv);
-				if(default_sep) {
-					const core::univalue &value{default_sep->get_value()};
-					sep = value.get_string()[0];
-				}
-				
-				core::environment_var var{name, sep};
-				if(child.empty()) {
-					const core::univalue &value{child.get_value()};
-					var.set(value.get_string());
-				} else {
-					for(const core::serializable &child_value : child) {
-						const ucstring &value{child_value.get_name()};
-						var.append(value);
-					}
-				}
-				var.commit();
-			}
-		}
-		
-		const core::serializable *subprocess{tool->get_child(u8"subprocess"_sv)};
-		if(subprocess) {
-			const core::serializable *path{subprocess->get_child(u8"path"_sv)};
-			if(path) {
-				const core::univalue &value{path->get_value()};
-				tool_info.path = as_string<pstring>(value);
-			} else {
-				path = subprocess->get_child(u8"shell"_sv);
-				if(!path) {
-					return false;
-				}
-				
-				const core::univalue &value{path->get_value()};
-				tool_info.cmd = value.get_string();
-			}
-			
-			tool_info.base_args += u8'"';
-			if(tool->is_shell()) {
-				ucstring cmd{tool->shell()};
-				tool_info.base_args += cmd;
-			} else {
-				pstring tool_path{tool->path()};
-				tool_info.base_args += as_string<ucstring>(tool_path);
-			}
-			tool_info.base_args += u8'"';
-			tool_info.base_args += u8' ';
-			
-			const core::serializable *drive{subprocess->get_child(u8"drive"_sv)};
-			if(drive) {
-				const core::univalue &value{drive->get_value()};
-				tool_info.drive = value.get_string();
-			}
-		} else {
-			if(tool->is_shell()) {
-				tool_info.cmd = tool->shell();
-			} else {
-				tool_info.path = tool->path();
 			}
 		}
 		
@@ -404,7 +486,9 @@ namespace mfw::builder
 				} else if(needs_equal) {
 					sep = info.equal_char;
 				}
-				str += sep;
+				if(sep != u8'\0') {
+					str += sep;
+				}
 				__MFW_QUOTE_STR_VALUE(name, quote_name)
 				__MFW_APPEND_VALUE(u8'=')
 				str += u8' ';
@@ -533,14 +617,25 @@ namespace mfw::builder
 
 	void plugin_process::add_file_to_str(const pstring &path, ucstring &str, const tool_info_t &info)
 	{
+		/*bool is_static{false};
+		if(info.is_unix_linker) {
+			is_static = (path.extension() == u8".a"_sv);
+		}*/
+		
 		ucstring filepath_str{as_string<ucstring>(path)};
 		if(!info.drive.empty()) {
 			filepath_str.insert(0, info.drive);
 		}
 		
+		/*if(is_static) {
+			str += u8"--whole-archive "_sv;
+		}*/
 		str += u8'"';
 		str += filepath_str;
 		str += u8'"';
+		/*if(is_static) {
+			str += u8" --no-whole-archive"_sv;
+		}*/
 		str += u8' ';
 	}
 
@@ -738,7 +833,15 @@ namespace mfw::builder
 
 		ucstring str{};
 		
+		if(info.is_unix_linker && !compiler.compiler_lib_dirs.empty()) {
+			str += compiler.compiler_lib_dirs;
+			str += u8' ';
+		}
+		
+	#define __MFW_PLUGIN_PROCESS_OPTIONS_FIRST
+	#ifdef __MFW_PLUGIN_PROCESS_OPTIONS_FIRST
 		process_options(options, str, info);
+	#endif
 		
 		if(!unity_build) {
 			for(const file_reference *file : files) {
@@ -796,6 +899,12 @@ namespace mfw::builder
 
 			add_file_to_str(unity_file_path, str, info);
 		}
+		
+	#ifndef __MFW_PLUGIN_PROCESS_OPTIONS_FIRST
+		process_options(options, str, info);
+		
+		str.pop_back();
+	#endif
 
 		if(unity_build && !only_compile_commands) {
 			vector<byte> unity_build_file{};
@@ -856,13 +965,25 @@ namespace mfw::builder
 		}
 		
 		if(!output_path.empty()) {
-			filesys.create_directories({output_path});
+			if(output_path.has_extension()) {
+				filesys.create_directories({output_path});
+			} else {
+				filesys.create_directories({output_path.parent_path()});
+			}
 		}
 		
 		str.insert(0, info.base_args);
 		
 		if(printcmdline) {
-			log().info(str);
+			ucstring tmp{};
+			if(!info.path.empty()) {
+				tmp += as_string<ucstring>(info.path);
+			} else {
+				tmp += info.cmd;
+			}
+			tmp += u8' ';
+			tmp += str;
+			log().info(tmp);
 		}
 		
 		compile_command_t &compile{compile_commands.back()};
@@ -995,6 +1116,12 @@ namespace mfw::builder
 		}
 		
 		bool do_print{!output.empty() || !success};
+		
+		const file_reference *file{vars.file};
+		bool dynamic{false};
+		if(file) {
+			dynamic = file->get_flag_bool(u8"dynamic"_sv);
+		}
 
 		if(do_print) {
 			if(exit_code == 0) {
@@ -1003,7 +1130,6 @@ namespace mfw::builder
 				log().set_severity(core::log_severity::error);
 			}
 
-			const file_reference *file{vars.file};
 			if(file) {
 				pstring filter{file->filter()};
 				
@@ -1043,9 +1169,8 @@ namespace mfw::builder
 			
 			return false;
 		} else {
-			if(!output_path.empty() && out_sec) {
-				if(vars.file) {
-					const file_reference *file{vars.file};
+			if(!output_path.empty() && out_sec && !dynamic) {
+				if(file) {
 					out_sec->add_file(output_path, file->get_flags(), file->filter(), file->get_condition());
 				} else {
 					out_sec->add_file(output_path, {}, {}, {});

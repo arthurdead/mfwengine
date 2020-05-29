@@ -41,7 +41,7 @@ namespace mfw::stl
 
 #if MFW_COMPILER_FLAGGED(UNIX)
 	MFW_WARNING_PUSH()
-	MFW_WARNING_DISABLE("-Wunused-parameter")
+	MFW_WARNING_DISABLE_UNIX("-Wunused-parameter")
 #endif
 
 	template <typename T>
@@ -72,19 +72,21 @@ namespace mfw::stl
 #endif
 
 	MFW_WARNING_PUSH()
-#if MFW_COMPILER_IS(MSVC)
+#if MFW_COMPILER_FLAGGED(MSVC)
 	MFW_WARNING_DISABLE(4172) //returning address of local variable or temporary
 	MFW_WARNING_DISABLE(4582) //'type': constructor is not implicitly called
 	MFW_WARNING_DISABLE(4583) //'type': destructor is not implicitly called
 	MFW_WARNING_DISABLE(4800) //Implicit conversion from 'type' to bool. Possible information loss
 	MFW_WARNING_DISABLE(4200) //nonstandard extension used : zero-sized array in struct/union
 	MFW_WARNING_DISABLE(4815) //'u': zero-sized array in stack object will have no elements (unless the object is an aggregate that has been aggregate initialized)
-#elif MFW_COMPILER_IS(CLANG)
-	MFW_WARNING_DISABLE("-Wreturn-stack-address")
-	MFW_WARNING_DISABLE("-Wold-style-cast")
-	MFW_WARNING_DISABLE("-Wcast-qual")
-	MFW_WARNING_DISABLE("-Wmicrosoft-flexible-array")
-	MFW_WARNING_DISABLE("-Wc99-extensions")
+	MFW_WARNING_DISABLE(4946) //reinterpret_cast used between related classes: 'type' and 'type'
+#endif
+#if MFW_COMPILER_FLAGGED(CLANG)
+	MFW_WARNING_DISABLE_UNIX("-Wreturn-stack-address")
+	MFW_WARNING_DISABLE_UNIX("-Wold-style-cast")
+	MFW_WARNING_DISABLE_UNIX("-Wcast-qual")
+	MFW_WARNING_DISABLE_UNIX("-Wmicrosoft-flexible-array")
+	MFW_WARNING_DISABLE_UNIX("-Wc99-extensions")
 #elif MFW_COMPILER_IS(GCC)
 	MFW_WARNING_DISABLE("-Wstrict-aliasing")
 #endif
@@ -93,11 +95,12 @@ namespace mfw::stl
 	{
 		using __D = remove_cvref_t<D>;
 		using __S = remove_cvref_t<S>;
-		if constexpr(is_convertible_v<__S, __D>) {
+		MFW_IF_CONSTEXPR(is_convertible_v<__S, __D>) {
 			return reinterpret_cast<D &>(const_cast<S &>(src_));
 		} else {
 			const union U final {
 			public:
+				constexpr inline U(const U &) = delete;
 				inline U(const S &_src) : src{_src} {}
 				inline ~U() {}
 				constexpr inline operator D &() const { return type_cast(D &, dst); }

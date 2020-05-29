@@ -1,0 +1,10 @@
+base_project
+{
+	iwyu_tool ignore {
+		options {
+			#include "compile_commands.sr"
+		}
+		#include "compile_commands_generate.sr"
+		format iwyu
+	}
+}

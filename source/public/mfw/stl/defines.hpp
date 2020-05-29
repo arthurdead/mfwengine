@@ -25,8 +25,8 @@
 #define MFW_u32STRINGFY(x) __MFW_u32STRINGFY_IMPL(x)
 #define MFW_wSTRINGFY(x) __MFW_wSTRINGFY_IMPL(x)
 
-#if MFW_COMPILER_IS(MSVC)
-	#define MFW_DECLSPEC(...) __declspec(##__VA_ARGS__)
+#if MFW_COMPILER_FLAGGED(MSVC)
+	#define MFW_DECLSPEC(...) __declspec(__VA_ARGS__)
 	#define MFW_ATTRIBUTE(...)
 	#define MFW_SHARED_EXPORT MFW_DECLSPEC(dllexport)
 	#define MFW_SHARED_IMPORT MFW_DECLSPEC(dllimport)
@@ -34,9 +34,20 @@
 	#define MFW_CALL_CDECL __cdecl
 	#define MFW_OPTIMIZE(...) MFW_PRAGMA(optimize(__VA_ARGS__))
 	#define MFW_RESET_OPTIONS()
-	#define MFW_WARNING_PUSH() MFW_PRAGMA(warning(push))
-	#define MFW_WARNING_POP() MFW_PRAGMA(warning(pop))
-	#define MFW_WARNING_DISABLE(...) MFW_PRAGMA(warning(disable: ##__VA_ARGS__))
+	#define MFW_WARNING_DISABLE(...) MFW_PRAGMA(warning(disable: __VA_ARGS__))
+	#define MFW_WARNING_SUPPRESS(...) MFW_PRAGMA(warning(suppress: __VA_ARGS__))
+	#define __MFW_WARNING_PUSH_MSVC() MFW_PRAGMA(warning(push))
+	#define __MFW_WARNING_POP_MSVC() MFW_PRAGMA(warning(pop))
+	#if MFW_COMPILER_FLAGGED(CLANG)
+		#define MFW_WARNING_DISABLE_UNIX(...) MFW_PRAGMA(clang diagnostic ignored __VA_ARGS__)
+		#define __MFW_WARNING_PUSH_UNIX() MFW_PRAGMA(clang diagnostic push)
+		#define __MFW_WARNING_POP_UNIX() MFW_PRAGMA(clang diagnostic pop)
+		#define MFW_WARNING_PUSH() __MFW_WARNING_PUSH_UNIX() __MFW_WARNING_PUSH_MSVC()
+		#define MFW_WARNING_POP() __MFW_WARNING_POP_UNIX() __MFW_WARNING_POP_MSVC()
+	#else
+		#define MFW_WARNING_PUSH __MFW_WARNING_PUSH_MSVC
+		#define MFW_WARNING_POP __MFW_WARNING_POP_MSVC
+	#endif
 	#define MFW_EXTENSION
 #elif MFW_COMPILER_FLAGGED(UNIX)
 	#define MFW_DECLSPEC(...)
@@ -53,7 +64,7 @@
 		#error
 	#endif
 	#define MFW_CALL_STDCALL MFW_ATTRIBUTE(__stdcall__, __ms_abi__)
-	#if MFW_COMPILER_IS(CLANG)
+	#if MFW_COMPILER_FLAGGED(CLANG)
 		#define MFW_CALL_CDECL __MFW_SYSTEM_ABI MFW_ATTRIBUTE(__cdecl__)
 		#define __MFW_PRAGMA_ID clang
 	#elif MFW_COMPILER_IS(GCC)
@@ -67,6 +78,7 @@
 	#define MFW_WARNING_PUSH() MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic push)
 	#define MFW_WARNING_POP() MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic pop)
 	#define MFW_WARNING_DISABLE(...) MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic ignored __VA_ARGS__)
+	#define MFW_WARNING_DISABLE_UNIX MFW_WARNING_DISABLE
 	#define MFW_EXTENSION __extension__
 #else
 	#error
@@ -82,9 +94,9 @@
 
 #define __MFW_ENABLE_DEBUGBREAK
 #if MFW_CONFIGURATION_IS(DEBUG) || defined __MFW_ENABLE_DEBUGBREAK
-	#if MFW_COMPILER_IS(MSVC)
+	#if MFW_COMPILER_FLAGGED(MSVC)
 		#define MFW_DEBUGBREAK() __debugbreak()
-	#elif MFW_COMPILER_IS(CLANG)
+	#elif MFW_COMPILER_FLAGGED(CLANG)
 		#define MFW_DEBUGBREAK() __builtin_debugtrap()
 	#elif MFW_COMPILER_IS(GCC)
 		#if MFW_PROCESSOR_FLAGGED(X86)
@@ -206,7 +218,7 @@
 			__exec_##num##_times++; \
 		} \
 
-	#if MFW_COMPILER_IS(CLANG)
+	#if MFW_COMPILER_FLAGGED(CLANG)
 		MFW_WARNING_DISABLE("-Wgnu-zero-variadic-macro-arguments")
 		MFW_MESSAGE("remove this later")
 	#endif

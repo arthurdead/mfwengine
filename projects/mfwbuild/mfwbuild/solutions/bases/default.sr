@@ -3,7 +3,6 @@ base_solution
 	build_set {
 	$if plugin_name == "vscode"
 		os {
-		/*
 		#if MFW_OS == MFW_OS_LINUX
 			linux
 		#elif MFW_OS == MFW_OS_WINDOWS
@@ -11,14 +10,12 @@ base_solution
 		#else
 			#error
 		#endif
-		*/
-			windows
 		}
 		configuration::debug
 	$else
 		os {
-			windows
-			//linux
+			//windows
+			linux
 		}
 		configuration {
 			debug,
@@ -28,22 +25,34 @@ base_solution
 		platform::x86_64
 	}
 
+	plugin::build {
+	$if plugin_name == "vscode"
+		command "\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" "
+	$endif
+	}
+
 	builder::macros {
 		root_folder "${path_folder}/../.."
 		source_folder "${root_folder}/source"
 		package_folder "${root_folder}/package"
 		thirdparty_folder "${root_folder}/thirdparty"
 		intermediary_folder "${plugin_data_folder}/${solution_name}/${project_name}/${tool_name}_${platform}_${os}_${configuration}"
+		base_dependency_folder "${data_folder}/process/${solution_name}/${dependency_name}"
 	}
 
 	tools {
 	$if os == "windows"
 		compiler cl
+		//compiler clang_cl
 		linker link
+		//linker lld_link
 		archiver lib
 	$else
-		compiler gcc
-		linker ld
+		compiler "g++"
+		//compiler "clang++"
+		//linker ld
+		linker ld_gold
+		//linker ld_lld
 		archiver gcc_ar
 	$endif
 	}

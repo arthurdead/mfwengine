@@ -1,6 +1,6 @@
-#include "bases/unix_cpp_compiler.sr"
+#include "bases/clang.sr"
 
 clang : base_tool
 {
-	shell "clang++"
+	shell "clang"
 }

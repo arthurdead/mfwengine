@@ -1,32 +1,85 @@
 standards {
-	cpp17 {
-		compiler::options {
-			standard "c++17"
-			char8_t
-		}
+	cpp11::compiler::options {
+		standard "c++11"
 	}
-	cpp20 {
+	cpp14::compiler::options {
+		standard "c++14"
+	}
+	cpp17::compiler::options {
+		standard "c++17"
+	}
+	cpp20::compiler::options {
+		standard "c++20"
+	}
+	cpp11|cpp14|cpp17 {
 		compiler::options {
-			standard "c++2a"
+			char8_t
 		}
 	}
 }
 
+crt {
+$if os == "linux"
+	static {
+		"/usr/lib/crt1.o"
+	}
+	shared {
+		"/usr/lib/Scrt1.o"
+	}
+	shared|static {
+		"/usr/lib/crti.o"
+	}
+	static {
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/9.3.0/crtbegin.o"
+	}
+	shared {
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/9.3.0/crtbeginS.o"
+	}
+	shared|static {
+		"-lstdc++"
+		"-lm"
+		"-lgcc_s"
+		"-lgcc"
+		"-lc"
+	}
+	static {
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/9.3.0/crtend.o"
+	}
+	shared {
+		"/usr/lib/gcc/x86_64-pc-linux-gnu/9.3.0/crtendS.o"
+	}
+	shared|static {
+		"/usr/lib/crtn.o"
+	}
+$endif
+}
+
 base_project {
+	compiler
+	archiver ignore
+	linker ignore
+	plugin::build {
+	$if plugin_name == "vscode"
+		command "\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --projects=\"${project_name}\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" "
+	$endif
+	}
+	builder {
+		pre_generate {
+		$if plugin_name == "vscode"
+			$(message="Generating compile_commands.json")
+			"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --projects=\"${project_name}\" --sections=\"compiler\" --plugins=\"process\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" --only_compile_commands"
+		$endif
+		}
+	}
 	compiler {
 		builder {
 		$if configuration == "release"
 			unity_build
 		$endif
-			macros {
-			$if os == "windows"
-				output_ext ".obj"
-			$else
-				output_ext ".o"
-			$endif
-			}
 		}
 		options {
+			nologo
+			no_linking
 		$if configuration == "debug"
 			//warning_errors
 			fatal_errors
@@ -49,21 +102,16 @@ base_project {
 				_WIN32_WINNT_WIN10_RS4 _WIN32_WINNT_WIN10
 				_WIN32_WINNT_WIN10_RS5 _WIN32_WINNT_WIN10
 			$endif
+				UNICODE,_UNICODE
 			}
-			nologo
-			no_linking
-			output "${intermediary_folder}/${file_basename}${output_ext}"
 			disable_warnings {
-			$if os == "windows"
+			$if is_cl
 				"4577","4530","4820"
+			$else
+				"expansion-to-defined"
 			$endif
 			}
 		}
-	$if plugin_name == "vscode"
-		pre_generate {
-			"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --plugins=\"process\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" --only_compile_commands"
-		}
-	$endif
 	}
 	linker {
 		implib {
@@ -80,44 +128,72 @@ base_project {
 		options {
 			nologo
 		$if os == "linux"
-			dynamic_linker "/lib64/ld-linux-x86-64.so.2"
-			libraries::c
-		$endif
-			output "${package_folder}/${project_name}${output_ext}"
-		}
-		files {
-		$if os == "linux"
-			"/usr/lib/crt1.o"
-			"/usr/lib/crti.o"
-			"/usr/lib/crtn.o"
+			"-dynamic-linker" "/lib64/ld-linux-x86-64.so.2"
+			"--hash-style=gnu"
 		$endif
 		}
 	}
-	archiver {
+	archiver::options {
+		nologo
+	$if is_ar
+		"-r","-c","-s"
+	$endif
+	}
+	compiler::options {
+		output "${intermediary_folder}/${file_basename}${output_ext}"
+	}
+	archiver|linker {
 		options {
-		$if tool_name == "ar"
-			"-r","-c","-s"
-		$endif
 			output "${intermediary_folder}/${project_name}${output_ext}"
 		}
 	}
 }
 
 output_executable|output_shared {
-	archiver ignore
-	compiler::output_tool linker
+	linker ""
+	compiler {
+		output_tool linker
+	}
 }
 
 output_static {
-	linker ignore
+	archiver ""
 	compiler::output_tool archiver
+	builder::dependency::linker {
+		files {
+		$if !is_self
+			$if os == "linux"
+			"${base_dependency_folder}/${archiver}_${platform}_${os}_${configuration}/${dependency_name}.a"
+			$endif
+		$endif
+		}
+	}
 }
 
 output_shared {
-	compiler::options::preprocessor_definitions {
-		_SHARED,SHARED
+	builder::dependency::linker {
+		files {
+		$if !is_self
+			$if os == "linux"
+			"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/${dependency_name}.so"
+			$endif
+		$endif
+		}
+	}
+	compiler::options {
+		pic
+		shared
+		preprocessor_definitions {
+			_SHARED,SHARED
+		}
 	}
 	linker {
+		options {
+			shared
+			#pragma insert(file_root.crt.shared)
+		}
+		options -= "/usr/lib/crt1.o"
+		options -= "/usr/lib/Scrt1.o"
 		builder::macros {
 		$if os == "windows"
 			output_ext ".dll"
@@ -128,27 +204,28 @@ output_shared {
 	}
 }
 
-output_static {
-	compiler::options::preprocessor_definitions {
-		_LIB,LIB
+output_executable {
+	compiler::options {
+		pie
+		pic
 	}
-	archiver {
+	linker {
+		options {
+			pie
+			#pragma insert(file_root.crt.shared)
+		}
 		builder::macros {
 		$if os == "windows"
-			output_ext ".lib"
+			output_ext ".exe"
 		$else
-			output_ext ".a"
+			output_ext ""
 		$endif
 		}
 	}
 }
 
-output_executable::linker::builder::macros {
-$if os == "windows"
-	output_ext ".exe"
-$else
-	output_ext ""
-$endif
+output_static::compiler::options::preprocessor_definitions {
+	_LIB,LIB
 }
 
 output_executable_console : output_executable {

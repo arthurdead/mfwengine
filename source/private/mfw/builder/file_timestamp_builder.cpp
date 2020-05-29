@@ -81,6 +81,47 @@ namespace mfw::builder
 
 		return true;
 	}
+	
+	bool file_timestamp_builder::is_cpp_header(const pstring &ext)
+	{
+		static const pstring file_exts[]{
+			u8".h"_p,
+			u8".hh"_p,
+			u8".hx"_p,
+			u8".hxx"_p,
+			u8".hpp"_p,
+			u8".h++"_p,
+			u8".ipp"_p,
+			u8".tpp"_p,
+			u8".inl"_p,
+			u8".inc"_p,
+		};
+		for(const pstring &it : file_exts) {
+			if(ext == it) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	bool file_timestamp_builder::is_cpp_source(const pstring &ext)
+	{
+		static const pstring file_exts[]{
+			u8".cpp"_p,
+			u8".c"_p,
+			u8".cc"_p,
+			u8".cx"_p,
+			u8".cxx"_p,
+			u8".c++"_p,
+			u8".S"_p,
+		};
+		for(const pstring &it : file_exts) {
+			if(ext == it) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	file_timestamp_builder::file_data_t *file_timestamp_builder::find_or_create_data(const pstring &filepath)
 	{
@@ -98,10 +139,13 @@ namespace mfw::builder
 
 		file_data_t *tmp{&data};
 
-		include_collector collector{};
-		if(!collector.collect_includes(tmp, *this)) {
-			files.pop_back();
-			tmp = nullptr;
+		pstring ext{filepath.extension()};
+		if(file_supports_includes(ext)) {
+			include_collector collector{};
+			if(!collector.collect_includes(tmp, *this)) {
+				files.pop_back();
+				tmp = nullptr;
+			}
 		}
 
 		return tmp;
@@ -350,6 +394,7 @@ namespace mfw::builder
 		for(core::serializable &timestamp : timestamps) {
 			if(timestamp_changed(timestamp, output_dir)) {
 				changed = true;
+				break;
 			}
 		}
 		return changed;

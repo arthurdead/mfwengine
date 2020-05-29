@@ -1,0 +1,4 @@
+builder::pre_generate {
+	$(message="Generating compile_commands.json")
+	"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --projects=\"${project_name}\" --sections=\"compiler\" --plugins=\"process\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" --only_compile_commands"
+}

@@ -6,6 +6,7 @@
 #include <private/mfw/builder/base_plugin.hpp>
 #include <private/mfw/builder/references/tool_reference.hpp>
 #include <private/mfw/builder/formats/json.hpp>
+#include <private/mfw/builder/plugins/shared.hpp>
 
 namespace mfw::builder
 {
@@ -53,18 +54,7 @@ namespace mfw::builder
 			pstring cwd{};
 			vector<ucstring> args{};
 			
-			enum class compiler_type_t : uchar_t
-			{
-				unknown,
-				gcc,
-				clang,
-				msvc
-			};
-			
-			static compiler_type_t get_compiler_type(const pstring &path);
-			static compiler_type_t get_compiler_type(const ucstring &path);
-			
-			compiler_type_t compiler_type{compiler_type_t::unknown};
+			compiler_info_t compiler_type{};
 			
 			vector<ucstring> problem_matcher{};
 
@@ -127,6 +117,6 @@ namespace mfw::builder
 		ptr_vector<json_project_t> json_projects{};
 		json_solution_t solution_json{};
 	};
-};
+}
 
 #endif

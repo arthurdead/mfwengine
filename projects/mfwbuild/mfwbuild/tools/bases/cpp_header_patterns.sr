@@ -8,5 +8,7 @@ base_tool {
 		"*.h++"
 		"*.ipp"
 		"*.tpp"
+		"*.inl"
+		"*.inc"
 	}
 }

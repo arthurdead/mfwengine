@@ -1,0 +1,3 @@
+#define __MFW_COMPILE_COMMANDS_FOLDER "${data_folder}/process/${solution_name}/${project_name}/${compiler}_${platform}_${os}_${configuration}"
+#define __MFW_COMPILE_COMMANDS_FILE "__MFW_COMPILE_COMMANDS_FOLDER/compile_commands.json"
+compile_commands __MFW_COMPILE_COMMANDS_FILE

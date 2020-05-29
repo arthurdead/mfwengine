@@ -1,10 +1,17 @@
 #include "cpp_compiler.sr"
+#include "unix_linker_patterns.sr"
 
 base_tool
 {
 	output "${file_basename}.o" {
 		"-o",
 		"--output"
+	}
+
+	builder::macros {
+		output_ext ".o"
+		is_unix_compiler true
+		is_cl false
 	}
 
 	patterns {
@@ -17,6 +24,8 @@ base_tool
 			"messages:"
 			"In file included "
 			"In function "
+			"In member function "
+			"In instantiation of "
 		}
 		warning {
 			"warning:"
@@ -38,7 +47,6 @@ base_tool
 
 	forced_includes {
 		"--include"
-		"-include"
 	}
 
 	standard "-std"
@@ -56,7 +64,10 @@ base_tool
 		$(folders)
 		includes_paths "--include-directory"
 		$(needs_equal)
-		standard "-std"
+		standard "-std" {
+			"c++latest" "c++2a"
+			"c++20" "c++2a"
+		}
 		warning_errors "-Werror"
 		fatal_errors "-Wfatal-errors"
 		pendatic "-Wpedantic"
@@ -68,5 +79,12 @@ base_tool
 		char8_t "-fchar8_t"
 		$(needs_values,no_space)
 		disable_warnings "-Wno-"
+		shared "-shared"
+		pic "-fPIC"
+		pie "-fPIE"
+		$(folders,no_space)
+		lib_directories "-L"
+		$(needs_values,no_space)
+		libraries "-l"
 	}
 }

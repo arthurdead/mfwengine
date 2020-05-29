@@ -125,9 +125,9 @@ namespace mfw::builder
 				tool_path = tool->path();
 			}
 			json.compiler_path = tool_path;
-			json.compiler_type = json_workspace_t::get_compiler_type(tool_path);
+			json.compiler_type = get_compiler_info(tool_path);
 			solution_json.compiler_path = tool_path;
-			solution_json.compiler_type = json_workspace_t::get_compiler_type(tool_path);
+			solution_json.compiler_type = json.compiler_type;
 			json.compiler_options = options;
 			const core::serializable *forced_arg{tool->get_child(u8"forced_includes"_sv)};
 			if(forced_arg) {
@@ -220,33 +220,6 @@ namespace mfw::builder
 		return true;
 	}
 	
-	plugin_vscode::json_workspace_t::compiler_type_t plugin_vscode::json_workspace_t::get_compiler_type(const pstring &path)
-	{
-		if(path.empty()) {
-			return compiler_type_t::unknown;
-		}
-		
-		ucstring tmp{as_string<ucstring>(path)};
-		return get_compiler_type(tmp);
-	}
-	
-	plugin_vscode::json_workspace_t::compiler_type_t plugin_vscode::json_workspace_t::get_compiler_type(const ucstring &path)
-	{
-		if(path.empty()) {
-			return compiler_type_t::unknown;
-		} else if(path.find(u8"cl"_sv) != ucstring::npos) {
-			return compiler_type_t::msvc;
-		} else if(path.find(u8"gcc"_sv) != ucstring::npos ||
-					path.find(u8"g++"_sv) != ucstring::npos) {
-			return compiler_type_t::gcc;
-		} else if(path.find(u8"clang"_sv) != ucstring::npos ||
-					path.find(u8"clang++"_sv) != ucstring::npos) {
-			return compiler_type_t::clang;
-		} else {
-			return compiler_type_t::unknown;
-		}
-	}
-	
 	void plugin_vscode::json_workspace_t::write_cpp_properties(json::file &cpp_properties)
 	{
 		if(solution) {
@@ -260,10 +233,10 @@ namespace mfw::builder
 		cpp_properties.StartArray();
 		cpp_properties.StartObject();
 		cpp_properties.Key(u8"name"_sv);
-		if(compiler_type == compiler_type_t::msvc) {
+		if(compiler_type == compiler_info_t::type_t::msvc) {
 			cpp_properties.String(u8"Win32"_sv);
-		} else if(compiler_type == compiler_type_t::gcc ||
-					compiler_type == compiler_type_t::clang) {
+		} else if(compiler_type == compiler_info_t::type_t::gcc ||
+					compiler_type == compiler_info_t::type_t::clang) {
 			cpp_properties.String(u8"Linux"_sv);
 		} else {
 			cpp_properties.String(u8"${default}"_sv);
@@ -282,11 +255,11 @@ namespace mfw::builder
 		}
 		cpp_properties.Key(u8"intelliSenseMode"_sv);
 		MFW_MESSAGE("sad hardcode")
-		if(compiler_type == compiler_type_t::msvc) {
+		if(compiler_type == compiler_info_t::type_t::msvc) {
 			cpp_properties.String(u8"msvc-x64"_sv);
-		} else if(compiler_type == compiler_type_t::gcc) {
+		} else if(compiler_type == compiler_info_t::type_t::gcc) {
 			cpp_properties.String(u8"gcc-x64"_sv);
-		} else if(compiler_type == compiler_type_t::clang) {
+		} else if(compiler_type == compiler_info_t::type_t::clang) {
 			cpp_properties.String(u8"clang-x64"_sv);
 		} else {
 			cpp_properties.String(u8"${default}"_sv);
@@ -382,10 +355,10 @@ namespace mfw::builder
 		tasks.Key(u8"command"_sv);
 		tasks.String(command);
 		if(problem_matcher.empty()) {
-			if(compiler_type == compiler_type_t::msvc) {
+			if(compiler_type == compiler_info_t::type_t::msvc) {
 				problem_matcher.emplace_back(u8"$msCompile"_s);
-			} else if(compiler_type == compiler_type_t::gcc ||
-						compiler_type == compiler_type_t::clang) {
+			} else if(compiler_type == compiler_info_t::type_t::gcc ||
+						compiler_type == compiler_info_t::type_t::clang) {
 				problem_matcher.emplace_back(u8"$gcc"_s);
 			}
 		}
@@ -484,6 +457,36 @@ namespace mfw::builder
 		if(solution) {
 			Key(u8"projectManager.projectsLocation"_sv);
 			String(path/u8"projects.json"_p);
+		} else {
+			if(compiler_type == compiler_info_t::type_t::clang) {
+				Key(u8"clangd.arguments"_sv);
+				StartArray();
+				for(const core::serializable &arg : compiler_options) {
+					const ucstring &name{arg.get_name()};
+					if(arg.empty()) {
+						ucstring tmp{name};
+						const core::univalue &value{arg.get_value()};
+						if(!value.empty()) {
+							tmp += u8' ';
+							tmp += value.get_string();
+						}
+						String(tmp);
+					} else {
+						for(const core::serializable &arg_value : arg) {
+							ucstring tmp{name};
+							tmp += u8' ';
+							tmp += arg_value.get_name();
+							const core::univalue &value{arg_value.get_value()};
+							if(!value.empty()) {
+								tmp += u8'=';
+								tmp += value.get_string();
+							}
+							String(tmp);
+						}
+					}
+				}
+				EndArray();
+			}
 		}
 		Key(u8"files.exclude"_sv);
 		StartObject();
@@ -594,7 +597,7 @@ namespace mfw::builder
 		program.clear();
 		cwd.clear();
 		args.clear();
-		compiler_type = compiler_type_t::unknown;
+		compiler_type.clear();
 		problem_matcher.clear();
 		command.clear();
 		debugger = debugger_type::unknown;

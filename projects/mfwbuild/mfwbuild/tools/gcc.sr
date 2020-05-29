@@ -1,4 +1,4 @@
-#include "bases/unix_cpp_compiler.sr"
+#include "bases/gcc.sr"
 
 gcc : base_tool
 {

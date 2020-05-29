@@ -1,0 +1,6 @@
+#include "bases/gcc.sr"
+
+musl_gcc : base_tool
+{
+	shell "musl-gcc"
+}

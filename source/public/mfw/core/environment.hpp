@@ -18,6 +18,7 @@ namespace mfw::core
 		#error
 	#endif
 	
+		environment_var() = default;
 		environment_var(ucstring_view name_, ucchar_t sep_ = default_sep) { reset(name_, sep_); }
 		~environment_var() = default;
 

@@ -1,0 +1,61 @@
+standards {
+	cpp11::cppcheck::options {
+		standard "c++11"
+	}
+	cpp14::cppcheck::options {
+		standard "c++14"
+	}
+	cpp17::cppcheck::options {
+		standard "c++17"
+	}
+	cpp20::cppcheck::options {
+		standard "c++20"
+	}
+}
+
+base_project
+{
+	cppcheck ignore {
+		options {
+		$if platform == "x86_64"
+			$if os == "linux"
+			platform "unix64"
+			$elif os == "windows"
+			platform "win64"
+			$endif
+		$else
+			$if os == "linux"
+			platform "unix32"
+			$elif os == "windows"
+			platform "win32W"
+			$endif
+		$endif
+			checks {
+				"all"
+				/*
+				"warning"
+				"style"
+				"performance"
+				"portability"
+				"information"
+				"unusedFunction"
+				"missingInclude"
+				*/
+			}
+			output "${intermediary_folder}"
+			preprocessor_definitions {
+				__cpp_check
+			}
+			inline_suppress
+			inconclusive
+			quiet
+		$if is_cl
+			template vs
+		$else
+			template gcc
+		$endif
+			#include "compile_commands.sr"
+		}
+		#include "compile_commands_generate.sr"
+	}
+}

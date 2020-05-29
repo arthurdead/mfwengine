@@ -661,6 +661,11 @@ namespace mfw::core
 			const serializable *inherit{ctx.parents.back()};
 			var.deduce(inherit->root());
 			return true;
+		} else if(name == u8"file_root"_sv) {
+			const parent_context &ctx{*parents[0]};
+			const serializable *inherit{ctx.parents[0]};
+			var.deduce(inherit);
+			return true;
 		} else if(name == u8"parent"_sv) {
 			MFW_DEBUGBREAK();
 		} else if(name == u8"value"_sv) {

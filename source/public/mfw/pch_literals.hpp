@@ -14,12 +14,12 @@
 
 namespace mfw::literals {}
 
-	#if MFW_COMPILER_IS(CLANG)
+	#if MFW_COMPILER_FLAGGED(CLANG)
 		MFW_WARNING_PUSH()
-		MFW_WARNING_DISABLE("-Wheader-hygiene")
+		MFW_WARNING_DISABLE_UNIX("-Wheader-hygiene")
 	#endif
 using namespace mfw::literals;
-	#if MFW_COMPILER_IS(CLANG)
+	#if MFW_COMPILER_FLAGGED(CLANG)
 		MFW_WARNING_POP()
 	#endif
 #endif

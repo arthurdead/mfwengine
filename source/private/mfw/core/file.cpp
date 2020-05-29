@@ -33,9 +33,15 @@ namespace mfw::core
 			case seek::end: { seek = SEEK_END; break; }
 		}
 
+		#ifdef __MFW_USE_LARGE_FILES_API
 		fseeko64(hndl, offset_, seek);
 
 		return ftello64(hndl);
+		#else
+		fseeko(hndl, offset_, seek);
+
+		return ftello(hndl);
+		#endif
 	}
 #endif
 
@@ -70,7 +76,11 @@ namespace mfw::core
 #if MFW_OS == MFW_OS_LINUX
 	ssize_t core::file::tell_handle(handle_t hndl)
 	{
+	#ifdef __MFW_USE_LARGE_FILES_API
 		return ftello64(hndl);
+	#else
+		return ftello(hndl);
+	#endif
 	}
 #endif
 
@@ -93,8 +103,13 @@ namespace mfw::core
 #if MFW_OS == MFW_OS_LINUX
 	size_t core::file::get_handle_size(file::handle_t hndl)
 	{
+	#ifdef __MFW_USE_LARGE_FILES_API
 		struct stat64 buff{};
 		fstat64(fileno(hndl), &buff);
+	#else
+		struct stat buff{};
+		fstat(fileno(hndl), &buff);
+	#endif
 		if(buff.st_size == 0) {
 			ssize_t offset_{tell_handle(hndl)};
 			byte data{0};
@@ -183,7 +198,11 @@ namespace mfw::core
 	#if MFW_OS == MFW_OS_WINDOWS
 		SetEndOfFile(handle);
 	#elif MFW_OS == MFW_OS_LINUX
+		#ifdef __MFW_USE_LARGE_FILES_API
 		ftruncate64(fileno(handle), size_);
+		#else
+		ftruncate(fileno(handle), size_);
+		#endif
 	#else
 		#error
 	#endif

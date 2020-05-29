@@ -1,0 +1,6 @@
+#include "bases/link.sr"
+
+lld_link : base_tool
+{
+	shell "lld-link"
+}

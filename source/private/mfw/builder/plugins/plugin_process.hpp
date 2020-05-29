@@ -7,6 +7,7 @@
 #include <public/mfw/core/process.hpp>
 #include <private/mfw/builder/references/tool_reference.hpp>
 #include <private/mfw/builder/formats/json.hpp>
+#include <private/mfw/builder/plugins/shared.hpp>
 
 namespace mfw::builder
 {
@@ -63,6 +64,8 @@ namespace mfw::builder
 			};
 			implib_t implib{};
 			
+			bool is_unix_linker{false};
+			
 			pstring path{};
 			ucstring cmd{};
 			pstring workdir{};
@@ -79,7 +82,16 @@ namespace mfw::builder
 			bool setup(const tool_info_t &tool_info, const tool_section_reference &tool_section, const core::serializable &options_);
 		};
 		
-		tool_execute_info_t compiler{};
+		struct compiler_tool_info_t : tool_execute_info_t
+		{
+			using super = tool_execute_info_t;
+			
+			bool setup(const tool_info_t &tool_info, const tool_section_reference &tool_section, const core::serializable &options_);
+			
+			ucstring compiler_lib_dirs{};
+		};
+		
+		compiler_tool_info_t compiler{};
 
 	private:
 		void initialize(interfaces::builder_funcs &funcs) override;
@@ -87,6 +99,8 @@ namespace mfw::builder
 		void insert_help(ucstring &help) override;
 	
 		void cleanup(cleanup_type_t type) override;
+	
+		bool populate_vars(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section) override;
 	
 		bool generate(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const core::serializable &options) override;
 		bool generate(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const file_reference &file, const core::serializable &options) override;

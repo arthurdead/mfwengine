@@ -23,6 +23,9 @@ namespace mfw::builder
 			virtual void replace_vars(pstring &file) = 0;
 			virtual void replace_vars(ucstring &str) = 0;
 			virtual void replace_vars(core::univalue &val) = 0;
+			
+			virtual void add_variable(const ucstring &name, const ucstring &value) = 0;
+			virtual void remove_variable(const ucstring &name) = 0;
 		
 		protected:
 			bool regen_cache_{false};
@@ -40,13 +43,13 @@ namespace mfw::builder
 
 		struct plugin_info_t
 		{
-			bool process_files_conditions{true};
-			bool process_options_conditions{true};
-			bool process_tools_patterns{true};
-			bool process_sections_args_unmaped{true};
-			bool process_build_set{true};
+			bool process_files_conditions{false};
+			bool process_options_conditions{false};
+			bool process_tools_patterns{false};
+			bool process_sections_args_unmaped{false};
+			bool process_build_set{false};
 			bool process_single_input{true};
-			bool merge_sections_files_options{false};
+			bool merge_sections_files_options{true};
 			bool process_out_of_date{false};
 			bool ignore_output{false};
 		};
@@ -64,6 +67,11 @@ namespace mfw::builder
 		virtual void cleanup(cleanup_type_t type) {}
 
 		const plugin_info_t &info() const { return info_; }
+
+		virtual bool populate_vars(const solution_reference &solution) { return true; }
+		virtual bool populate_vars(const solution_reference &solution, const project_reference &project) { return true; }
+		virtual bool populate_vars(const solution_reference &solution, const project_reference &project, const core::serializable &section) { return true; }
+		virtual bool populate_vars(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section) { return true; }
 
 		virtual bool generate(const solution_reference &solution) { return true; }
 		virtual bool generate(const solution_reference &solution, const project_reference &project) { return true; }

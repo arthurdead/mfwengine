@@ -1,0 +1,48 @@
+#include "windows_tool.sr"
+
+base_tool
+{
+	single_input
+
+	output "${file_basename}.exe" {
+		"/OUT"
+	}
+
+	builder::macros {
+		is_unix_linker false
+	}
+
+	output_regex {
+		ignore {
+			"Microsoft (R) Incremental Linker Version "
+			"Copyright (C) Microsoft Corporation.  All rights reserved."
+		}
+	#if MFW_OS == MFW_OS_LINUX
+		ignore {
+	#else
+		error {
+	#endif
+			"Internal error during SetupPhase"
+		}
+	}
+
+	patterns {
+		"*.obj"
+	}
+
+	options_map {
+		$(needs_equal,file)
+		output "/OUT"
+		$(remove)
+		dynamic_linker
+		$(remove)
+		libraries
+		nologo "/nologo"
+		$(remove)
+		shared
+		$(folders)
+		lib_directories "-L"
+		$(remove)
+		pie
+	}
+}

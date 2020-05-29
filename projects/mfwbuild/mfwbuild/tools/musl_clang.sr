@@ -1,0 +1,6 @@
+#include "bases/clang.sr"
+
+musl_clang : base_tool
+{
+	shell "musl-clang"
+}

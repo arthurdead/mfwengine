@@ -18,4 +18,4 @@ namespace mfw
 	}
 }
 
-#include <public/mfw/stl/impl/string_funcs_core.ipp>
+//#include <public/mfw/stl/impl/string_funcs_core.ipp>

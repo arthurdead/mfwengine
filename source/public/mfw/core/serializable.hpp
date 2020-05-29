@@ -152,7 +152,7 @@ namespace mfw::core
 		MFW_CORE_API bool MFW_CORE_CALL erase(const ucstring_view &str);
 
 		using merge_str_process_t = function<void(ucstring &str)>;
-		MFW_CORE_API void MFW_CORE_CALL merge(const serializable &other, const merge_str_process_t &func = nullptr);
+		MFW_CORE_API void MFW_CORE_CALL merge(const serializable &other, bool replace=true, const merge_str_process_t &func = nullptr);
 
 		MFW_CORE_API void MFW_CORE_CALL follow_xpath(const ucstring_view &xpath, univalue &value_) const;
 		MFW_CORE_API const serializable * MFW_CORE_CALL follow_xpath(const ucstring_view &xpath) const;
