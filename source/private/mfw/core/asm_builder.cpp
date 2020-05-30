@@ -1,4 +1,4 @@
-#ifndef __MFW_DISABLE_ASMJIT
+#ifdef __MFW_USE_ASMJIT
 
 #include <private/mfw/core/asm_builder.hpp>
 #include <public/mfw/core/globals.hpp>

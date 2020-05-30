@@ -22,13 +22,13 @@ list(APPEND include_dirs
 	"${thirdparty_dir}/libsupc++"
 )
 
-file(GLOB_RECURSE ${project_name}_files 
+file(GLOB_RECURSE ${project_name}_files
 	"${source_dir}/*/mfw/${project_name}/*.cpp"
 	"${source_dir}/*/mfw/${project_name}/*.hpp"
 	"${source_dir}/*/mfw/${project_name}/*.inl"
 )
 
-file(GLOB_RECURSE stl_files 
+file(GLOB_RECURSE stl_files
 	"${source_dir}/*/mfw/stl/*.cpp"
 	"${source_dir}/*/mfw/stl/*.hpp"
 	"${source_dir}/*/mfw/stl/*.inl"
@@ -101,8 +101,6 @@ add_compile_definitions(
 	UNICODE _UNICODE
 
 	_CONSOLE CONSOLE
-
-	__MFW_DISABLE_ASMJIT
 )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${base_dir}/build_tools/mfwbuilder")

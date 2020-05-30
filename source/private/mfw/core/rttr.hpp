@@ -4,7 +4,7 @@
 #pragma once
 
 #include <public/mfw/core/rttr_interface.hpp>
-#ifndef __MFW_DISABLE_ASMJIT
+#ifdef __MFW_USE_ASMJIT
 	#include <private/mfw/core/asm_builder.hpp>
 #endif
 #include <public/mfw/stl/string.hpp>
@@ -35,7 +35,7 @@ namespace mfw::core
 		bool deallocate(void *ptr, const class_info &info) const override;
 
 	private:
-	#ifndef __MFW_DISABLE_ASMJIT
+	#ifdef __MFW_USE_ASMJIT
 		class func_info_jit : public func_info
 		{
 		public:

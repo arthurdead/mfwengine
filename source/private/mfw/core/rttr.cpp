@@ -22,7 +22,7 @@ namespace mfw::core
 
 	bool core::rttr::register_class_info(const class_info &info)
 	{
-	#ifndef __MFW_DISABLE_ASMJIT
+	#ifdef __MFW_USE_ASMJIT
 		class_info_vec_t::value_type &jitinfo{class_infos.emplace_back()};
 		jitinfo = info;
 		if(!jitinfo.build_signatures()) {
@@ -38,7 +38,7 @@ namespace mfw::core
 
 	bool core::rttr::register_func_info(const func_info &info)
 	{
-	#ifndef __MFW_DISABLE_ASMJIT
+	#ifdef __MFW_USE_ASMJIT
 		func_info_vec_t::value_type &jitinfo{function_infos.emplace_back()};
 		jitinfo = info;
 		if(!jitinfo.build_signature()) {
@@ -96,7 +96,7 @@ namespace mfw::core
 
 	bool core::rttr::call_function(const func_info &info, const vector<type_holder> &args, type_holder &result) const
 	{
-	#ifndef __MFW_DISABLE_ASMJIT
+	#ifdef __MFW_USE_ASMJIT
 		const asmjit::FuncSignature &signature{info.get_extrainfo<asmjit::FuncSignature>()};
 		if(!asm_builder::instance().call_function(info, signature, args, result)) {
 			MFW_DEBUGBREAK();
@@ -248,7 +248,7 @@ namespace mfw::core
 		return true;
 	}
 
-#ifndef __MFW_DISABLE_ASMJIT
+#ifdef __MFW_USE_ASMJIT
 	bool core::rttr::func_info_jit::build_signature()
 	{
 		signature.setCallConv(asmjit::CallConv::Id::kIdHost);

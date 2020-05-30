@@ -44,5 +44,7 @@ base_tool
 		lib_directories "-L"
 		$(remove)
 		pie
+		$(remove)
+		ignore_unresolved_symbol
 	}
 }

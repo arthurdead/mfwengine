@@ -564,23 +564,22 @@ namespace mfw::builder
 			ucstring condition{it.get_condition()};
 			
 			if(!condition.empty()) {
-				size_t index{condition.find(u8"is_self"_sv)};
-				if(index != ucstring::npos) {
-					bool negate{false};
-					if(condition[index > 0 ? index-1 : 0] == u8'!') {
-						negate = true;
-					}
-					if(condition.compare(negate ? 1 : 0, ucstring::npos, u8"is_self"_sv) != 0) {
-						ucstring repl{};
-						repl += u8'(';
-						if(negate) {
-							repl += u8'!';
-						}
-						repl += u8"is_self) && ("_sv;
-						replace_all(condition, repl, {});
+				MFW_MESSAGE("this is really sad i need to make a expression optmizer")
+				if(self) {
+					replace_all(condition, u8"is_self"_sv, u8"true"_sv);
+				} else {
+					replace_all(condition, u8"is_self"_sv, u8"false"_sv);
+				}
+				if(condition == u8"false"_sv ||
+					condition.find(u8"!true"_sv) != ucstring::npos) {
+					continue;
+				} else if(condition == u8"true"_sv ||
+							condition == u8"!false"_sv) {
+					condition.clear();
+				} else {
+					replace_all(condition, u8"!false && "_sv, {});
+					if(replace_all(condition, u8"(!false) && ("_sv, {})) {
 						condition.pop_back();
-					} else if(self == negate) {
-						continue;
 					}
 				}
 			}
@@ -618,14 +617,11 @@ namespace mfw::builder
 				add_variable(u8"dependency_filter"_s, as_string<ucstring>(other.filter()));
 				
 				core::serializable parsed{};
-				began_gen = true;
-				bool did{process_dependency(*dependency, parsed, self)};
-				began_gen = false;
-				if(!did) {
+				if(!process_dependency(*dependency, parsed, self)) {
 					return false;
 				}
 				
-				project.merge(parsed, false);
+				project.merge(parsed);
 			}
 		}
 		return true;

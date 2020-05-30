@@ -290,7 +290,8 @@ namespace mfw::builder
 			}
 			
 			tool_info_t::implib_t &tool_implib{tool_info.implib};
-			const core::univalue &folder_value{child.get_value()};
+			core::univalue folder_value{child.get_value()};
+			builder_funcs().replace_vars(folder_value);
 			tool_implib.folder = as_string<pstring>(folder_value);
 			
 			for(const core::serializable &other : child) {
@@ -733,7 +734,7 @@ namespace mfw::builder
 		
 		core::library::export_vec_t exports{};
 		if(do_load || do_asm) {
-			if(!core::library::get_library_exports({path}, exports)) {
+			if(!core::library::get_library_exports({path}, exports) || exports.empty()) {
 				log().error(u8"implib invalid file"_sv);
 				return false;
 			}

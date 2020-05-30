@@ -270,7 +270,9 @@ namespace mfw::core
 		skip_newlines();
 
 		const token &tok{token_()};
-		if(tok.type_ == token::type::dollar) {
+		if(tok.type_ == token::type::hashtag) {
+			parse_preprocessor();
+		} else if(tok.type_ == token::type::dollar) {
 			parse_dynamicprocessor();
 		}
 	}
@@ -651,6 +653,8 @@ namespace mfw::core
 		const token &tok{token_()};
 		if(tok.type_ == token::type::hashtag) {
 			parse_preprocessor();
+		} else if(tok.type_ == token::type::dollar) {
+			parse_dynamicprocessor();
 		}
 	}
 
@@ -1020,15 +1024,6 @@ namespace mfw::core
 
 		replace_defines(tmp);
 
-		bool create{
-			context.force == parent_context::force_type::create ||
-			force_create ||
-			!dynamic_if_contexts.empty() ||
-			hasflags
-		};
-
-		vector<serializable *> childs{};
-
 		vector<serializable *> *parents_{nullptr};
 		if(context.tmpdata.namespace_) {
 			parents_ = &context.tmpdata.parents;
@@ -1040,8 +1035,28 @@ namespace mfw::core
 			return;
 		}
 
+		bool base_create{
+			context.force == parent_context::force_type::create ||
+			force_create ||
+			hasflags
+		};
+
+		vector<serializable *> childs{};
+
 		const ucstring &child_name{tmp.get_string()};
 		for(serializable *parent : *parents_) {
+			bool create{base_create};
+			
+			if(!dynamic_if_contexts.empty()) {
+				const dynamic_if_context &top_context{dynamic_if_contexts.top()};
+				const serializable *child_tmp{parent->get_child(child_name)};
+				if(child_tmp) {
+					if(child_tmp->get_condition() != top_context.check) {
+						create = true;
+					}
+				}
+			}
+			
 			serializable *child{nullptr};
 			if(create) {
 				child = &parent->create_child(child_name);

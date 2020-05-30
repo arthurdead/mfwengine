@@ -50,8 +50,8 @@ base_solution
 	$else
 		compiler "g++"
 		//compiler "clang++"
-		//linker ld
-		linker ld_gold
+		linker ld
+		//linker ld_gold
 		//linker ld_lld
 		archiver gcc_ar
 	$endif

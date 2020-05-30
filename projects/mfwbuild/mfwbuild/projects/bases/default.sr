@@ -38,7 +38,11 @@ $if os == "linux"
 	shared|static {
 		"-lstdc++"
 		"-lm"
+	}
+	shared {
 		"-lgcc_s"
+	}
+	static|shared {
 		"-lgcc"
 		"-lc"
 	}
@@ -130,6 +134,8 @@ base_project {
 		$if os == "linux"
 			"-dynamic-linker" "/lib64/ld-linux-x86-64.so.2"
 			"--hash-style=gnu"
+			"-m" "elf_x86_64"
+			"--build-id"
 		$endif
 		}
 	}
@@ -175,7 +181,7 @@ output_shared {
 		files {
 		$if !is_self
 			$if os == "linux"
-			"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/${dependency_name}.so"
+			//"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/${dependency_name}.so"
 			$endif
 		$endif
 		}

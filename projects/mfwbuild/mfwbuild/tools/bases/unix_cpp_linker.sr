@@ -28,6 +28,7 @@ base_tool
 			"final link failed: "
 			"can not be used when making a shared object"
 			"error: "
+			"multiple definition of "
 		}
 	}
 
@@ -44,5 +45,7 @@ base_tool
 		$(folders,no_space)
 		lib_directories "-L"
 		pie "-pie"
+		$(needs_values)
+		ignore_unresolved_symbol "--ignore-unresolved-symbol"
 	}
 }

@@ -26,22 +26,22 @@
 #define MFW_wSTRINGFY(x) __MFW_wSTRINGFY_IMPL(x)
 
 #if MFW_COMPILER_FLAGGED(MSVC)
-	#define MFW_DECLSPEC(...) __declspec(__VA_ARGS__)
-	#define MFW_ATTRIBUTE(...)
+	#define MFW_DECLSPEC(x) __declspec(x)
+	#define MFW_ATTRIBUTE(x)
 	#define MFW_SHARED_EXPORT MFW_DECLSPEC(dllexport)
 	#define MFW_SHARED_IMPORT MFW_DECLSPEC(dllimport)
 	#define MFW_CALL_STDCALL __stdcall
 	#define MFW_CALL_CDECL __cdecl
-	#define MFW_OPTIMIZE(...) MFW_PRAGMA(optimize(__VA_ARGS__))
+	#define MFW_OPTIMIZE(x) MFW_PRAGMA(optimize(x))
 	#define MFW_RESET_OPTIONS()
 	#define MFW_WARNING_DISABLE(...) MFW_PRAGMA(warning(disable: __VA_ARGS__))
 	#define MFW_WARNING_SUPPRESS(...) MFW_PRAGMA(warning(suppress: __VA_ARGS__))
 	#define __MFW_WARNING_PUSH_MSVC() MFW_PRAGMA(warning(push))
 	#define __MFW_WARNING_POP_MSVC() MFW_PRAGMA(warning(pop))
 	#if MFW_COMPILER_FLAGGED(CLANG)
-		#define MFW_WARNING_DISABLE_UNIX(...) MFW_PRAGMA(clang diagnostic ignored __VA_ARGS__)
-		#define __MFW_WARNING_PUSH_UNIX() MFW_PRAGMA(clang diagnostic push)
-		#define __MFW_WARNING_POP_UNIX() MFW_PRAGMA(clang diagnostic pop)
+		#define MFW_WARNING_DISABLE_UNIX(x) MFW_PRAGMA_UNIX(clang diagnostic ignored x)
+		#define __MFW_WARNING_PUSH_UNIX() MFW_PRAGMA_UNIX(clang diagnostic push)
+		#define __MFW_WARNING_POP_UNIX() MFW_PRAGMA_UNIX(clang diagnostic pop)
 		#define MFW_WARNING_PUSH() __MFW_WARNING_PUSH_UNIX() __MFW_WARNING_PUSH_MSVC()
 		#define MFW_WARNING_POP() __MFW_WARNING_POP_UNIX() __MFW_WARNING_POP_MSVC()
 	#else
@@ -50,8 +50,12 @@
 	#endif
 	#define MFW_EXTENSION
 #elif MFW_COMPILER_FLAGGED(UNIX)
-	#define MFW_DECLSPEC(...)
-	#define MFW_ATTRIBUTE(...) __attribute__((__VA_ARGS__))
+	#define MFW_DECLSPEC(x)
+	#if MFW_C_COMPARE(>=, 99)
+		#define MFW_ATTRIBUTE(...) __attribute__((__VA_ARGS__))
+	#else
+		#define MFW_ATTRIBUTE(x) __attribute__((x))
+	#endif
 	#if MFW_OS_IS(WINDOWS)
 		#define MFW_SHARED_EXPORT MFW_ATTRIBUTE(__dllexport__) MFW_ATTRIBUTE(__visibility__("default"))
 		#define MFW_SHARED_IMPORT MFW_ATTRIBUTE(__dllimport__) MFW_ATTRIBUTE(__visibility__("default"))
@@ -73,11 +77,11 @@
 	#else
 		#error
 	#endif
-	#define MFW_OPTIMIZE(...) MFW_PRAGMA(__MFW_PRAGMA_ID optimize(__VA_ARGS__))
+	#define MFW_OPTIMIZE(x) MFW_PRAGMA(__MFW_PRAGMA_ID optimize(x))
 	#define MFW_RESET_OPTIONS() MFW_PRAGMA(__MFW_PRAGMA_ID reset_options)
 	#define MFW_WARNING_PUSH() MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic push)
 	#define MFW_WARNING_POP() MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic pop)
-	#define MFW_WARNING_DISABLE(...) MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic ignored __VA_ARGS__)
+	#define MFW_WARNING_DISABLE(x) MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic ignored x)
 	#define MFW_WARNING_DISABLE_UNIX MFW_WARNING_DISABLE
 	#define MFW_EXTENSION __extension__
 #else
@@ -219,7 +223,7 @@
 		} \
 
 	#if MFW_COMPILER_FLAGGED(CLANG)
-		MFW_WARNING_DISABLE("-Wgnu-zero-variadic-macro-arguments")
+		MFW_WARNING_DISABLE_UNIX("-Wgnu-zero-variadic-macro-arguments")
 		MFW_MESSAGE("remove this later")
 	#endif
 

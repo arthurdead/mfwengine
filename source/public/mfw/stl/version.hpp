@@ -3,16 +3,19 @@
 
 #pragma once
 
-#ifdef __has_include
-	#define MFW_HAS_INCLUDE(...) __has_include(__VA_ARGS__)
-#else
-	#define MFW_HAS_INCLUDE(...) 0
+#if defined __cplusplus || defined _MSVC_LANG
+	#define MFW_CPP
+	#define MFW_C
+#elif defined __ASSEMBLER__
+	#define MFW_ASM
+#elif defined __STDC__ || defined __STDC_VERSION__ || defined __STDC_HOSTED__
+	#define MFW_C
 #endif
 
-#ifdef __cplusplus
-	#define MFW_CPP
+#ifdef __has_include
+	#define MFW_HAS_INCLUDE(x) __has_include(x)
 #else
-	#define MFW_C
+	#define MFW_HAS_INCLUDE(x) 0
 #endif
 
 #ifdef MFW_CPP
@@ -69,7 +72,29 @@
 	#error
 #endif
 
+#if defined MFW_C || defined MFW_ASM
+	#define MFW_C_94 199409L
+	#define MFW_C_99 199901L
+	#define MFW_C_11 201112L
+	#define MFW_C_17 201710L
+
+	#define MFW_C_COMPARE(cmp, then) (MFW_C_VERSION cmp MFW_C_##then)
+
+	#ifdef MFW_ASM
+		#define MFW_C_VERSION (MFW_C_94/2)
+	#elif defined MFW_CPP
+		#define MFW_C_VERSION (MFW_C_17*2)
+	#else
+		#ifdef __STDC_VERSION__
+			#define MFW_C_VERSION __STDC_VERSION__
+		#else
+			#define MFW_C_VERSION (MFW_C_94/2)
+		#endif
+	#endif
+#endif
+
 #ifdef MFW_CPP
+	#define MFW_CPP_98 199711L
 	#define MFW_CPP_11 201103L
 	#define MFW_CPP_14 201402L
 	#define MFW_CPP_17 201703L
@@ -83,10 +108,14 @@
 	#endif
 #endif
 
-#if MFW_COMPILER_IS(MSVC)
-	#define __MFW_PRAGMA(...) __pragma(__VA_ARGS__)
+#if MFW_COMPILER_FLAGGED(MSVC)
+	#define __MFW_PRAGMA(x) __pragma(x)
+	#if MFW_COMPILER_FLAGGED(CLANG)
+		#define __MFW_PRAGMA_UNIX(x) _Pragma(__MFW_STRINGFY(x))
+	#endif
 #elif MFW_COMPILER_FLAGGED(UNIX)
-	#define __MFW_PRAGMA(...) _Pragma(__MFW_STRINGFY(__VA_ARGS__))
+	#define __MFW_PRAGMA(x) _Pragma(__MFW_STRINGFY(x))
+	#define __MFW_PRAGMA_UNIX __MFW_PRAGMA
 #else
 	#error
 #endif
@@ -95,7 +124,7 @@
 #ifndef __MFW_DISABLE_COMPILE_MESSAGES
 	#define __MFW_MESSAGE(text) __MFW_PRAGMA(message(__MFW_FILE_LINE_STRING text))
 #else
-	#define __MFW_MESSAGE(...) 
+	#define __MFW_MESSAGE(x) 
 #endif
 
 #define MFW_CONFIGURATION_RELEASE 0
@@ -300,28 +329,28 @@ namespace MFW_STD_NAMESPACE {}
 #endif
 
 #ifdef __has_feature
-	#define MFW_HAS_FEATURE(...) __has_feature(__VA_ARGS__)
+	#define MFW_HAS_FEATURE(x) __has_feature(x)
 #else
-	#define MFW_HAS_FEATURE(...) 0
+	#define MFW_HAS_FEATURE(x) 0
 #endif
 
 #ifdef __has_extension
-	#define MFW_HAS_EXTENSION(...) __has_extension(__VA_ARGS__)
+	#define MFW_HAS_EXTENSION(x) __has_extension(x)
 #else
-	#define MFW_HAS_EXTENSION(...) 0
+	#define MFW_HAS_EXTENSION(x) 0
 #endif
 
 #ifdef __has_builtin
-	#define MFW_HAS_BUILTIN(...) __has_builtin(__VA_ARGS__)
+	#define MFW_HAS_BUILTIN(x) __has_builtin(x)
 #else
-	#define MFW_HAS_BUILTIN(...) 0
+	#define MFW_HAS_BUILTIN(x) 0
 #endif
 
 #ifdef MFW_CPP
 	#ifdef __has_cpp_attribute
-		#define MFW_HAS_CPP_ATTRIBUTE(...) __has_cpp_attribute(__VA_ARGS__)
+		#define MFW_HAS_CPP_ATTRIBUTE(x) __has_cpp_attribute(x)
 	#else
-		#define MFW_HAS_CPP_ATTRIBUTE(...) 0
+		#define MFW_HAS_CPP_ATTRIBUTE(x) 0
 	#endif
 
 	#define MFW_CPP_EXPERIMENTAL_FLAG __MFW_BIT(0)
