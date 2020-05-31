@@ -35,6 +35,8 @@ namespace mfw::core
 		using stl::filesystem::remove_all;
 		using stl::filesystem::weakly_canonical;
 		using stl::filesystem::is_symlink;
+		using stl::filesystem::last_write_time;
+		using stl::filesystem::file_time_type;
 
 		static pstring &clean_path(pstring &fullpath)
 		{
@@ -66,6 +68,10 @@ namespace mfw::core
 
 		static bool matches_file_pattern(const pstring &file, const pstring &pattern)
 		{
+			if(file == pattern) {
+				return true;
+			}
+			
 			bool matches{matches_file_pattern(uc_str(file), uc_str(pattern))};
 			return matches;
 		}
@@ -766,18 +772,8 @@ namespace mfw::core
 		if(resolved.empty()) {
 			return 0;
 		}
-
-	#if MFW_OS == MFW_OS_LINUX
-		#ifdef __MFW_USE_LARGE_FILES_API
-		struct stat64 buffer{};
-		stat64(c_str(resolved), &buffer);
-		#else
-		struct stat buffer{};
-		stat(c_str(resolved), &buffer);
-		#endif
-		return buffer.st_mtim.tv_sec;
-	#else
-		#error
-	#endif
+		
+		__filesystem_internal::file_time_type time{__filesystem_internal::last_write_time(resolved)};
+		return time.time_since_epoch().count();
 	}
 }

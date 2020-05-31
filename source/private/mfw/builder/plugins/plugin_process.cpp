@@ -4,6 +4,7 @@
 #include <public/mfw/core/environment.hpp>
 #include <public/mfw/core/library.hpp>
 #include <public/mfw/core/commandline.hpp>
+#include <public/mfw/core/debugging.hpp>
 
 namespace mfw::builder
 {
@@ -319,6 +320,40 @@ namespace mfw::builder
 				} else if(name == u8"load"_sv) {
 					const core::univalue &value{other.get_value()};
 					tool_implib.output2 = as_string<pstring>(value);
+				} else if(name == u8"symbols"_sv) {
+					for(const core::serializable &sym : other) {
+						if(!sym.passes_condition(&builder_funcs())) {
+							continue;
+						}
+						const ucstring &sym_name{sym.get_name()};
+						const core::univalue &value{sym.get_value()};
+						tool_info_t::implib_t::symbol_name_t &sym_info{tool_implib.symbols.emplace_back()};
+						sym_info.name = sym_name;
+						if(value == u8"unmangled"_sv) {
+							sym_info.mangled = false;
+							if(!tool_implib.has_glob) {
+								tool_implib.has_glob = true;
+							}
+						}
+						if(!tool_implib.has_glob) {
+							if(sym_name.find(u8'*') != ucstring::npos) {
+								tool_implib.has_glob = true;
+							}
+						}
+					}
+				} else if(name == u8"remove_symbols"_sv) {
+					for(const core::serializable &sym : other) {
+						if(!sym.passes_condition(&builder_funcs())) {
+							continue;
+						}
+						const ucstring &sym_name{sym.get_name()};
+						const core::univalue &value{sym.get_value()};
+						tool_info_t::implib_t::symbol_name_t &sym_info{tool_implib.remove_symbols.emplace_back()};
+						sym_info.name = sym_name;
+						if(value == u8"unmangled"_sv) {
+							sym_info.mangled = false;
+						}
+					}
 				}
 			}
 		}
@@ -642,35 +677,44 @@ namespace mfw::builder
 
 	namespace __plugin_process_internal
 	{
-		static constexpr void get_fmt_str(plugin_process::tool_info_t::implib_arch_t arch, ucstring_view &table, ucstring_view &trampoline)
+		static constexpr void get_fmt_str_trampoline(plugin_process::tool_info_t::implib_arch_t arch, ucstring_view &trampoline)
+		{
+			if(arch == plugin_process::tool_info_t::implib_arch_t::x86_64) {
+				trampoline = ucstring_view{
+					#include <private/mfw/builder/implib/x86_64/trampoline.hpp>
+				};
+			} else if(arch == plugin_process::tool_info_t::implib_arch_t::i386) {
+				trampoline = ucstring_view{
+					#include <private/mfw/builder/implib/i386/trampoline.hpp>
+				};
+			} else if(arch == plugin_process::tool_info_t::implib_arch_t::arm) {
+				trampoline = ucstring_view{
+					#include <private/mfw/builder/implib/arm/trampoline.hpp>
+				};
+			} else if(arch == plugin_process::tool_info_t::implib_arch_t::aarch64) {
+				trampoline = ucstring_view{
+					#include <private/mfw/builder/implib/aarch64/trampoline.hpp>
+				};
+			}
+		}
+		
+		static constexpr void get_fmt_str_table(plugin_process::tool_info_t::implib_arch_t arch, ucstring_view &table)
 		{
 			if(arch == plugin_process::tool_info_t::implib_arch_t::x86_64) {
 				table = ucstring_view{
 					#include <private/mfw/builder/implib/x86_64/table.hpp>
 				};
-				trampoline = ucstring_view{
-					#include <private/mfw/builder/implib/x86_64/trampoline.hpp>
-				};
 			} else if(arch == plugin_process::tool_info_t::implib_arch_t::i386) {
 				table = ucstring_view{
 					#include <private/mfw/builder/implib/i386/table.hpp>
-				};
-				trampoline = ucstring_view{
-					#include <private/mfw/builder/implib/i386/trampoline.hpp>
 				};
 			} else if(arch == plugin_process::tool_info_t::implib_arch_t::arm) {
 				table = ucstring_view{
 					#include <private/mfw/builder/implib/arm/table.hpp>
 				};
-				trampoline = ucstring_view{
-					#include <private/mfw/builder/implib/arm/trampoline.hpp>
-				};
 			} else if(arch == plugin_process::tool_info_t::implib_arch_t::aarch64) {
 				table = ucstring_view{
 					#include <private/mfw/builder/implib/aarch64/table.hpp>
-				};
-				trampoline = ucstring_view{
-					#include <private/mfw/builder/implib/aarch64/trampoline.hpp>
 				};
 			}
 		}
@@ -707,10 +751,21 @@ namespace mfw::builder
 		max_processes_ = old_max;
 		return executed;
 	}
+	
+	bool plugin_process::tool_info_t::implib_t::symbol_name_t::matches(const ucstring &other) const
+	{
+		if(!mangled) {
+			ucstring unmangled_name{};
+			core::undecorate(other, unmangled_name);
+			return matches_pattern(unmangled_name, name);
+		} else {
+			return matches_pattern(other, name);
+		}
+	}
 
 	bool plugin_process::generate_implib(const solution_reference &solution, const project_reference &project, const pstring &path, const gen_lib_vars_t &vars, bool regen)
 	{
-		const pstring &folder{vars.folder};
+		const pstring &folder{*vars.folder};
 		tool_info_t::implib_arch_t arch{vars.arch};
 		
 		if(arch == tool_info_t::implib_arch_t::unknown) {
@@ -732,23 +787,49 @@ namespace mfw::builder
 			return true;
 		}
 		
-		core::library::export_vec_t exports{};
-		if(do_load || do_asm) {
+		vector<ucstring> symbols{};
+		if(vars.symbols && !vars.has_glob) {
+			for(const tool_info_t::implib_t::symbol_name_t &rem : *vars.symbols) {
+				symbols.emplace_back(rem.name);
+			}
+		}
+		
+		if((do_load || do_asm) && symbols.empty()) {
+			core::library::export_vec_t exports{};
 			if(!core::library::get_library_exports({path}, exports) || exports.empty()) {
 				log().error(u8"implib invalid file"_sv);
 				return false;
 			}
+			for(const core::library::export_t &sym : exports) {
+				const ucstring &name{sym.name};
+				bool ignore{false};
+				if(vars.remove_symbols) {
+					for(const tool_info_t::implib_t::symbol_name_t &rem : *vars.remove_symbols) {
+						if(rem.matches(name)) {
+							ignore = true;
+							break;
+						}
+					}
+					if(ignore) {
+						continue;
+					}
+				}
+				if(vars.symbols) {
+					for(const tool_info_t::implib_t::symbol_name_t &rem : *vars.symbols) {
+						if(rem.matches(name)) {
+							symbols.emplace_back(name);
+							break;
+						}
+					}
+				} else {
+					symbols.emplace_back(name);
+				}
+			}
 		}
 		
-		ucstring_view table_fmt{};
-		ucstring_view trampoline_fmt{};
-		if(do_load || do_asm) {
-			__plugin_process_internal::get_fmt_str(arch, table_fmt, trampoline_fmt);
+		if(symbols.empty()) {
+			return false;
 		}
-		
-		static constexpr ucstring_view load_fmt{
-			#include <private/mfw/builder/implib/load.hpp>
-		};
 		
 		pstring filename{path.filename()};
 		filename.replace_extension();
@@ -760,17 +841,22 @@ namespace mfw::builder
 		if(do_asm) {
 			size_t ptr_size{__plugin_process_internal::get_ptr_size(arch)};
 			
+			ucstring_view table_fmt{};
+			__plugin_process_internal::get_fmt_str_table(arch, table_fmt);
+			ucstring_view trampoline_fmt{};
+			__plugin_process_internal::get_fmt_str_trampoline(arch, trampoline_fmt);
+			
 			asm_str = table_fmt;
-			replace_all(asm_str, u8"$table_size"_sv, as_string<ucstring>(exports.size() * ptr_size));
+			replace_all(asm_str, u8"$table_size"_sv, as_string<ucstring>(symbols.size() * ptr_size));
 			replace_all(asm_str, u8"$$"_sv, u8"$"_sv);
 			
 			size_t i{0};
-			for(const core::library::export_t &sym : exports) {
+			for(const ucstring &sym : symbols) {
 				size_t offset{i * ptr_size};
 				ucstring sym_tmp{trampoline_fmt};
 				replace_all(sym_tmp, u8"$number"_sv, as_string<ucstring>(i));
 				replace_all(sym_tmp, u8"$offset"_sv, as_string<ucstring>(offset));
-				replace_all(sym_tmp, u8"$sym"_sv, sym.name);
+				replace_all(sym_tmp, u8"$sym"_sv, sym);
 				asm_str += move(sym_tmp);
 				i++;
 			}
@@ -780,7 +866,7 @@ namespace mfw::builder
 			
 			filesys.save_text_file({asm_path}, asm_str);
 			
-			const pstring &output1{vars.output1};
+			const pstring &output1{*vars.output1};
 			if(!output1.empty()) {
 				if(!compile_cpp_file(solution, project, asm_path, output1)) {
 					return false;
@@ -789,6 +875,10 @@ namespace mfw::builder
 		}
 		
 		if(do_load) {
+			static constexpr ucstring_view load_fmt{
+				#include <private/mfw/builder/implib/load.hpp>
+			};
+			
 			asm_str = load_fmt;
 			replace_all(asm_str, u8"$has_dlopen_callback"_sv, u8"0"_sv);
 			replace_all(asm_str, u8"$no_dlopen"_sv, u8"1"_sv);
@@ -796,9 +886,9 @@ namespace mfw::builder
 			replace_all(asm_str, u8"$dlopen_callback"_sv, u8"dlopen_callback"_sv);
 			replace_all(asm_str, u8"$load_name"_sv, as_string<ucstring>(filename));
 			ucstring sym_names{};
-			for(const core::library::export_t &sym : exports) {
+			for(const ucstring &sym : symbols) {
 				sym_names += u8'"';
-				sym_names += sym.name;
+				sym_names += sym;
 				sym_names += u8"\",\n  "_sv;
 			}
 			sym_names.erase(sym_names.end()-4, sym_names.end());
@@ -808,7 +898,7 @@ namespace mfw::builder
 			
 			filesys.save_text_file({load_path}, asm_str);
 			
-			const pstring &output2{vars.output2};
+			const pstring &output2{*vars.output2};
 			if(!output2.empty()) {
 				if(!compile_cpp_file(solution, project, load_path, output2)) {
 					return false;
@@ -853,7 +943,7 @@ namespace mfw::builder
 						gen_lib_vars_t gen_vars{};
 						gen_vars.arch = info.implib.arch;
 						
-						pstring &folder{gen_vars.folder};
+						pstring folder{};
 						
 						folder = filesys.resolve({{}, name()}, false);
 						folder /= u8"implibs"_p;
@@ -864,18 +954,22 @@ namespace mfw::builder
 						
 						folder /= lib_name;
 						
-						gen_vars.output1 = folder;
-						gen_vars.output1 /= u8"asm.o"_p;
+						pstring output1{folder};
+						output1 /= u8"asm.o"_p;
 						
-						gen_vars.output2 = folder;
-						gen_vars.output2 /= u8"load.o"_p;
+						pstring output2{folder};
+						output2 /= u8"load.o"_p;
+						
+						gen_vars.folder = &folder;
+						gen_vars.output1 = &output1;
+						gen_vars.output2 = &output2;
 						
 						if(generate_implib(solution, project, file_path, gen_vars, false)) {
-							if(!gen_vars.output1.empty()) {
-								add_file_to_str(gen_vars.output1, str, info);
+							if(!output1.empty()) {
+								add_file_to_str(output1, str, info);
 							}
-							if(!gen_vars.output2.empty()) {
-								add_file_to_str(gen_vars.output2, str, info);
+							if(!output2.empty()) {
+								add_file_to_str(output2, str, info);
 							}
 							continue;
 						} else {
@@ -1182,9 +1276,12 @@ namespace mfw::builder
 			if(!implib.folder.empty()) {
 				gen_lib_vars_t gen_vars{};
 				gen_vars.arch = implib.arch;
-				gen_vars.folder = implib.folder;
-				gen_vars.output1 = implib.output1;
-				gen_vars.output2 = implib.output2;
+				gen_vars.folder = &implib.folder;
+				gen_vars.output1 = &implib.output1;
+				gen_vars.output2 = &implib.output2;
+				gen_vars.symbols = &implib.symbols;
+				gen_vars.remove_symbols = &implib.remove_symbols;
+				gen_vars.has_glob = implib.has_glob;
 				
 				if(!generate_implib(*vars.solution, *vars.project, output_path, gen_vars, true)) {
 					return false;

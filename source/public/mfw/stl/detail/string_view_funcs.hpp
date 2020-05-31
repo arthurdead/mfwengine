@@ -52,6 +52,8 @@ namespace mfw::stl
 
 	MFW_STL_API void MFW_STL_CALL to_upper(ucstring_view src, ucstring &dst);
 	MFW_STL_API void MFW_STL_CALL to_upper(uwstring_view src, uwstring &dst);
+	
+	MFW_STL_API bool MFW_STL_CALL matches_pattern(ucstring_view str, ucstring_view pattern);
 #else
 	#error
 #endif

@@ -20,25 +20,41 @@
 	#define __MFW_APPLICATION_CORE_AVAILABLE
 #endif
 
-#ifdef __MFW_APPLICATION_CORE_AVAILABLE
-	#define __MFW_APPLICATION_ENABLE_LOGGING
+#if defined __MFW_APPLICATION_CORE_AVAILABLE && MFW_BUILD & MFW_BUILD_SHARED_FLAG
+	#include <public/mfw/core/logging_interface.hpp>
 #endif
 
-#ifdef __MFW_APPLICATION_ENABLE_LOGGING
-	#if MFW_BUILD & MFW_BUILD_SHARED_FLAG
-		#include <public/mfw/core/logging_interface.hpp>
-	#endif
-#endif
-
-#if MFW_COMPILER == MFW_COMPILER_CLANG
+#if MFW_COMPILER_FLAGGED(CLANG)
 	MFW_WARNING_DISABLE("-Wmissing-prototypes")
 	MFW_WARNING_DISABLE("-Wmissing-variable-declarations")
 #endif
 
 namespace mfw::core
 {
-	const exit_status exit_status::success{exit_status::exit_codes::success};
-	const exit_status exit_status::fatal{exit_status::exit_codes::fatal};
+	MFW_SHARED_LOCAL const exit_status exit_status::success{exit_status::exit_codes::success};
+	MFW_SHARED_LOCAL const exit_status exit_status::fatal{exit_status::exit_codes::fatal};
+	
+	namespace __application_internal
+	{
+	#if MFW_BUILD & MFW_BUILD_SHARED_FLAG
+		#if defined __MFW_APPLICATION_CORE_AVAILABLE && !defined __MFW_CORE_IS_DELAY_LOADED
+		MFW_DECLARE_LOG_CONTEXT(log_application, u8"core/application"_p)
+		#endif
+	
+		template <typename ...Args>
+		static void print(ucstring_view fmt, Args... args)
+		{
+		#if defined __MFW_APPLICATION_CORE_AVAILABLE && !defined __MFW_CORE_IS_DELAY_LOADED
+			log_application().print(fmt, forward<Args>(args)...);
+		#else
+			ucstring str{};
+			format(str, fmt, forward<Args>(args)...);
+			str += u8'\n';
+			::MFW_STD_NAMESPACE::printf(c_str(str));
+		#endif
+		}
+	#endif
+	}
 	
 #if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
 	namespace __application_internal
@@ -176,58 +192,56 @@ namespace mfw::core
 		#if MFW_CORE_BUILD == MFW_BUILD_SHARED
 			#if MFW_OS == MFW_OS_WINDOWS
 			if(!LoadLibraryExW(L"core/bin/" __MFW_OS_TARGET L"_" __MFW_PROCESSOR_TARGET L"_" __MFW_CONFIGURATION_TARGET L"/core.dll", nullptr, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS)) {
+				__application_internal::print(u8"could not load core library"_sv);
 				return false;
 			}
 			#elif MFW_OS == MFW_OS_LINUX
 			void *core_dl{dlopen("core/bin/" __MFW_OS_TARGET "_" __MFW_PROCESSOR_TARGET "_" __MFW_CONFIGURATION_TARGET "/core.so", RTLD_NOW|RTLD_GLOBAL|RTLD_DEEPBIND)};
 				#ifndef __MFW_APPLICATION_CORE_AVAILABLE
 			if(core_dl) {
-				const char *core_load_library_name{"_ZN3mfw4core7library12load_libraryERKNS0_10searchpathE"};
+				constexpr const char *core_load_library_name{"_ZN3mfw4core7library12load_libraryERKNS0_10searchpathE"};
 				core_load_library_ptr = reinterpret_cast<core_load_library_t>(dlsym(core_dl, core_load_library_name));
 				if(!core_load_library_ptr) {
+					::mfw::core::__application_internal::print(u8"core library missing library::load_library symbol"_sv);
 					return false;
 				}
 				
-				const char *core_update_name{"_ZN3mfw4core6updateEv"};
+				constexpr const char *core_update_name{"_ZN3mfw4core6updateEv"};
 				core_update_ptr = reinterpret_cast<core_update_t>(dlsym(core_dl, core_update_name));
 				if(!core_update_ptr) {
+					::mfw::core::__application_internal::print(u8"core library missing update symbol"_sv);
 					return false;
 				}
 				
-				const char *core_initialize_name{"_ZN3mfw4core10initializeEv"};
+				constexpr const char *core_initialize_name{"_ZN3mfw4core10initializeEv"};
 				core_initialize_ptr = reinterpret_cast<core_initialize_t>(dlsym(core_dl, core_initialize_name));
 				if(!core_initialize_ptr) {
+					::mfw::core::__application_internal::print(u8"core library missing initialize symbol"_sv);
 					return false;
 				}
 				
-				const char *core_shutdown_name{"_ZN3mfw4core8shutdownEv"};
+				constexpr const char *core_shutdown_name{"_ZN3mfw4core8shutdownEv"};
 				core_shutdown_ptr = reinterpret_cast<core_shutdown_t>(dlsym(core_dl, core_shutdown_name));
 				if(!core_shutdown_ptr) {
+					::mfw::core::__application_internal::print(u8"core library missing shutdown symbol"_sv);
 					return false;
 				}
 				
-				const char *core_filesystem_instance_name{"_ZN3mfw4core10interfaces10filesystem8instanceEv"};
+				constexpr const char *core_filesystem_instance_name{"_ZN3mfw4core10interfaces10filesystem8instanceEv"};
 				core_filesystem_instance_ptr = reinterpret_cast<core_filesystem_instance_t>(dlsym(core_dl, core_filesystem_instance_name));
 				if(!core_filesystem_instance_ptr) {
+					::mfw::core::__application_internal::print(u8"core library missing interfaces::filesystem::instance symbol"_sv);
 					return false;
 				}
 			} else {
+				ucstring reason{uc_str(dlerror())};
+				__application_internal::print(u8"could not load core library: {}"_sv, reason);
 				return false;
 			}
 				#endif
 			#else
 				#error
 			#endif
-		#endif
-
-		#if MFW_OS == MFW_OS_WINDOWS
-			wchar_t exefile[MAX_PATH]{L'\0'};
-			size_t len{GetModuleFileNameW(nullptr, exefile, size(exefile))};
-		#elif MFW_OS == MFW_OS_LINUX
-			char exefile[PATH_MAX]{'\0'};
-			ssize_t len{readlink("/proc/self/exe", exefile, size(exefile))};
-		#else
-			#error
 		#endif
 
 			pstring exepath{executable_path()};
@@ -243,10 +257,6 @@ namespace mfw::core
 	#endif
 
 	#if MFW_BUILD & MFW_BUILD_SHARED_FLAG
-		#ifdef __MFW_APPLICATION_ENABLE_LOGGING
-			MFW_DECLARE_LOG_CONTEXT(log_application, u8"core/application"_p)
-		#endif
-	
 		static exit_status call_exit(
 		#if MFW_BUILD == MFW_BUILD_SHARED && MFW_OS == MFW_OS_WINDOWS
 		bool thread
@@ -293,12 +303,12 @@ namespace mfw::core
 			exit_status exit{call_exit()};
 			main_status += exit;
 
-			#ifdef __MFW_APPLICATION_ENABLE_LOGGING
-				#if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
+			#if defined __MFW_APPLICATION_CORE_AVAILABLE
 			main_status.add_error(error_count());
 			main_status.add_warning(warning_count());
-				#endif
+			#endif
 
+			#if defined __MFW_APPLICATION_CORE_AVAILABLE && !defined __MFW_CORE_IS_DELAY_LOADED
 			if(main_status.absolutely_succeded()) {
 				log_application().set_severity(log_context::severity::success);
 			} else if(main_status.succeded()) {
@@ -306,8 +316,8 @@ namespace mfw::core
 			} else {
 				log_application().set_severity(log_context::severity::error);
 			}
-			log_application().print(u8"exited with code: {} [warnings: {}, errors: {}]"_sv, main_status.code(), main_status.warnings(), main_status.errors());
 			#endif
+			__application_internal::print(u8"exited with code: {} [warnings: {}, errors: {}]"_sv, main_status.code(), main_status.warnings(), main_status.errors());
 
 			exit_status core_status{__application_internal::core_shutdown()};
 			main_status += core_status;

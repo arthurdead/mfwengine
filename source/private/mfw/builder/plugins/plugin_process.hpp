@@ -60,7 +60,18 @@ namespace mfw::builder
 				pstring output1{};
 				pstring output2{};
 				implib_arch_t arch{implib_arch_t::unknown};
-				vector<ucstring> symbols{};
+				
+				struct symbol_name_t
+				{
+					bool mangled{true};
+					ucstring name{};
+					
+					bool matches(const ucstring &other) const;
+				};
+				
+				vector<symbol_name_t> symbols{};
+				bool has_glob{false};
+				vector<symbol_name_t> remove_symbols{};
 			};
 			implib_t implib{};
 			
@@ -161,10 +172,13 @@ namespace mfw::builder
 	
 		struct gen_lib_vars_t
 		{
-			pstring folder{};
-			pstring output1{};
-			pstring output2{};
+			const pstring *folder{nullptr};
+			const pstring *output1{nullptr};
+			const pstring *output2{nullptr};
 			tool_info_t::implib_arch_t arch{tool_info_t::implib_arch_t::unknown};
+			const vector<tool_info_t::implib_t::symbol_name_t> *symbols{nullptr};
+			const vector<tool_info_t::implib_t::symbol_name_t> *remove_symbols{nullptr};
+			bool has_glob{false};
 		};
 		bool generate_implib(const solution_reference &solution, const project_reference &project, const pstring &path, const gen_lib_vars_t &vars, bool regen);
 

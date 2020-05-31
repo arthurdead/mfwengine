@@ -14,12 +14,12 @@ base_solution
 		configuration::debug
 	$else
 		os {
-			//windows
+			windows
 			linux
 		}
 		configuration {
 			debug,
-			//release
+			release
 		}
 	$endif
 		platform::x86_64
@@ -42,16 +42,16 @@ base_solution
 
 	tools {
 	$if os == "windows"
-		compiler cl
-		//compiler clang_cl
-		linker link
-		//linker lld_link
+		//compiler cl
+		compiler clang_cl
+		//linker link
+		linker lld_link
 		archiver lib
 	$else
 		compiler "g++"
 		//compiler "clang++"
-		linker ld
-		//linker ld_gold
+		//linker ld
+		linker ld_gold
 		//linker ld_lld
 		archiver gcc_ar
 	$endif

@@ -122,7 +122,7 @@ namespace mfw::stl
 	template <typename B> template <typename ...Args>
 	typename ptr_vector_like<B>::iterator ptr_vector_like<B>::emplace(const_iterator pos, Args &&... args)
 	{
-		typename super::iterator it{super::emplace(pos, {})};
+		typename super::iterator it{super::emplace(pos)};
 		it->reset(new value_type{forward<Args>(args)...});
 		return force_cast<iterator>(it);
 	}

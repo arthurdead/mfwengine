@@ -9,6 +9,10 @@
 	#error
 #endif
 
+#if MFW_OS_IS(LINUX)
+	#include <fnmatch.h>
+#endif
+
 namespace mfw::stl
 {
 #if MFW_STD_FLAGGED(API_CONFORMING)
@@ -155,6 +159,19 @@ namespace mfw::stl
 	{
 		dst = src;
 		transform(dst.begin(), dst.end(), dst.begin(), static_cast<ucchar_t(*)(ucchar_t)>(__string_view_funcs_internal::toupper));
+	}
+	
+	MFW_STL_API bool MFW_STL_CALL matches_pattern(ucstring_view str, ucstring_view pattern)
+	{
+		if(str == pattern) {
+			return true;
+		}
+		
+	#if MFW_OS == MFW_OS_LINUX
+		return (fnmatch(c_str(pattern), c_str(str), FNM_CASEFOLD|FNM_EXTMATCH) != FNM_NOMATCH);
+	#else
+		#error
+	#endif
 	}
 #else
 	#error

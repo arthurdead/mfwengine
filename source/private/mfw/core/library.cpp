@@ -271,7 +271,7 @@ namespace mfw::core
 				int32_t bind{ELF64_ST_BIND(symbol_header.st_info)};
 				int32_t visibility{ELF64_ST_VISIBILITY(symbol_header.st_other)};
 				
-				if((type != STT_FUNC /*&& type != STT_OBJECT*/) ||
+				if((type != STT_FUNC && type != STT_OBJECT) ||
 					(bind != STB_GLOBAL && bind != STB_WEAK) ||
 					visibility != STV_DEFAULT) {
 					continue;

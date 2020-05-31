@@ -1,9 +1,8 @@
 #include "bases/engine_project.sr"
 
-#define __MFW_ENABLE_LARGE_FILE_API
 //#define __MFW_ENABLE_IBERTY
 //#define __MFW_ENABLE_ASMJIT
-#define __MFW_USE_CORE_DELAY_LOADED
+//#define __MFW_USE_CORE_DELAY_LOADED
 
 core : base_project, standards.cpp20, output_shared
 {
@@ -11,16 +10,6 @@ core : base_project, standards.cpp20, output_shared
 		dependency {
 			linker {
 				options {
-				$if is_unix_linker
-					#pragma message("why is this happening?")
-					ignore_unresolved_symbol {
-					#ifdef __MFW_ENABLE_LARGE_FILE_API
-						"fstat64","stat64"
-					#else
-						"fstat","stat"
-					#endif
-					}
-				$endif
 					libraries {
 					$if os == "linux"
 						dl
@@ -56,7 +45,13 @@ core : base_project, standards.cpp20, output_shared
 		}
 	}
 	linker {
-		implib "${intermediary_folder}"
+	#ifdef __MFW_USE_CORE_DELAY_LOADED
+		implib "${intermediary_folder}" {
+			symbols {
+				"*mfw*"
+			}
+		}
+	#endif
 		options {
 			libraries {
 		#ifdef __MFW_ENABLE_IBERTY
@@ -73,9 +68,6 @@ core : base_project, standards.cpp20, output_shared
 	#endif
 	#ifdef __MFW_ENABLE_IBERTY
 		__MFW_USE_IBERTY
-	#endif
-	#ifdef __MFW_ENABLE_LARGE_FILE_API
-		__MFW_USE_LARGE_FILES_API
 	#endif
 	}
 }

@@ -43,15 +43,12 @@ namespace mfw::core
 		ucstring library{};
 	};
 
-	extern "C"
-	{
-		MFW_CORE_API bool MFW_CORE_CALL undecorate(const ucstring_view &decorated, ucstring &undecorated, undecorate_flags flags = undecorate_flags::complete);
+	MFW_CORE_API bool MFW_CORE_CALL undecorate(const ucstring_view &decorated, ucstring &undecorated, undecorate_flags flags = undecorate_flags::complete);
 
-		MFW_CORE_API bool MFW_CORE_CALL symbols_from_address(const void *ptr, symbol &sym);
-		MFW_CORE_API bool MFW_CORE_CALL walk_stack(vector<symbol> &symbols, uint32_t count=0);
+	MFW_CORE_API bool MFW_CORE_CALL symbols_from_address(const void *ptr, symbol &sym);
+	MFW_CORE_API bool MFW_CORE_CALL walk_stack(vector<symbol> &symbols, uint32_t count=0);
 
-		MFW_CORE_API void MFW_CORE_CALL print_stack(uint32_t count = 0);
-	}
+	MFW_CORE_API void MFW_CORE_CALL print_stack(uint32_t count = 0);
 
 	class rtti
 	{

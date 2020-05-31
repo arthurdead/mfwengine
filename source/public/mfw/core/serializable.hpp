@@ -191,6 +191,8 @@ namespace mfw::core
 		const_reverse_iterator rbegin() const { return crbegin(); }
 		const_reverse_iterator rend() const { return crend(); }
 
+		MFW_CORE_API serializable & MFW_CORE_CALL find_or_emplace(const ucstring_view &str, const_iterator it);
+
 	private:
 		virtual serializable *allocate_child(ssize_t depth, const ucstring_view &name, const core::serializable *parent) const;
 		virtual void merge_child(size_t depth, serializable &child, const serializable &other) const;

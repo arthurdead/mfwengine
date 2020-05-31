@@ -84,6 +84,10 @@ base_project {
 		options {
 			nologo
 			no_linking
+		$if is_unix_compiler
+			"-fvisibility=hidden"
+			"-fvisibility-inlines-hidden"
+		$endif
 		$if configuration == "debug"
 			//warning_errors
 			fatal_errors
@@ -164,7 +168,12 @@ output_executable|output_shared {
 
 output_static {
 	archiver ""
-	compiler::output_tool archiver
+	compiler {
+		options {
+			pic
+		}
+		output_tool archiver
+	}
 	builder::dependency::linker {
 		files {
 		$if !is_self

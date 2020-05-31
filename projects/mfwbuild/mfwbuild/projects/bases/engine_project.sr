@@ -29,13 +29,11 @@ base_project {
 		}
 		files {
 			"public" filter {
-				/*
 			$if is_gcc
 				"${source_folder}/public/mfw/pch.hpp" dynamic {
 					output "${source_folder}/public/mfw/pch.hpp.gch/${project_name}_${os}_${configuration}_${platform}.gch"
 				}
 			$endif
-				*/
 				"${source_folder}/public/mfw/*.*"
 			}
 			"${source_folder}/private/mfw/${project_name}/**/*.*"

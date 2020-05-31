@@ -209,12 +209,10 @@ namespace mfw::builder
 			return false;
 		}
 
-		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
-
 		for(size_t i{0}; i < syms; i++) {
 			const ucstring &symname{lib->symbol_name(i)};
 
-			if(!filesys.matches_glob(symname, u8"*__*_get_plugin"_sv)) {
+			if(!matches_pattern(symname, u8"*__*_get_plugin"_sv)) {
 				continue;
 			}
 
@@ -621,7 +619,7 @@ namespace mfw::builder
 					return false;
 				}
 				
-				project.merge(parsed);
+				project.merge(parsed, false);
 			}
 		}
 		return true;

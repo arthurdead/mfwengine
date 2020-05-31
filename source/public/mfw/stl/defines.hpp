@@ -30,6 +30,9 @@
 	#define MFW_ATTRIBUTE(x)
 	#define MFW_SHARED_EXPORT MFW_DECLSPEC(dllexport)
 	#define MFW_SHARED_IMPORT MFW_DECLSPEC(dllimport)
+	#define MFW_SHARED_LOCAL 
+	#define MFW_VISIBILITY_PUSH(x) 
+	#define MFW_VISIBILITY_POP() 
 	#define MFW_CALL_STDCALL __stdcall
 	#define MFW_CALL_CDECL __cdecl
 	#define MFW_OPTIMIZE(x) MFW_PRAGMA(optimize(x))
@@ -56,17 +59,19 @@
 	#else
 		#define MFW_ATTRIBUTE(x) __attribute__((x))
 	#endif
+	#define __MFW_VISIBILITY_DEFAULT MFW_ATTRIBUTE(__visibility__("default"))
 	#if MFW_OS_IS(WINDOWS)
-		#define MFW_SHARED_EXPORT MFW_ATTRIBUTE(__dllexport__) MFW_ATTRIBUTE(__visibility__("default"))
-		#define MFW_SHARED_IMPORT MFW_ATTRIBUTE(__dllimport__) MFW_ATTRIBUTE(__visibility__("default"))
+		#define MFW_SHARED_EXPORT MFW_ATTRIBUTE(__dllexport__) __MFW_VISIBILITY_DEFAULT
+		#define MFW_SHARED_IMPORT MFW_ATTRIBUTE(__dllimport__) __MFW_VISIBILITY_DEFAULT
 		#define __MFW_SYSTEM_ABI MFW_ATTRIBUTE(__ms_abi__)
 	#elif MFW_OS_IS(LINUX)
-		#define MFW_SHARED_EXPORT MFW_ATTRIBUTE(__visibility__("default"))
-		#define MFW_SHARED_IMPORT MFW_ATTRIBUTE(__visibility__("default"))
+		#define MFW_SHARED_EXPORT __MFW_VISIBILITY_DEFAULT
+		#define MFW_SHARED_IMPORT __MFW_VISIBILITY_DEFAULT
 		#define __MFW_SYSTEM_ABI MFW_ATTRIBUTE(__sysv_abi__)
 	#else
 		#error
 	#endif
+	#define MFW_SHARED_LOCAL MFW_ATTRIBUTE(__visibility__("hidden"))
 	#define MFW_CALL_STDCALL MFW_ATTRIBUTE(__stdcall__, __ms_abi__)
 	#if MFW_COMPILER_FLAGGED(CLANG)
 		#define MFW_CALL_CDECL __MFW_SYSTEM_ABI MFW_ATTRIBUTE(__cdecl__)
@@ -77,6 +82,8 @@
 	#else
 		#error
 	#endif
+	#define MFW_VISIBILITY_PUSH(x) MFW_PRAGMA(__MFW_PRAGMA_ID visibility push(x))
+	#define MFW_VISIBILITY_POP() MFW_PRAGMA(__MFW_PRAGMA_ID visibility pop)
 	#define MFW_OPTIMIZE(x) MFW_PRAGMA(__MFW_PRAGMA_ID optimize(x))
 	#define MFW_RESET_OPTIONS() MFW_PRAGMA(__MFW_PRAGMA_ID reset_options)
 	#define MFW_WARNING_PUSH() MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic push)

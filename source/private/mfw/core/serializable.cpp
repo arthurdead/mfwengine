@@ -183,6 +183,18 @@ namespace mfw::core
 		return nullptr;
 	}
 	
+	MFW_CORE_API serializable & MFW_CORE_CALL serializable::find_or_emplace(const ucstring_view &str, const_iterator it)
+	{
+		serializable *tmp{get_child(str)};
+		if(tmp) {
+			return *tmp;
+		}
+		
+		serializable &value{*childs.emplace(it)};
+		value.set_name(str);
+		return value;
+	}
+	
 	MFW_CORE_API serializable::iterator MFW_CORE_CALL serializable::find(const ucstring_view &str)
 	{
 		iterator it{begin()};

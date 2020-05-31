@@ -5,6 +5,8 @@
 #elif MFW_OS == MFW_OS_LINUX
 	#include <sys/stat.h>
 	#include <unistd.h>
+	#include <climits>
+	#include <public/mfw/stl/format.hpp>
 #endif
 
 namespace mfw::core
@@ -33,15 +35,9 @@ namespace mfw::core
 			case seek::end: { seek = SEEK_END; break; }
 		}
 
-		#ifdef __MFW_USE_LARGE_FILES_API
 		fseeko64(hndl, offset_, seek);
 
 		return ftello64(hndl);
-		#else
-		fseeko(hndl, offset_, seek);
-
-		return ftello(hndl);
-		#endif
 	}
 #endif
 
@@ -76,11 +72,7 @@ namespace mfw::core
 #if MFW_OS == MFW_OS_LINUX
 	ssize_t core::file::tell_handle(handle_t hndl)
 	{
-	#ifdef __MFW_USE_LARGE_FILES_API
 		return ftello64(hndl);
-	#else
-		return ftello(hndl);
-	#endif
 	}
 #endif
 
@@ -101,16 +93,24 @@ namespace mfw::core
 	}
 	
 #if MFW_OS == MFW_OS_LINUX
+	namespace __file_internal
+	{
+		static pstring get_handle_path(file::handle_t hndl)
+		{
+			ucstring desc{};
+			format(desc, u8"/proc/self/fd/{}"_sv, fileno(hndl));
+			char filename[PATH_MAX]{'\0'};
+			ssize_t len{readlink(c_str(desc), filename, stl::size(filename))};
+			pstring filepath{MFW_PATH_FROM_CHARARRAY(filename, len)};
+			return filepath;
+		}
+	}
+
 	size_t core::file::get_handle_size(file::handle_t hndl)
 	{
-	#ifdef __MFW_USE_LARGE_FILES_API
-		struct stat64 buff{};
-		fstat64(fileno(hndl), &buff);
-	#else
-		struct stat buff{};
-		fstat(fileno(hndl), &buff);
-	#endif
-		if(buff.st_size == 0) {
+		pstring filepath{__file_internal::get_handle_path(hndl)};
+		uintmax_t st_size{stl::filesystem::file_size(filepath)};
+		if(st_size == 0) {
 			ssize_t offset_{tell_handle(hndl)};
 			byte data{0};
 			while(true) {
@@ -118,27 +118,19 @@ namespace mfw::core
 				if(read != 1 || feof(hndl) != 0 || ferror(hndl) != 0) {
 					break;
 				}
-				buff.st_size++;
+				st_size++;
 			}
 			if(offset_ != -1) {
 				seek_handle(hndl, offset_, seek::begin);
 			}
 		}
-		return buff.st_size;
+		return st_size;
 	}
 #endif
 
 	size_t core::file::size()
 	{
-	#if MFW_OS == MFW_OS_WINDOWS
-		LARGE_INTEGER large{};
-		GetFileSizeEx(handle, &large);
-		return static_cast<size_t>(large.QuadPart);
-	#elif MFW_OS == MFW_OS_LINUX
-		return get_handle_size(handle);
-	#else
-		#error
-	#endif
+		return stl::filesystem::file_size(path_);
 	}
 
 	size_t core::file::read(void *data, size_t elesiz, size_t size_)
@@ -198,11 +190,7 @@ namespace mfw::core
 	#if MFW_OS == MFW_OS_WINDOWS
 		SetEndOfFile(handle);
 	#elif MFW_OS == MFW_OS_LINUX
-		#ifdef __MFW_USE_LARGE_FILES_API
 		ftruncate64(fileno(handle), size_);
-		#else
-		ftruncate(fileno(handle), size_);
-		#endif
 	#else
 		#error
 	#endif
