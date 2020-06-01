@@ -1,0 +1,16 @@
+#include "bases/default.sr"
+
+llvm : base_project, standards.cpp20, output_static
+{
+	compiler {
+		options::includes_paths {
+			//"${source_folder}/private/thirdparty/llvm"
+			//"${thirdparty_folder}/llvm/build/include"
+			"${thirdparty_folder}/llvm/include"
+			"${thirdparty_folder}/llvm/include/llvm/IR"
+		}
+		files {
+
+		}
+	}
+}

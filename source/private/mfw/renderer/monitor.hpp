@@ -16,7 +16,7 @@ namespace mfw::renderer
 	namespace agnostic
 	{
 		class gpu;
-	};
+	}
 
 	class monitor
 	{
@@ -53,6 +53,6 @@ namespace mfw::renderer
 
 		ucstring name{};
 	};
-};
+}
 
 #endif

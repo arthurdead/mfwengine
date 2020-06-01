@@ -14,6 +14,6 @@ namespace mfw::renderer::vulkan
 		static const vk::VertexInputBindingDescription &binding_description();
 		static const array<vk::VertexInputAttributeDescription, 2> &attribute_descriptions();
 	};
-};
+}
 
 #endif

@@ -1,20 +1,30 @@
 #include "default.sr"
 
 base_project {
-	builder::dependency::compiler {
-		options::preprocessor_definitions {
-			"MFW_DEPENDS_ON_${dependency_name_upper}"
-		}
-		files {
-		$if !is_self
-			"public/${dependency_name}" filter {
-				"${source_folder}/public/mfw/${dependency_name}/**/*.*"
+	builder {
+		dependency::compiler {
+			options::preprocessor_definitions {
+				"MFW_DEPENDS_ON_${dependency_name_upper}"
 			}
-		$endif
+			files {
+			$if !is_self
+				"public/${dependency_name}" filter {
+					"${source_folder}/public/mfw/${dependency_name}/**/*.*"
+				}
+			$endif
+			}
 		}
 	}
 	compiler {
 		options {
+		$if configuration == "debug"
+			//warning_errors
+			fatal_errors
+			all_warnings
+			pendatic
+			pendatic_errors
+			extra_warnings
+		$endif
 			forced_includes {
 				"${source_folder}/public/mfw/pch.hpp"
 			}
@@ -25,6 +35,12 @@ base_project {
 			preprocessor_definitions {
 				"MFW_BUILDING_${project_name_upper}"
 				//__MFW_ENABLE_CUSTOM_ALLOCATORS
+				UNICODE,_UNICODE
+			$if configuration == "debug"
+				DEBUG,_DEBUG
+			$else
+				NDEBUG,_NDEBUG
+			$endif
 			}
 		}
 		files {
@@ -51,18 +67,38 @@ output_embedded::builder::dependency::compiler::options::preprocessor_definition
 	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EMBEDDED"
 }
 
-output_shared::builder::dependency::compiler::options::preprocessor_definitions {
-	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_SHARED"
+output_shared {
+	compiler::options::preprocessor_definitions {
+		_SHARED,SHARED
+	}
+	builder::dependency::compiler::options::preprocessor_definitions {
+		"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_SHARED"
+	}
 }
 
-output_static::builder::dependency::compiler::options::preprocessor_definitions {
-	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_STATIC"
+output_static {
+	compiler::options::preprocessor_definitions {
+		_LIB,LIB
+	}
+	builder::dependency::compiler::options::preprocessor_definitions {
+		"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_STATIC"
+	}
 }
 
-output_executable_console::builder::dependency::compiler::options::preprocessor_definitions {
-	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE"
+output_executable_console {
+	compiler::options::preprocessor_definitions {
+		_CONSOLE,CONSOLE
+	}
+	builder::dependency::compiler::options::preprocessor_definitions {
+		"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE"
+	}
 }
 
-output_executable_windows::builder::dependency::compiler::options::preprocessor_definitions {
-	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE_WINDOWS"
+output_executable_windows {
+	compiler::options::preprocessor_definitions {
+		_WINDOWS,WINDOWS
+	}
+	builder::dependency::compiler::options::preprocessor_definitions {
+		"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE_WINDOWS"
+	}
 }

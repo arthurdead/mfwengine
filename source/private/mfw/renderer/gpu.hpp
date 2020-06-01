@@ -20,7 +20,7 @@
 namespace mfw::renderer
 {
 	class window;
-};
+}
 
 namespace mfw::renderer::agnostic
 {
@@ -71,6 +71,6 @@ namespace mfw::renderer::agnostic
 
 		static const gpu *maingpu_;
 	};
-};
+}
 
 #endif

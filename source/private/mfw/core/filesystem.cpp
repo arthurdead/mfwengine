@@ -70,6 +70,8 @@ namespace mfw::core
 		{
 			if(file == pattern) {
 				return true;
+			} else if(file.native().find(u8'*') != unpstring::npos) {
+				return false;
 			}
 			
 			bool matches{matches_file_pattern(uc_str(file), uc_str(pattern))};
@@ -306,7 +308,7 @@ namespace mfw::core
 	{
 		vector<pstring> resolved{};
 		resolve(search, resolved, exists);
-
+		
 		pstring fullpath{};
 
 		if(!resolved.empty()) {
@@ -321,6 +323,7 @@ namespace mfw::core
 				it++;
 			}
 		}
+		
 		if(fullpath.empty() && !resolved.empty()) {
 			fullpath = *resolved.crbegin();
 			__filesystem_internal::clean_path(fullpath);
@@ -378,7 +381,11 @@ namespace mfw::core
 					paths.emplace_back(tmp);
 				}
 			#endif
-				return false;
+				tmp = dir;
+				__filesystem_internal::clean_path(tmp);
+				if(__filesystem_internal::check_if_exists(tmp, exists)) {
+					paths.emplace_back(tmp);
+				}
 			}
 		}
 
@@ -586,10 +593,15 @@ namespace mfw::core
 
 			if(__filesystem_internal::exists(file)) {
 				continue;
-			}
-
-			if(!__filesystem_internal::create_directories(file)) {
+			} else if(file.native().find(u8'*') != unpstring::npos) {
 				failed = true;
+				continue;
+			} else {
+				::MFW_STD_NAMESPACE::error_code errc{};
+				if(!__filesystem_internal::create_directories(file, errc)) {
+					failed = true;
+					continue;
+				}
 			}
 		}
 

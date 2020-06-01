@@ -35,13 +35,13 @@ namespace mfw::renderer::agnostic
 		unique_ptr<agnostic::renderer> renderer{};
 	};
 
-	MFW_DECLARE_GLOBAL_ALLOCATOR(factory, factory);
+	MFW_DECLARE_GLOBAL_ALLOCATOR(factory, factory)
 
 	agnostic::renderer &agnostic::renderer::instance()
 	{
 		return *__factory_global_allocator.instance().renderer;
 	}
-};
+}
 
 mfw::core::exit_status application_main(
 #if MFW_OS == MFW_OS_WINDOWS

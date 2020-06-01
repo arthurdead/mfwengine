@@ -13,7 +13,7 @@ namespace mfw::builder
 		info_.process_build_set = true;
 		info_.process_single_input = false;
 		info_.merge_sections_files_options = false;
-		info_.process_out_of_date = false;
+		info_.process_out_of_date = true;
 		info_.ignore_output = true;
 		
 		core::interfaces::filesystem::instance().remove({{}, name()});
@@ -215,7 +215,7 @@ namespace mfw::builder
 		pstring filepath{file.path()};
 		link /= filepath.filename();
 
-		filesys.create_symlink({filepath}, {{link}, name()});
+		filesys.create_symlink({filepath}, {link, name()});
 
 		return true;
 	}
@@ -536,6 +536,13 @@ namespace mfw::builder
 		pstring launch_path{path/u8".vscode/launch.json"_p};
 		pstring tasks_path{path/u8".vscode/tasks.json"_p};
 		
+		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+		
+		if(filesys.exists({compile_commands})) {
+			pstring link{path / compile_commands.filename()};
+			filesys.create_symlink({compile_commands}, {link});
+		}
+		
 		cpp_properties.save({cpp_path});
 		//launch.save({launch_path});
 		//tasks.save({tasks_path});
@@ -554,6 +561,7 @@ namespace mfw::builder
 		if(solution) {
 			exclude_files.emplace_back(u8"**/projects.json"_p);
 		}
+		exclude_files.emplace_back(u8"**/compile_commands.json"_p);
 
 		if(!solution) {
 			folder_t &folder{folders.emplace_back()};

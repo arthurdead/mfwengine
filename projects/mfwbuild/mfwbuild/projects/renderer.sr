@@ -1,0 +1,12 @@
+#include "bases/engine_project.sr"
+
+renderer : base_project, standards.cpp20, output_shared
+{
+	builder::depends {
+		core,
+		stl
+	}
+	compiler::options::preprocessor_definitions {
+		MFW_APPLICATION_MAIN_DEFINED
+	}
+}

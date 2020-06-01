@@ -56,6 +56,11 @@ namespace mfw::core
 				vec.resize(size());
 				return read(vec.data(), sizeof(T), vec.size());
 			}
+			
+			template <typename T>
+			size_t write(const vector<T> &vec) {
+				return write(vec.data(), sizeof(T), vec.size());
+			}
 		};
 	}
 }

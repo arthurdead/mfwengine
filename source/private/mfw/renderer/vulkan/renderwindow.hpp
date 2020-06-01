@@ -18,7 +18,9 @@ namespace mfw::renderer::vulkan
 		~renderwindow() override;
 
 	private:
+	#if MFW_OS_IS(WINDOWS)
 		int64_t window_proc(uint32_t msg, uint64_t param1, int64_t param2) override;
+	#endif
 
 		vk::PresentModeKHR present_mode(const vk::PhysicalDevice &device) const;
 		vk::SurfaceFormatKHR surface_format(const vk::PhysicalDevice &device) const;
@@ -129,7 +131,7 @@ namespace mfw::renderer::vulkan
 		};
 		sync_t sync_{};
 
-		shader base_shader{u"shader_vertexbuffer"_sv};
+		shader base_shader{u8"shader_vertexbuffer"_sv};
 
 		struct memory_t
 		{
@@ -180,6 +182,6 @@ namespace mfw::renderer::vulkan
 		};
 		memory_t memory_{};
 	};
-};
+}
 
 #endif

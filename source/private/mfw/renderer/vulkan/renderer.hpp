@@ -12,7 +12,9 @@ namespace mfw::renderer::vulkan
 	class renderer : public agnostic::renderer
 	{
 	public:
-		static renderer &instance() { return static_cast<renderer &>(__super::instance()); }
+		using super = agnostic::renderer;
+	
+		static renderer &instance() { return static_cast<renderer &>(super::instance()); }
 
 		core::exit_status initialize() override;
 		core::exit_status shutdown() override;
@@ -45,6 +47,6 @@ namespace mfw::renderer::vulkan
 		};
 		instance_t instance_{};
 	};
-};
+}
 
 #endif

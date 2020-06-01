@@ -24,6 +24,6 @@ namespace mfw::renderer
 
 	void set_rect_bounds(RECT &rect, int32_t x, int32_t y, int32_t w, int32_t h);
 	void get_rect_bounds(const RECT &rect, int32_t *x, int32_t *y, int32_t *w, int32_t *h);
-};
+}
 
 #endif

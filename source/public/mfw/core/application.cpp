@@ -330,7 +330,7 @@ namespace mfw::core
 }
 
 #if MFW_BUILD == MFW_BUILD_SHARED && !defined MFW_APPLICATION_MAIN_DEFINED
-::mfw::core::exit_status application_main(
+MFW_SHARED_LOCAL ::mfw::core::exit_status application_main(
 	#if MFW_BUILD == MFW_BUILD_SHARED && MFW_OS == MFW_OS_WINDOWS
 bool thread
 	#endif
@@ -339,7 +339,7 @@ bool thread
 	return {};
 }
 
-::mfw::core::exit_status application_exit(
+MFW_SHARED_LOCAL ::mfw::core::exit_status application_exit(
 	#if MFW_BUILD == MFW_BUILD_SHARED && MFW_OS == MFW_OS_WINDOWS
 bool thread
 	#endif

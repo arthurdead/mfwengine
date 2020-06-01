@@ -30,7 +30,6 @@ namespace mfw::builder
 		core::serializable *allocate_child(ssize_t depth, const ucstring_view &name, const core::serializable *parent) const override;
 
 		vector<project_reference *> depends{};
-		bool generated_{false};
 	};
 }
 

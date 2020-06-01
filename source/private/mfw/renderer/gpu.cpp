@@ -218,4 +218,4 @@ namespace mfw::renderer::agnostic
 		}
 		return nullptr;
 	}
-};
+}

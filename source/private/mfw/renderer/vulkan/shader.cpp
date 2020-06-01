@@ -5,22 +5,22 @@
 
 namespace mfw::renderer::vulkan
 {
-	MFW_DECLARE_LOG_CONTEXT(log_shader, u"renderer/vulkan/shader"_p);
+	MFW_DECLARE_LOG_CONTEXT(log_shader, u8"renderer/vulkan/shader"_p)
 
 	static void __open_binary_file(vector<uint32_t> &bin, const core::searchpath &search)
 	{
-		core::file *file_{core::filesystem::instance().open_file(search, core::open_flags::read)};
+		core::interfaces::file *file_{core::interfaces::filesystem::instance().open_file(search, core::open_flags::read)};
 		if(!file_) {
 			return;
 		}
 
-		size_t filesize{file_->size_()};
+		size_t filesize{file_->size()};
 		if(filesize == 0) {
 			return;
 		}
 
-		bin.resize(scast<size_t>(filesize), 0);
-		file_->read(ccast<uint32_t *>(bin.data()), scast<size_t>(filesize));
+		bin.resize(static_cast<size_t>(filesize), 0);
+		file_->read(const_cast<uint32_t *>(bin.data()), static_cast<size_t>(filesize));
 
 		delete file_;
 	}
@@ -44,22 +44,22 @@ namespace mfw::renderer::vulkan
 		options.SetOptimizationLevel(shaderc_optimization_level_performance);
 	#endif
 
-		core::filesystem &filesys{core::filesystem::instance()};
+		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 
-		filesys.add_searchpath({u"shaders"_sv, u"shaders"_sv}, {{}, u"root"_sv});
+		filesys.add_searchpath({u8"shaders"_sv, u8"shaders"_sv}, {{}, u8"root"_sv});
 
 		filesys.print_searchmap();
 
 		vector<pstring> files{};
-		filesys.glob({u"*.*"_sv, u"shaders"_sv}, files);
+		filesys.glob({u8"*.*"_sv, u8"shaders"_sv}, files);
 
 		for(const pstring &file : files) {
 			pstring ext{file.extension()};
 
 			type type_{};
-			if(ext == u".vert"_sv) {
+			if(ext == u8".vert"_sv) {
 				type_ = type::vertex;
-			} else if(ext == u".frag"_sv) {
+			} else if(ext == u8".frag"_sv) {
 				type_ = type::fragment;
 			} else {
 				continue;
@@ -75,30 +75,24 @@ namespace mfw::renderer::vulkan
 			ucstring code{};
 			filesys.open_text_file(file, code);
 
-			ucstring u8code{};
-			convert(code, u8code);
-
-			ucstring u8file{};
-			convert(as_string(file), u8file);
-
-			shaderc::SpvCompilationResult res{compiler.CompileGlslToSpv(rcast<const char *>(u8code.c_str()), kind, rcast<const char *>(u8file.c_str()), "main", options)};
+			shaderc::SpvCompilationResult res{compiler.CompileGlslToSpv(c_str(code), kind, c_str(file), "main", options)};
 
 			if(res.GetCompilationStatus() != shaderc_compilation_status_success) {
-				::std::string std_message{res.GetErrorMessage()};
+				::MFW_STD_NAMESPACE::string std_message{res.GetErrorMessage()};
 				std_message.erase(std_message.cend()-1);
 
 				MFW_MESSAGE("get rid of this rcast")
-				log_shader.warning(u"{}"_sv, convert(rcast<u8string &>(std_message)));
+				log_shader().warning(u8"{}"_sv, uc_str(std_message));
 			} else {
-				core::file *file_{filesys.open_file({as_string(file) + u".bin"_s}, core::open_flags::all)};
+				core::interfaces::file *file_{filesys.open_file({as_string<ucstring>(file) + u8".bin"_s}, core::open_flags::all)};
 
 				for(uint32_t it : res) {
-					file_->write(&it, sizeof(uint32), 1);
+					file_->write(&it, sizeof(uint32_t), 1);
 				}
 
 				delete file_;
 
-				log_shader.info(u"compiled {}"_sv, as_string(file));
+				log_shader().info(u8"compiled {}"_sv, file);
 			}
 		}
 	}
@@ -111,7 +105,7 @@ namespace mfw::renderer::vulkan
 	shader::stages_t shader::stages() const
 	{
 		stages_t stages{};
-		for(stl::size_t i{0}; i < data.size(); i++) {
+		for(size_t i{0}; i < data.size(); i++) {
 			stages[i] = data[i].stageinfo;
 		}
 		return stages;
@@ -126,18 +120,18 @@ namespace mfw::renderer::vulkan
 
 	bool shader::load_files(const vk::Device &device)
 	{
-		core::filesystem &filesys{core::filesystem::instance()};
+		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 
 		vector<pstring> files{};
-		filesys.glob({name_+u".*.bin"_s, u"shaders"_sv}, files);
+		filesys.glob({name_+u8".*.bin"_s, u8"shaders"_sv}, files);
 
 		for(const pstring &file : files) {
 			pstring ext{file.extension()};
 
 			type type_{};
-			if(ext == u".vert.bin"_sv) {
+			if(ext == u8".vert.bin"_sv) {
 				type_ = type::vertex;
-			} else if(ext == u".frag.bin"_sv) {
+			} else if(ext == u8".frag.bin"_sv) {
 				type_ = type::fragment;
 			} else {
 				return false;
@@ -167,7 +161,7 @@ namespace mfw::renderer::vulkan
 
 		vk::ShaderModuleCreateInfo moduleinfo{};
 		moduleinfo.setCodeSize(code.size());
-		moduleinfo.setPCode(rcast<const uint32_t *>(code.data()));
+		moduleinfo.setPCode(reinterpret_cast<const uint32_t *>(code.data()));
 		data[type_].module_ = MFW_VKRES(device.createShaderModuleUnique(move(moduleinfo), &__vk_alloc_callbacks()));
 
 		const vk::ShaderModule &module_{*data[type_].module_};
@@ -183,4 +177,4 @@ namespace mfw::renderer::vulkan
 
 		return true;
 	}
-};
+}

@@ -1,0 +1,10 @@
+#include "bases/default.sr"
+
+clang : base_solution
+{
+	projects {
+		//llvm
+		//clang
+		cling
+	}
+}

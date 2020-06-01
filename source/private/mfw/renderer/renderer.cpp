@@ -47,5 +47,5 @@ namespace mfw::renderer
 			renderwindow *win = create_window();
 			win->enable(true);
 		}
-	};
-};
+	}
+}

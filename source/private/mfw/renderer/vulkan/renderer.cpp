@@ -11,24 +11,23 @@
 
 namespace mfw::renderer::vulkan
 {
-	MFW_DECLARE_LOG_CONTEXT(log_renderer, u"renderer/vulkan"_p);
+	MFW_DECLARE_LOG_CONTEXT(log_renderer, u8"renderer/vulkan"_p)
 
-	static VkBool32 MFW_SHAREDCALL __vk_debug_msg(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
+	static VkBool32 MFW_CALL_SHARED __vk_debug_msg(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData)
 	{
-		if(bcast(messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) ||
-		   bcast(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)) {
+		if(bool_cast(messageTypes & VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) ||
+			bool_cast(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)) {
 			return VK_TRUE;
 		}
 
-		ucstring msg{};
-		convert(rcast<const char8_t *>(pCallbackData->pMessage), msg);
+		ucstring msg{uc_str(pCallbackData->pMessage)};
 
-		if(bcast(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)) {
-			log_renderer().info(u"{}"_sv, msg);
-		} else if(bcast(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)) {
-			log_renderer().warning(u"{}"_sv, msg);
-		} else if(bcast(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)) {
-			log_renderer().error(u"{}"_sv, msg);
+		if(bool_cast(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)) {
+			log_renderer().info(u8"{}"_sv, msg);
+		} else if(bool_cast(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)) {
+			log_renderer().warning(u8"{}"_sv, msg);
+		} else if(bool_cast(messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)) {
+			log_renderer().error(u8"{}"_sv, msg);
 		}
 
 		return VK_TRUE;
@@ -36,7 +35,7 @@ namespace mfw::renderer::vulkan
 
 	core::exit_status renderer::initialize()
 	{
-		core::exit_status status{__super::initialize()};
+		core::exit_status status{super::initialize()};
 		if(!status.succeded()) {
 			return status;
 		}
@@ -56,64 +55,69 @@ namespace mfw::renderer::vulkan
 		vk::InstanceCreateInfo instinfo{};
 		instinfo.setPApplicationInfo(&appinfo);
 
-		vector<const char8_t *> extensions_required{};
+		vector<const ucchar_t *> extensions_required{};
 		extensions(extensions_required);
-		instinfo.setEnabledExtensionCount(scast<uint32_t>(extensions_required.size()));
-		instinfo.setPpEnabledExtensionNames(rcast<const char *const *>(extensions_required.data()));
+		instinfo.setEnabledExtensionCount(static_cast<uint32_t>(extensions_required.size()));
+		instinfo.setPpEnabledExtensionNames(reinterpret_cast<const char *const *const>(extensions_required.data()));
 
-		vector<const char8_t *> layers_required{};
+		vector<const ucchar_t *> layers_required{};
 		layers(layers_required);
-		instinfo.setEnabledLayerCount(scast<uint32_t>(layers_required.size()));
-		instinfo.setPpEnabledLayerNames(rcast<const char *const *>(layers_required.data()));
+		instinfo.setEnabledLayerCount(static_cast<uint32_t>(layers_required.size()));
+		instinfo.setPpEnabledLayerNames(reinterpret_cast<const char *const *const>(layers_required.data()));
 
 		instance_.instance = MFW_VKRES(vk::createInstanceUnique(move(instinfo), &__vk_alloc_callbacks()));
 
 		#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
 		vk::DebugUtilsMessengerCreateInfoEXT dbgmsginfo{};
-		dbgmsginfo.setPfnUserCallback(rcast<PFN_vkDebugUtilsMessengerCallbackEXT>(__vk_debug_msg));
+		dbgmsginfo.setPfnUserCallback(reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(__vk_debug_msg));
 		dbgmsginfo.setPUserData(nullptr);
-		dbgmsginfo.setMessageSeverity(scast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(vk::FlagTraits<vk::DebugUtilsMessageSeverityFlagBitsEXT>::allFlags));
-		dbgmsginfo.setMessageType(scast<vk::DebugUtilsMessageTypeFlagBitsEXT>(vk::FlagTraits<vk::DebugUtilsMessageTypeFlagBitsEXT>::allFlags));
+		dbgmsginfo.setMessageSeverity(static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(vk::FlagTraits<vk::DebugUtilsMessageSeverityFlagBitsEXT>::allFlags));
+		dbgmsginfo.setMessageType(static_cast<vk::DebugUtilsMessageTypeFlagBitsEXT>(vk::FlagTraits<vk::DebugUtilsMessageTypeFlagBitsEXT>::allFlags));
 		instance_.messenger = MFW_VKRES(instance_.instance->createDebugUtilsMessengerEXTUnique(move(dbgmsginfo), &__vk_alloc_callbacks()));
 		#endif
 
 		vector<vk::PhysicalDevice> devices{MFW_VKRES(instance_.instance->enumeratePhysicalDevices())};
 
+	#if MFW_OS_IS(WINDOWS)
 		vk::Win32SurfaceCreateInfoKHR win32info{};
 		win32info.setHinstance(window::instance());
 		win32info.setHwnd(window::desktop_window());
 
 		vk::UniqueSurfaceKHR surface{MFW_VKRES(instance_.instance->createWin32SurfaceKHRUnique(move(win32info), &__vk_alloc_callbacks()))};
+	#else
+		//#error
+	#endif
 
+	#if 0
 		for(const vk::PhysicalDevice &device : devices) {
 			if(gpu::is_device_valid(device, *surface)) {
 				vk::PhysicalDeviceProperties dprop{};
 				device.getProperties(&dprop);
 
-				const gpu *gpu_{scast<const gpu *>(gpu::find(dprop.deviceID))};
+				const gpu *gpu_{static_cast<const gpu *>(gpu::find(dprop.deviceID))};
 
-				log_renderer.info(u"found {}"_sv, convert(rcast<const char8_t *>(dprop.deviceName)));
+				ucstring name{uc_str(dprop.deviceName)};
+				log_renderer.info(u"found {}"_sv, name);
 
 				gpu::maingpu_ = gpu_;
-				ccast<gpu *>(gpu_)->physical_device_ = device;
+				const_cast<gpu *>(gpu_)->physical_device_ = device;
 			}
 		}
+	#endif
 
 		shader::initialize();
 
-		renderwindow *wtf = scast<renderwindow *>(create_window());
-
-		return core::exit_code::success;
+		return core::exit_status::success;
 	}
 
-	core::exit_code renderer::shutdown()
+	core::exit_status renderer::shutdown()
 	{
 		shader::shutdown();
 
-		return __super::shutdown();
+		return super::shutdown();
 	}
 
-	void renderer::layers(vector<const char8_t *> &required, bool *anyunsupported)
+	void renderer::layers(vector<const ucchar_t *> &required, bool *anyunsupported)
 	{
 		vector<vk::LayerProperties> supported{MFW_VKRES(vk::enumerateInstanceLayerProperties())};
 
@@ -123,27 +127,31 @@ namespace mfw::renderer::vulkan
 		required.push_back(u8"VK_LAYER_NV_optimus");
 
 		__vk_remove_unsupported(required, supported,
-			[anyunsupported](const u8string_view &name) -> void {
-				log_renderer.warning(u"{} not supported"_sv, convert(name));
+			[anyunsupported](const ucstring_view &name) -> void {
+				log_renderer().warning(u8"{} not supported"_sv, name);
 				if(anyunsupported) {
 					*anyunsupported = true;
 				}
 		});
 	}
 
-	void renderer::extensions(vector<const char8_t *> &required, bool *anyunsupported)
+	void renderer::extensions(vector<const ucchar_t *> &required, bool *anyunsupported)
 	{
 		vector<vk::ExtensionProperties> supported{MFW_VKRES(vk::enumerateInstanceExtensionProperties())};
 
 		#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
-		required.push_back(rcast<const char8_t *>(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
+		required.push_back(reinterpret_cast<const ucchar_t *>(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
 		#endif
-		required.push_back(rcast<const char8_t *>(VK_KHR_SURFACE_EXTENSION_NAME));
-		required.push_back(rcast<const char8_t *>(VK_KHR_WIN32_SURFACE_EXTENSION_NAME));
+		required.push_back(reinterpret_cast<const ucchar_t *>(VK_KHR_SURFACE_EXTENSION_NAME));
+	#if MFW_OS_IS(WINDOWS)
+		required.push_back(reinterpret_cast<const ucchar_t *>(VK_KHR_WIN32_SURFACE_EXTENSION_NAME));
+	#else
+		//#error
+	#endif
 
 		__vk_remove_unsupported(required, supported,
-			[anyunsupported](const u8string_view &name) -> void {
-				log_renderer.warning(u"{} not supported"_sv, convert(name));
+			[anyunsupported](const ucstring_view &name) -> void {
+				log_renderer().warning(u8"{} not supported"_sv, name);
 				if(anyunsupported) {
 					*anyunsupported = true;
 				}
@@ -160,4 +168,4 @@ namespace mfw::renderer::vulkan
 		const gpu &gpu_{gpu::maingpu()};
 		return new renderwindow{&gpu_, &gpu_.main_monitor()};
 	}
-};
+}

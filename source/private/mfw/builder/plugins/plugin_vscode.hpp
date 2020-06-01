@@ -10,7 +10,7 @@
 
 namespace mfw::builder
 {
-	class plugin_vscode : public base_plugin
+	class plugin_vscode final : public base_plugin
 	{
 	public:
 		plugin_vscode();

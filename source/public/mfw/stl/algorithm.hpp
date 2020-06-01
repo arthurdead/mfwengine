@@ -18,6 +18,8 @@ namespace mfw::stl
 {
 #if MFW_STD_FLAGGED(API_CONFORMING)
 	using ::MFW_STD_NAMESPACE::clamp;
+	using ::MFW_STD_NAMESPACE::min;
+	using ::MFW_STD_NAMESPACE::max;
 #else
 	#error
 #endif

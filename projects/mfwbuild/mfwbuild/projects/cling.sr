@@ -1,0 +1,17 @@
+#include "bases/default.sr"
+
+cling : base_project, standards.cpp20, output_static
+{
+	compiler {
+		options::includes_paths {
+			"${thirdparty_folder}/llvm/tools/cling/include"
+			//"${thirdparty_folder}/llvm/tools/clang/include"
+			//"${thirdparty_folder}/llvm/include"
+			//"${thirdparty_folder}/llvm/build/include"
+			//"${source_folder}/private/thirdparty/llvm"
+		}
+		files {
+			"${thirdparty_folder}/llvm/tools/cling/lib/**/*.cpp"
+		}
+	}
+}

@@ -25,6 +25,6 @@ namespace mfw::renderer::agnostic
 	private:
 		void do_stuff() override;
 	};
-};
+}
 
 #endif

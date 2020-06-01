@@ -6,6 +6,7 @@
 #include <private/mfw/renderer/gpu.hpp>
 #include <private/mfw/renderer/vulkan/helpers.hpp>
 #include <private/mfw/renderer/vulkan/renderer.hpp>
+#include <public/mfw/stl/array.hpp>
 
 namespace mfw::renderer::vulkan
 {
@@ -16,7 +17,7 @@ namespace mfw::renderer::vulkan
 	public:
 		const vk::PhysicalDevice &physical_device() const { return physical_device_; }
 
-		enum /*class*/ queue_type : int8_t
+		enum /*class*/ queue_type : uchar_t
 		{
 			graphics,
 			present,
@@ -42,7 +43,7 @@ namespace mfw::renderer::vulkan
 					return true;
 				}
 
-				using queue_indexes_t = array<uint32, queue_type::count>;
+				using queue_indexes_t = array<uint32_t, queue_type::count>;
 
 				queue_indexes_t indexes() const {
 					queue_indexes_t indexes{};
@@ -74,11 +75,11 @@ namespace mfw::renderer::vulkan
 
 		static bool is_device_valid(const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface);
 
-		static const gpu &maingpu() { return *scast<const gpu *>(maingpu_); }
+		static const gpu &maingpu() { return *static_cast<const gpu *>(maingpu_); }
 
 	private:
 		vk::PhysicalDevice physical_device_{};
 	};
-};
+}
 
 #endif

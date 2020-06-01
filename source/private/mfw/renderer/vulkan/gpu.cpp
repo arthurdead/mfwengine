@@ -3,13 +3,13 @@
 
 namespace mfw::renderer::vulkan
 {
-	MFW_DECLARE_LOG_CONTEXT(log_gpu, u"renderer/vulkan/gpu"_p);
+	MFW_DECLARE_LOG_CONTEXT(log_gpu, u8"renderer/vulkan/gpu"_p)
 
 	void gpu::queues(queue_array &required, const vk::PhysicalDevice &device, const vk::SurfaceKHR &surface)
 	{
 		vector<vk::QueueFamilyProperties> familyinfos{MFW_VKRES(device.getQueueFamilyProperties())};
 
-		for(uint32 fi{0}; fi < familyinfos.size(); fi++) {
+		for(uint32_t fi{0}; fi < familyinfos.size(); fi++) {
 			const vk::QueueFamilyProperties &props{familyinfos[fi]};
 
 			queue_family_t family{};
@@ -42,8 +42,8 @@ namespace mfw::renderer::vulkan
 		vector<vk::LayerProperties> supported{MFW_VKRES(device.enumerateDeviceLayerProperties())};
 
 		__vk_remove_unsupported(required, supported,
-			[anyunsupported](const u8string_view &name) -> void {
-				log_gpu.warning(u"{} not supported"_sv, convert(name));
+			[anyunsupported](const ucstring_view &name) -> void {
+				log_gpu().warning(u8"{} not supported"_sv, name);
 				if(anyunsupported) {
 					*anyunsupported = true;
 				}
@@ -54,11 +54,11 @@ namespace mfw::renderer::vulkan
 	{
 		vector<vk::ExtensionProperties> supported{MFW_VKRES(device.enumerateDeviceExtensionProperties())};
 
-		required.push_back(rcast<const char8_t *>(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
+		required.push_back(reinterpret_cast<const char8_t *>(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
 
 		__vk_remove_unsupported(required, supported,
-			[anyunsupported](const u8string_view &name) -> void {
-				log_gpu.warning(u"{} not supported"_sv, convert(name));
+			[anyunsupported](const ucstring_view &name) -> void {
+				log_gpu().warning(u8"{} not supported"_sv, name);
 				if(anyunsupported) {
 					*anyunsupported = true;
 				}
@@ -69,4 +69,4 @@ namespace mfw::renderer::vulkan
 	{
 		return true;
 	}
-};
+}

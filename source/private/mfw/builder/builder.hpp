@@ -123,7 +123,7 @@ namespace mfw::builder
 		bool generate_project(const solution_reference &solution, const project_reference &project, base_plugin *plugin, core::log_context &log, const base_plugin::plugin_info_t &info);
 		bool generate_tool_section(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, base_plugin *plugin, core::log_context &log, const base_plugin::plugin_info_t &info);
 
-		project_reference *find_or_load_project(const ucstring &name, solution_reference &solution);
+		project_reference *find_or_load_project(const ucstring &name, const pstring &filter, const ucstring &condition, solution_reference &solution);
 
 		static void generate_pch(const pstring &file, const tool_reference &tool, const project_reference &project, const solution_reference &solution);
 
@@ -135,6 +135,7 @@ namespace mfw::builder
 		bool parse_solutions();
 		bool parse_solution(solution_reference &solution);
 		bool parse_projects(const core::serializable &projects, const pstring &filter, solution_reference &solution);
+		project_reference *load_project(const ucstring &name, const pstring &filter, const ucstring &condition, solution_reference &solution);
 		bool parse_project(project_reference &project, solution_reference &solution);
 		bool parse_tool_section(tool_section_reference &tool_section, project_reference &project, const solution_reference &solution);
 		bool parse_tool(tool_reference &tool);
@@ -280,6 +281,8 @@ namespace mfw::builder
 		
 		vector<ucstring> selected_sections{};
 		vector<ucstring> selected_projects{};
+		
+		//vector<const project_reference *> already_generated{};
 
 		file_timestamp_builder timestamp_builder{};
 

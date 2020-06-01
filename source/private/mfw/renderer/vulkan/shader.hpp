@@ -5,6 +5,7 @@
 
 #include <private/mfw/renderer/vulkan/helpers.hpp>
 #include <public/mfw/core/searchpath.hpp>
+#include <public/mfw/stl/array.hpp>
 
 namespace mfw::renderer::vulkan
 {
@@ -14,7 +15,7 @@ namespace mfw::renderer::vulkan
 		shader(ucstring_view name) : name_{name} {}
 		~shader() { reset(); }
 
-		enum /*class*/ type : uint8_t
+		enum /*class*/ type : uchar_t
 		{
 			vertex,
 			fragment,
@@ -34,7 +35,7 @@ namespace mfw::renderer::vulkan
 	private:
 		bool load_file(const vk::Device &device, type type_, const core::searchpath &search);
 
-		u16string name_{};
+		ucstring name_{};
 
 		struct data_t
 		{
@@ -44,6 +45,6 @@ namespace mfw::renderer::vulkan
 
 		array<data_t, type::count> data{};
 	};
-};
+}
 
 #endif

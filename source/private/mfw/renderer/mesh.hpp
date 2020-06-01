@@ -11,6 +11,6 @@ namespace mfw::renderer::agnostic
 	private:
 		//fvec3 pos;
 	};
-};
+}
 
 #endif

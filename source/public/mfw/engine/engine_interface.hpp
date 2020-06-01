@@ -18,7 +18,7 @@ namespace mfw::engine
 		public:
 			MFW_ENGINE_API static engine & MFW_ENGINE_CALL instance();
 		};
-	};
-};
+	}
+}
 
 #endif

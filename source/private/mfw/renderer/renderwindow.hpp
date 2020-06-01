@@ -30,6 +30,6 @@ namespace mfw::renderer::agnostic
 		bool fullscreen{false};
 		const monitor *monitor_{nullptr};
 	};
-};
+}
 
 #endif

@@ -45,8 +45,8 @@ namespace mfw::builder
 			builder::instance().replace_vars(str);
 		}
 
-		static plugin_process process_plugin{};
-		static plugin_vscode vscode_plugin{};
+		static unique_ptr<plugin_process> process_plugin{};
+		static unique_ptr<plugin_vscode> vscode_plugin{};
 	}
 
 	builder::builder()
@@ -70,8 +70,23 @@ namespace mfw::builder
 			$(optional,count=1,description="list symbols of file")
 			list_symbols
 			
+			$(optional,min=1,description="list of sections to build")
+			sections
+			
+			$(optional,min=1,description="list of projects to build")
+			projects
+
+			$(optional,count=0,description="ignores cache")
+			regen_cache
+			
 			$(required,min=1,description="list of plugins to use while building")
 			plugins
+			
+			$(required,count=1,description="root path to mfwbuild files")
+			path
+
+			$(required,min=1,description="list of solutions to build")
+			solutions
 		)"_sv;
 
 		valid = cmdline.validate(help);
@@ -94,56 +109,6 @@ namespace mfw::builder
 			}
 			
 			return core::exit_status::success;
-		}
-		
-		if(!parse_plugins()) {
-			return core::exit_status::fatal;
-		}
-		
-		help = u8R"(
-			$(optional,min=1,description="list of sections to build")
-			sections
-			
-			$(optional,min=1,description="list of projects to build")
-			projects
-
-			$(optional,count=0,description="ignores cache")
-			regen_cache
-		)"_sv;
-		
-		valid = cmdline.validate(help);
-		if(!valid) {
-			return core::exit_status::fatal;
-		}
-		
-		ucstring tmp_help{};
-		
-		for(base_plugin *plugin : plugins) {
-			tmp_help += u8"$if plugins."_sv;
-			tmp_help += plugin->name();
-			tmp_help += u8'\n';
-			plugin->insert_help(tmp_help);
-			tmp_help += u8"$endif"_sv;
-		}
-		
-		if(!tmp_help.empty()) {
-			valid = cmdline.validate(tmp_help);
-			if(!valid) {
-				return core::exit_status::fatal;
-			}
-		}
-		
-		help = u8R"(
-			$(required,count=1,description="root path to mfwbuild files")
-			path
-
-			$(required,min=1,description="list of solutions to build")
-			solutions
-		)"_sv;
-		
-		valid = cmdline.validate(help);
-		if(!valid) {
-			return core::exit_status::fatal;
 		}
 
 		pstring root_dir{as_string<pstring>(*cmdline.value(u8"path"_s))};
@@ -171,6 +136,27 @@ namespace mfw::builder
 		filesys.set_working_dir({{}, u8"data"_sv});
 
 		regen_cache_ = cmdline.get_bool(u8"regen_cache"_s);
+		
+		if(!parse_plugins()) {
+			return core::exit_status::fatal;
+		}
+		
+		/*ucstring tmp_help{};
+		
+		for(base_plugin *plugin : plugins) {
+			tmp_help += u8"$if plugins."_sv;
+			tmp_help += plugin->name();
+			tmp_help += u8'\n';
+			plugin->insert_help(tmp_help);
+			tmp_help += u8"$endif"_sv;
+		}
+		
+		if(!tmp_help.empty()) {
+			valid = cmdline.validate(tmp_help);
+			if(!valid) {
+				return core::exit_status::fatal;
+			}
+		}*/
 
 		const vector<core::univalue> *values_sections{cmdline.values(u8"sections"_s)};
 		if(values_sections) {
@@ -241,9 +227,11 @@ namespace mfw::builder
 			const ucstring &name{value.get_string()};
 
 			if(name == u8"process"_sv) {
-				plugins.emplace_back(&__builder_internal::process_plugin);
+				__builder_internal::process_plugin.reset(new plugin_process{});
+				plugins.emplace_back(__builder_internal::process_plugin.get());
 			} else if(name == u8"vscode"_sv) {
-				plugins.emplace_back(&__builder_internal::vscode_plugin);
+				__builder_internal::vscode_plugin.reset(new plugin_vscode{});
+				plugins.emplace_back(__builder_internal::vscode_plugin.get());
 			} else {
 				bool found{false};
 				for(base_plugin *plugin : plugins) {
@@ -646,7 +634,7 @@ namespace mfw::builder
 		return true;
 	}
 
-	project_reference *builder::find_or_load_project(const ucstring &name, solution_reference &solution)
+	project_reference *builder::find_or_load_project(const ucstring &name, const pstring &filter, const ucstring &condition, solution_reference &solution)
 	{
 		ptr_vector<project_reference> &projects{solution.projects_};
 		for(project_reference &proj : projects) {
@@ -655,7 +643,7 @@ namespace mfw::builder
 			}
 		}
 
-		return nullptr;
+		return nullptr;//load_project(name, filter, condition, solution);
 	}
 
 	bool builder::parse_builder_section(const builder_section_reference &sec, project_reference &project, solution_reference &solution)
@@ -675,7 +663,10 @@ namespace mfw::builder
 				if(name == proj_name) {
 					continue;
 				}
-				project_reference *other{find_or_load_project(name, solution)};
+				if(!it.passes_condition(this)) {
+					continue;
+				}
+				project_reference *other{find_or_load_project(name, {}, {}, solution)};
 				if(!other) {
 					log_builder().error(u8"project {} missing dependency {}"_sv, project.get_name(), name);
 					return false;
@@ -692,6 +683,33 @@ namespace mfw::builder
 
 		return true;
 	}
+	
+	project_reference *builder::load_project(const ucstring &name, const pstring &filter, const ucstring &condition, solution_reference &solution)
+	{
+		__builder_internal::root_file<project_reference> project_root{};
+
+		const ucstring &solution_name{solution.get_name()};
+		pstring cache_filter{solution_name/filter};
+
+		bool cached{true};
+		if(!open_cached_file_project(name, cache_filter, project_root, cached)) {
+			return nullptr;
+		}
+		
+		project_reference &project_main{reinterpret_cast<project_reference &>(*project_root.get_child(name))};
+		project_main.set_value(as_string<core::univalue>(filter));
+		project_main.set_condition(condition);
+		
+		if(!parse_project(project_main, solution)) {
+			return nullptr;
+		}
+
+		if(!cached) {
+			save_cached_file_project(name, cache_filter, project_main);
+		}
+
+		return &solution.projects_.emplace_back(move(project_main));
+	}
 
 	bool builder::parse_projects(const core::serializable &projects, const pstring &filter, solution_reference &solution)
 	{
@@ -705,30 +723,10 @@ namespace mfw::builder
 				}
 				continue;
 			}
-
-			__builder_internal::root_file<project_reference> project_root{};
-
-			const ucstring &solution_name{solution.get_name()};
-			pstring cache_filter{solution_name/filter};
-
-			bool cached{true};
-			if(!open_cached_file_project(name, cache_filter, project_root, cached)) {
+			
+			if(!load_project(name, filter, condition, solution)) {
 				return false;
 			}
-			
-			project_reference &project_main{reinterpret_cast<project_reference &>(*project_root.get_child(name))};
-			project_main.set_value(as_string<core::univalue>(filter));
-			project_main.set_condition(condition);
-			
-			if(!parse_project(project_main, solution)) {
-				return false;
-			}
-
-			if(!cached) {
-				save_cached_file_project(name, cache_filter, project_main);
-			}
-
-			solution.projects_.emplace_back(move(project_main));
 		}
 
 		return true;
@@ -931,6 +929,7 @@ namespace mfw::builder
 				filesys.glob({name_path}, files_paths);
 				
 				if(files_paths.empty()) {
+					MFW_MESSAGE("this adds globs which is not good")
 					files_paths.emplace_back(name_path);
 				}
 			} else {
@@ -959,8 +958,10 @@ namespace mfw::builder
 					
 					size_t pos{name.find(u8'*')};
 					if(pos != ucstring::npos) {
-						ucstring junk{name.substr(0, pos)};
-						replace_all(str, junk, u8""_sv);
+						pstring junk{as_string<pstring>(name.substr(0, pos))};
+						junk = filesys.clean({junk});
+						replace_all(str, as_string<ucstring>(junk), {});
+						str.erase(str.cbegin());
 						tmp_filter = filter;
 						tmp_filter /= str;
 						tmp_filter.remove_filename();
@@ -1936,11 +1937,11 @@ namespace mfw::builder
 			if(!generate_project(solution, *it, plugin, log, info)) {
 				return false;
 			}
-		}*/
-		
-		if(project.generated_) {
-			return true;
 		}
+		
+		if(contains(already_generated, &project)) {
+			return true;
+		}*/
 
 		ucstring proj_name{project.get_name()};
 		add_variable(u8"project_name"_s, proj_name);
@@ -1999,25 +2000,27 @@ namespace mfw::builder
 			
 			const ucstring &sec_name{tool_section_main.get_name()};
 			
-			bool in_cmdline{false};
-			bool generate_sec{true};
-			
-			if(!selected_sections.empty()) {
-				if(!contains(selected_sections, sec_name)) {
-					generate_sec = false;
-				} else {
-					in_cmdline = true;
+			if(!is_hardcoded_tool(sec_name)) {
+				bool in_cmdline{false};
+				bool generate_sec{true};
+				
+				if(!selected_sections.empty() ) {
+					if(!contains(selected_sections, sec_name)) {
+						generate_sec = false;
+					} else {
+						in_cmdline = true;
+					}
 				}
-			}
-			
-			if(!in_cmdline) {
-				if(value == u8"ignore"_sv) {
-					generate_sec = false;
+				
+				if(!in_cmdline) {
+					if(value == u8"ignore"_sv) {
+						generate_sec = false;
+					}
 				}
-			}
-			
-			if(!generate_sec) {
-				continue;
+				
+				if(!generate_sec) {
+					continue;
+				}
 			}
 
 			log.set_ident(ident);
@@ -2037,6 +2040,8 @@ namespace mfw::builder
 				}
 			}
 		}
+		
+		//already_generated.emplace_back(&project);
 
 		return true;
 	}

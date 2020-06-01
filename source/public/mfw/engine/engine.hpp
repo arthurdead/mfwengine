@@ -19,16 +19,16 @@ namespace mfw
 {
 	namespace engine
 	{
-		namespace interfaces {};
+		namespace interfaces {}
 		using namespace interfaces;
-		namespace literals {};
+		namespace literals {}
 		using namespace literals;
-	};
+	}
 
 	namespace literals
 	{
 		using namespace engine::literals;
-	};
-};
+	}
+}
 
 #endif

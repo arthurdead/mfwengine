@@ -97,29 +97,10 @@ namespace mfw::builder
 		return true;
 	}
 
-	bool plugin_process::populate_vars(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section)
+	namespace __plugin_process_internal
 	{
-		return true;
-	}
-	
-	bool plugin_process::compiler_tool_info_t::setup(const tool_info_t &tool_info, const tool_section_reference &tool_section, const core::serializable &options_)
-	{
-		if(!super::setup(tool_info, tool_section, options_)) {
-			return false;
-		}
-		
-		compiler_info_t info{};
-		
-		const tool_reference *tool{tool_section.tool()};
-		
-		pstring tool_path{tool->path()};
-		if(!tool_path.empty()) {
-			info = get_compiler_info(tool_path);
-		} else {
-			info = get_compiler_info(tool->shell());
-		}
-		
-		if(info & compiler_info_t::flags_t::unix_) {
+		static bool get_lib_dirs(const pstring &tool_path, ucstring &compiler_lib_dirs, bool only_first)
+		{
 			core::process proc{};
 			proc.set_path(tool_path);
 			proc.set_args(u8"-print-search-dirs"_s);
@@ -155,15 +136,70 @@ namespace mfw::builder
 					str.pop_back();
 				}
 				
-				compiler_lib_dirs += u8"-L"_sv;
-				compiler_lib_dirs += move(str);
-				compiler_lib_dirs += u8' ';
+				if(only_first) {
+					compiler_lib_dirs += move(str);
+					break;
+				} else {
+					compiler_lib_dirs += u8"-L"_sv;
+					compiler_lib_dirs += move(str);
+					compiler_lib_dirs += u8' ';
+				}
 				
 				start++;
 				start += len;
 			}
 			
-			compiler_lib_dirs.pop_back();
+			if(!only_first) {
+				compiler_lib_dirs.pop_back();
+			}
+			
+			return true;
+		}
+		
+		static bool get_lib_dir(const ucstring &name, ucstring &compiler_lib_dir)
+		{
+			pstring tool_path{core::process::get_path(name)};
+			return get_lib_dirs(tool_path, compiler_lib_dir, true);
+		}
+	}
+
+	bool plugin_process::populate_vars(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section)
+	{
+		const ucstring &sec_name{tool_section.get_name()};
+		
+		if(sec_name == u8"compiler"_sv ||
+			sec_name == u8"linker"_sv) {
+			ucstring compiler_lib_dir{};
+			if(!__plugin_process_internal::get_lib_dir(u8"gcc"_s, compiler_lib_dir)) {
+				return false;
+			}
+			builder_funcs().add_variable(u8"gcc_lib_dir"_s, compiler_lib_dir);
+		}
+		
+		return true;
+	}
+	
+	bool plugin_process::compiler_tool_info_t::setup(const tool_info_t &tool_info, const tool_section_reference &tool_section, const core::serializable &options_)
+	{
+		if(!super::setup(tool_info, tool_section, options_)) {
+			return false;
+		}
+		
+		compiler_info_t info{};
+		
+		const tool_reference *tool{tool_section.tool()};
+		
+		pstring tool_path{tool->path()};
+		if(!tool_path.empty()) {
+			info = get_compiler_info(tool_path);
+		} else {
+			info = get_compiler_info(tool->shell());
+		}
+		
+		if(info & compiler_info_t::flags_t::unix_) {
+			if(!__plugin_process_internal::get_lib_dirs(tool_path, compiler_lib_dirs, false)) {
+				return false;
+			}
 		}
 		
 		return true;
@@ -990,7 +1026,7 @@ namespace mfw::builder
 			}
 			unity_file_path.replace_extension(ext);
 			
-			unity_file_path = filesys.resolve({unity_file_path}, false);
+			unity_file_path = filesys.resolve({unity_file_path, name()}, false);
 
 			add_file_to_str(unity_file_path, str, info);
 		}
@@ -1005,29 +1041,32 @@ namespace mfw::builder
 			vector<byte> unity_build_file{};
 
 			for(const file_reference *file : files) {
+				if(file->has_flag(u8"dynamic"_sv)) {
+					continue;
+				}
+				
 				core::interfaces::file *file_handle{filesys.open_file({file->path()}, core::open_flags::read)};
 				if(!file_handle) {
 					log().error(u8"could not open file: {}"_sv, file->path());
 					return false;
 				}
 
-				size_t size{file_handle->size()};
 				vector<byte> temp{};
-				temp.resize(size);
-				file_handle->read(temp.data(), temp.size());
+				file_handle->read(temp);
+				temp.emplace_back(static_cast<byte>(u8'\n'));
 
-				unity_build_file.insert(unity_build_file.end(), temp.begin(), temp.end());
+				unity_build_file.insert(unity_build_file.cbegin(), temp.cbegin(), temp.cend());
 
 				delete file_handle;
 			}
 
-			core::interfaces::file *file_handle{filesys.open_file({unity_file_path, name()}, core::open_flags::all)};
+			core::interfaces::file *file_handle{filesys.open_file({unity_file_path}, core::open_flags::all)};
 			if(!file_handle) {
 				log().error(u8"could not open file: {}"_sv, unity_file_path);
 				return false;
 			}
 
-			file_handle->write(unity_build_file.data(), unity_build_file.size());
+			file_handle->write(unity_build_file);
 
 			delete file_handle;
 		}

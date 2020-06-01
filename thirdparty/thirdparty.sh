@@ -25,6 +25,7 @@ sh "${build_scripts}/git_clone.sh" "https://github.com/arthurdead/Implib.so.git"
 #sh "${build_scripts}/git_clone.sh" "https://github.com/codecat/angelscript-mirror.git" master angelscript
 #sh "${build_scripts}/git_clone.sh" "https://github.com/bluecataudio/AngelScript-JIT-Compiler.git" master "AngelScript-JIT-Compiler"
 
+#sh "${build_scripts}/git_clone.sh" "https://github.com/hfinkel/llvm-project-cxxjit.git" "cxxjit-ni-9.0" "llvm-project-cxxjit"
 #sh "${build_scripts}/git_clone.sh" "http://root.cern.ch/git/llvm.git" "cling-patches" llvm
 #sh "${build_scripts}/git_clone.sh" "http://root.cern.ch/git/cling.git" master "llvm/tools/cling"
 #sh "${build_scripts}/git_clone.sh" "http://root.cern.ch/git/clang.git" "cling-patches" "llvm/tools/clang"

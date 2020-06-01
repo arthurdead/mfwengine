@@ -26,7 +26,7 @@ namespace std
 
 	#define allocator __vulkan_allocator_replace_hack
 	#define vector __vulkan_vector_replace_hack
-};
+}
 	#include <vulkan/vulkan.hpp>
 	#undef allocator
 	#undef vector
@@ -81,6 +81,6 @@ namespace mfw::renderer::vulkan
 				return false;
 		}), required.end());
 	}
-};
+}
 
 #endif

@@ -14,12 +14,12 @@ base_solution
 		configuration::debug
 	$else
 		os {
-			windows
+			//windows
 			linux
 		}
 		configuration {
 			debug,
-			release
+			//release
 		}
 	$endif
 		platform::x86_64
@@ -27,17 +27,25 @@ base_solution
 
 	plugin::build {
 	$if plugin_name == "vscode"
-		command "\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" "
+		command "\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" --jobs=6"
 	$endif
 	}
 
-	builder::macros {
-		root_folder "${path_folder}/../.."
-		source_folder "${root_folder}/source"
-		package_folder "${root_folder}/package"
-		thirdparty_folder "${root_folder}/thirdparty"
-		intermediary_folder "${plugin_data_folder}/${solution_name}/${project_name}/${tool_name}_${platform}_${os}_${configuration}"
-		base_dependency_folder "${data_folder}/process/${solution_name}/${dependency_name}"
+	builder {
+		pre_generate {
+		$if plugin_name == "vscode"
+			$(message="Generating compile_commands.json")
+			"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --sections=\"compiler\" --plugins=\"process\" --path=\"${path_folder}\" --only_compile_commands"
+		$endif
+		}
+		macros {
+			root_folder "${path_folder}/../.."
+			source_folder "${root_folder}/source"
+			package_folder "${root_folder}/package"
+			thirdparty_folder "${root_folder}/thirdparty"
+			intermediary_folder "${plugin_data_folder}/${solution_name}/${project_name}/${tool_name}_${platform}_${os}_${configuration}"
+			base_dependency_folder "${data_folder}/process/${solution_name}/${dependency_name}"
+		}
 	}
 
 	tools {

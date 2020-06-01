@@ -3,17 +3,22 @@
 #if MFW_OS == MFW_OS_WINDOWS
 	#include <Windows.h>
 #endif
+#include <public/mfw/stl/algorithm.hpp>
 
 namespace mfw::renderer::vulkan
 {
 	renderwindow::renderwindow(const gpu *gpu_, const monitor *mon)
 		: agnostic::renderwindow{mon}
 	{
+	#if MFW_OS_IS(WINDOWS)
 		vk::Win32SurfaceCreateInfoKHR win32info{};
 		win32info.setHinstance(instance());
 		win32info.setHwnd(handle());
 
 		device_.surface = MFW_VKRES(renderer::instance().vulkan_instance().createWin32SurfaceKHRUnique(move(win32info), &__vk_alloc_callbacks()));
+	#else
+		//#error
+	#endif
 
 		device_.physical_device = gpu_->physical_device();
 
@@ -81,20 +86,20 @@ namespace mfw::renderer::vulkan
 		device.getSurfaceCapabilitiesKHR(*device_.surface, &capabilities);
 
 		vk::Extent2D currentExtent{capabilities.currentExtent};
-		//currentExtent.setWidth(max(currentExtent.width, scast<const uint32>(WINDOW_MINIMAL_WIDTH)));
-		//currentExtent.setHeight(max(currentExtent.height, scast<const uint32>(WINDOW_MINIMAL_HEIGHT)));
+		//currentExtent.setWidth(max(currentExtent.width, static_cast<const uint32>(WINDOW_MINIMAL_WIDTH)));
+		//currentExtent.setHeight(max(currentExtent.height, static_cast<const uint32>(WINDOW_MINIMAL_HEIGHT)));
 
 		vk::Extent2D minExtent{capabilities.minImageExtent};
-		//minExtent.setWidth(max(minExtent.width, scast<const uint32>(WINDOW_MINIMAL_WIDTH)));
-		//minExtent.setHeight(max(minExtent.height, scast<const uint32>(WINDOW_MINIMAL_HEIGHT)));
+		//minExtent.setWidth(max(minExtent.width, static_cast<const uint32>(WINDOW_MINIMAL_WIDTH)));
+		//minExtent.setHeight(max(minExtent.height, static_cast<const uint32>(WINDOW_MINIMAL_HEIGHT)));
 
 		vk::Extent2D maxExtent{capabilities.maxImageExtent};
 
 		//int32 mw{0}; int32 mh{0};
 		//GetMonitorBounds(nullptr, nullptr, &mw, &mh);
 
-		//maxExtent.setWidth(max(maxExtent.width, scast<const uint32>(mw)));
-		//maxExtent.setHeight(max(maxExtent.height, scast<const uint32>(mh)));
+		//maxExtent.setWidth(max(maxExtent.width, static_cast<const uint32>(mw)));
+		//maxExtent.setHeight(max(maxExtent.height, static_cast<const uint32>(mh)));
 
 		vk::PresentModeKHR mode{present_mode(device)};
 		vk::SurfaceFormatKHR format{surface_format(device)};
@@ -119,8 +124,8 @@ namespace mfw::renderer::vulkan
 			//w = max(w, WINDOW_MINIMAL_WIDTH);
 			//h = max(h, WINDOW_MINIMAL_HEIGHT);
 
-			extent.setWidth(scast<uint32_t>(w));
-			extent.setHeight(scast<uint32_t>(h));
+			extent.setWidth(static_cast<uint32_t>(w));
+			extent.setHeight(static_cast<uint32_t>(h));
 
 			extent.setWidth(max(minExtent.width, min(maxExtent.width, extent.width)));
 			extent.setHeight(max(minExtent.height, min(maxExtent.height, extent.height)));
@@ -142,7 +147,7 @@ namespace mfw::renderer::vulkan
 			swapinfo.setImageSharingMode(vk::SharingMode::eExclusive);
 		}
 		swapinfo.setPQueueFamilyIndices(indexes.data());
-		swapinfo.setQueueFamilyIndexCount(scast<uint32_t>(indexes.size()));
+		swapinfo.setQueueFamilyIndexCount(static_cast<uint32_t>(indexes.size()));
 
 		swapinfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
 
@@ -198,13 +203,13 @@ namespace mfw::renderer::vulkan
 
 		vector<const char8_t *> extensions{};
 		gpu::extensions(extensions, device);
-		deviceinfo.setEnabledExtensionCount(scast<uint32_t>(extensions.size()));
-		deviceinfo.setPpEnabledExtensionNames(rcast<const char *const *>(extensions.data()));
+		deviceinfo.setEnabledExtensionCount(static_cast<uint32_t>(extensions.size()));
+		deviceinfo.setPpEnabledExtensionNames(reinterpret_cast<const char *const *>(extensions.data()));
 
 		vector<const char8_t *> layers{};
 		gpu::layers(layers, device);
-		deviceinfo.setEnabledLayerCount(scast<uint32_t>(layers.size()));
-		deviceinfo.setPpEnabledLayerNames(rcast<const char *const *>(layers.data()));
+		deviceinfo.setEnabledLayerCount(static_cast<uint32_t>(layers.size()));
+		deviceinfo.setPpEnabledLayerNames(reinterpret_cast<const char *const *>(layers.data()));
 
 		gpu::queues(device_.queues, device, *device_.surface);
 
@@ -225,7 +230,7 @@ namespace mfw::renderer::vulkan
 		}
 
 		deviceinfo.setPQueueCreateInfos(queueinfos.data());
-		deviceinfo.setQueueCreateInfoCount(scast<uint32_t>(queueinfos.size()));
+		deviceinfo.setQueueCreateInfoCount(static_cast<uint32_t>(queueinfos.size()));
 
 		device_.device = MFW_VKRES(device.createDeviceUnique(move(deviceinfo), &__vk_alloc_callbacks()));
 
@@ -243,7 +248,7 @@ namespace mfw::renderer::vulkan
 		vk::PipelineVertexInputStateCreateInfo vertexstate{};
 
 		array<vk::VertexInputAttributeDescription, 2> attribdesc{mesh::attribute_descriptions()};
-		vertexstate.setVertexAttributeDescriptionCount(scast<uint32_t>(attribdesc.size()));
+		vertexstate.setVertexAttributeDescriptionCount(static_cast<uint32_t>(attribdesc.size()));
 		vertexstate.setPVertexAttributeDescriptions(attribdesc.data());
 
 		vk::VertexInputBindingDescription binddesc{mesh::binding_description()};
@@ -260,8 +265,8 @@ namespace mfw::renderer::vulkan
 		vk::Viewport viewport{};
 		viewport.setX(0.0f);
 		viewport.setY(0.0f);
-		viewport.setHeight(scast<float32_t>(swapchain_.extent.height));
-		viewport.setWidth(scast<float32_t>(swapchain_.extent.width));
+		viewport.setHeight(static_cast<float32_t>(swapchain_.extent.height));
+		viewport.setWidth(static_cast<float32_t>(swapchain_.extent.width));
 		viewport.setMinDepth(0.0f);
 		viewport.setMaxDepth(1.0f);
 
@@ -360,7 +365,7 @@ namespace mfw::renderer::vulkan
 		pipelineinfo.setSubpass(0);
 
 		shader::stages_t stages{base_shader.stages()};
-		pipelineinfo.setStageCount(scast<uint32_t>(stages.size()));
+		pipelineinfo.setStageCount(static_cast<uint32_t>(stages.size()));
 		pipelineinfo.setPStages(stages.data());
 
 		pipeline_.pipeline = MFW_VKRES(device_.device->createGraphicsPipelineUnique(nullptr, move(pipelineinfo), &__vk_alloc_callbacks()));
@@ -381,7 +386,7 @@ namespace mfw::renderer::vulkan
 
 		vk::CommandBufferAllocateInfo bufalloc{};
 		bufalloc.setCommandPool(*memory_.cmdpool);
-		bufalloc.setCommandBufferCount(scast<uint32_t>(swapchain_.framebuffers.size()));
+		bufalloc.setCommandBufferCount(static_cast<uint32_t>(swapchain_.framebuffers.size()));
 		bufalloc.setLevel(vk::CommandBufferLevel::ePrimary);
 		swapchain_.cmdbuffers = MFW_VKRES(device_.device->allocateCommandBuffersUnique(move(bufalloc)));
 
@@ -420,7 +425,7 @@ namespace mfw::renderer::vulkan
 			buffer.bindVertexBuffers(0, 1, &(*memory_.vertex.buffer), &dvsize);
 			buffer.bindIndexBuffer((*memory_.index.buffer), 0, vk::IndexType::eUint16);
 
-			buffer.drawIndexed(scast<uint32_t>(memory_.index.indices.size()), 1, 0, 0, 0);
+			buffer.drawIndexed(static_cast<uint32_t>(memory_.index.indices.size()), 1, 0, 0, 0);
 
 			buffer.endRenderPass();
 
@@ -446,7 +451,7 @@ namespace mfw::renderer::vulkan
 	void renderwindow::create_buffer(size_t size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memoryflags, vk::UniqueBuffer &buffer, vk::UniqueDeviceMemory &memory)
 	{
 		vk::BufferCreateInfo buffercreate{};
-		buffercreate.setSize(scast<uint32_t>(size));
+		buffercreate.setSize(static_cast<uint32_t>(size));
 		buffercreate.setUsage(usage);
 		buffercreate.setSharingMode(vk::SharingMode::eExclusive);
 		buffer = MFW_VKRES(device_.device->createBufferUnique(move(buffercreate), &__vk_alloc_callbacks()));
@@ -461,7 +466,7 @@ namespace mfw::renderer::vulkan
 		device_.physical_device.getMemoryProperties(&props);
 
 		for(uint32_t i{0}; i < props.memoryTypeCount; i++) {
-			if(bcast(required.memoryTypeBits & (1 << i)) && bcast(props.memoryTypes[i].propertyFlags & memoryflags)) {
+			if(bool_cast(required.memoryTypeBits & (1 << i)) && bool_cast(props.memoryTypes[i].propertyFlags & memoryflags)) {
 				allocinfo.setMemoryTypeIndex(i);
 				break;
 			}
@@ -505,7 +510,7 @@ namespace mfw::renderer::vulkan
 		begin_single_tile_commands(cmdbuffer);
 
 		vk::BufferCopy buffcopy{};
-		buffcopy.setSize(scast<vk::DeviceSize>(size));
+		buffcopy.setSize(static_cast<vk::DeviceSize>(size));
 		cmdbuffer->copyBuffer(*src, *dst, 1, &buffcopy);
 
 		end_single_tile_commands(cmdbuffer);
@@ -520,7 +525,7 @@ namespace mfw::renderer::vulkan
 		create_buffer(vertisize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingbuffer, stagingmemory);
 
 		void *data{nullptr};
-		device_.device->mapMemory(stagingmemory.get(), 0, scast<vk::DeviceSize>(vertisize), vk::MemoryMapFlags{0}, &data);
+		device_.device->mapMemory(stagingmemory.get(), 0, static_cast<vk::DeviceSize>(vertisize), vk::MemoryMapFlags{0}, &data);
 		memcpy(data, memory_.vertex.vertices.data(), vertisize);
 		device_.device->unmapMemory(*stagingmemory);
 
@@ -538,7 +543,7 @@ namespace mfw::renderer::vulkan
 		create_buffer(indisize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingbuffer, stagingmemory);
 
 		void *data{nullptr};
-		device_.device->mapMemory(stagingmemory.get(), 0, scast<vk::DeviceSize>(indisize), vk::MemoryMapFlags{0}, &data);
+		device_.device->mapMemory(stagingmemory.get(), 0, static_cast<vk::DeviceSize>(indisize), vk::MemoryMapFlags{0}, &data);
 		memcpy(data, memory_.index.indices.data(), indisize);
 		device_.device->unmapMemory(*stagingmemory);
 
@@ -579,11 +584,12 @@ namespace mfw::renderer::vulkan
 		create_frame_buffers();
 	}
 
+#if MFW_OS_IS(WINDOWS)
 	int64_t renderwindow::window_proc(uint32_t msg, uint64_t param1, int64_t param2)
 	{
 		if(msg == WM_SIZE) {
 			swapchain_.resized = true;
-			return __super::window_proc(msg, param1, param2);
+			return super::window_proc(msg, param1, param2);
 		} else if(msg == WM_PAINT) {
 			if(minimized()) {
 				return 0;
@@ -638,6 +644,7 @@ namespace mfw::renderer::vulkan
 			return 0;
 		}
 
-		return __super::window_proc(msg, param1, param2);
+		return super::window_proc(msg, param1, param2);
 	}
-};
+#endif
+}

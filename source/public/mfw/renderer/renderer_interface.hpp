@@ -17,6 +17,6 @@ namespace mfw::renderer::interfaces
 
 		virtual void do_stuff() = 0;
 	};
-};
+}
 
 #endif

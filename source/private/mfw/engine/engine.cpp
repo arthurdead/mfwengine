@@ -2,13 +2,12 @@
 #include <public/mfw/core/filesystem_interface.hpp>
 #include <public/mfw/core/commandline.hpp>
 #include <public/mfw/core/logging_interface.hpp>
-#include <public/mfw/renderer/renderer_interface.hpp>
+//#include <public/mfw/renderer/renderer_interface.hpp>
 
 namespace mfw::engine
 {
-	MFW_DECLARE_LOG_CONTEXT(log_engine, u8"engine"_p);
-
-	MFW_DECLARE_GLOBAL_ALLOCATOR(engine, ::mfw::engine::engine);
+	MFW_DECLARE_LOG_CONTEXT(log_engine, u8"engine"_p)
+	MFW_DECLARE_GLOBAL_ALLOCATOR(engine, ::mfw::engine::engine)
 
 	::mfw::engine::engine &::mfw::engine::engine::instance() {
 		return __engine_global_allocator.instance();
@@ -73,7 +72,7 @@ namespace mfw::engine
 			//return core::exit_code::error;
 		}*/
 		
-		renderer::interfaces::renderer::instance().do_stuff();
+		//renderer::interfaces::renderer::instance().do_stuff();
 
 		return {};
 	}
@@ -87,4 +86,4 @@ namespace mfw::engine
 	{
 		return {};
 	}
-};
+}

@@ -25,6 +25,6 @@ namespace mfw::engine
 		core::serializable gameinfo{};
 		core::library gamelibrary{};
 	};
-};
+}
 
 #endif

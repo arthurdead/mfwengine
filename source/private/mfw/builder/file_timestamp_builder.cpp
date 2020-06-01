@@ -280,6 +280,10 @@ namespace mfw::builder
 	{
 		value.clear();
 		
+		if(*it != u8'"' && *it != u8'<') {
+			return false;
+		}
+		
 		bool inside{false};
 		while(true) {
 			if(it >= end || *it == u8'\0') {
@@ -304,6 +308,7 @@ namespace mfw::builder
 			}
 			it++;
 		}
+		
 		return false;
 	}
 

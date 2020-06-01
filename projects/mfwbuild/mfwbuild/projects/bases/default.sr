@@ -30,10 +30,10 @@ $if os == "linux"
 		"/usr/lib/crti.o"
 	}
 	static {
-		"/usr/lib/gcc/x86_64-pc-linux-gnu/9.3.0/crtbegin.o"
+		"${gcc_lib_dir}/crtbegin.o"
 	}
 	shared {
-		"/usr/lib/gcc/x86_64-pc-linux-gnu/9.3.0/crtbeginS.o"
+		"${gcc_lib_dir}/crtbeginS.o"
 	}
 	shared|static {
 		"-lstdc++"
@@ -47,10 +47,10 @@ $if os == "linux"
 		"-lc"
 	}
 	static {
-		"/usr/lib/gcc/x86_64-pc-linux-gnu/9.3.0/crtend.o"
+		"${gcc_lib_dir}/crtend.o"
 	}
 	shared {
-		"/usr/lib/gcc/x86_64-pc-linux-gnu/9.3.0/crtendS.o"
+		"${gcc_lib_dir}/crtendS.o"
 	}
 	shared|static {
 		"/usr/lib/crtn.o"
@@ -67,14 +67,6 @@ base_project {
 		command "\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --projects=\"${project_name}\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" "
 	$endif
 	}
-	builder {
-		pre_generate {
-		$if plugin_name == "vscode"
-			$(message="Generating compile_commands.json")
-			"\"${mfwbuilder}\" --solutions=\"${solution_name}\" --projects=\"${project_name}\" --sections=\"compiler\" --plugins=\"process\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" --only_compile_commands"
-		$endif
-		}
-	}
 	compiler {
 		builder {
 		$if configuration == "release"
@@ -88,20 +80,7 @@ base_project {
 			"-fvisibility=hidden"
 			"-fvisibility-inlines-hidden"
 		$endif
-		$if configuration == "debug"
-			//warning_errors
-			fatal_errors
-			all_warnings
-			pendatic
-			pendatic_errors
-			extra_warnings
-		$endif
 			preprocessor_definitions {
-			$if configuration == "debug"
-				DEBUG,_DEBUG
-			$else
-				NDEBUG,_NDEBUG
-			$endif
 			$if os == "windows"
 				_WIN32_WINNT_WIN10_TH2 _WIN32_WINNT_WIN10
 				_WIN32_WINNT_WIN10_RS1 _WIN32_WINNT_WIN10
@@ -110,7 +89,6 @@ base_project {
 				_WIN32_WINNT_WIN10_RS4 _WIN32_WINNT_WIN10
 				_WIN32_WINNT_WIN10_RS5 _WIN32_WINNT_WIN10
 			$endif
-				UNICODE,_UNICODE
 			}
 			disable_warnings {
 			$if is_cl
@@ -198,9 +176,6 @@ output_shared {
 	compiler::options {
 		pic
 		shared
-		preprocessor_definitions {
-			_SHARED,SHARED
-		}
 	}
 	linker {
 		options {
@@ -239,18 +214,5 @@ output_executable {
 	}
 }
 
-output_static::compiler::options::preprocessor_definitions {
-	_LIB,LIB
-}
-
-output_executable_console : output_executable {
-	compiler::options::preprocessor_definitions {
-		_CONSOLE,CONSOLE
-	}
-}
-
-output_executable_windows : output_executable {
-	compiler::options::preprocessor_definitions {
-		_WINDOWS,WINDOWS
-	}
-}
+output_executable_console : output_executable
+output_executable_windows : output_executable

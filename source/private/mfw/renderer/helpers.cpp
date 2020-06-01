@@ -25,4 +25,4 @@ namespace mfw::renderer
 			*h = (rect.bottom - rect.top);
 		}
 	}
-};
+}

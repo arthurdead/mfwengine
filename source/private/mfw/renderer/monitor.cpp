@@ -8,4 +8,4 @@ namespace mfw::renderer
 
 		get_rect_bounds(rect_, x, y, w, h);
 	}
-};
+}

@@ -517,4 +517,4 @@ namespace mfw::renderer
 			*h = 0;
 		}
 	}
-};
+}

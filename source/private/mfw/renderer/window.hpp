@@ -39,7 +39,7 @@ namespace mfw::renderer
 	namespace agnostic
 	{
 		class gpu;
-	};
+	}
 
 	class window
 	{
@@ -140,6 +140,6 @@ namespace mfw::renderer
 		xcb_connection_t *device_{nullptr};
 	#endif
 	};
-};
+}
 
 #endif

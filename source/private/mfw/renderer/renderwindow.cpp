@@ -45,4 +45,4 @@ namespace mfw::renderer::agnostic
 		return __super::window_proc(msg, param1, param2);
 	}
 #endif
-};
+}
