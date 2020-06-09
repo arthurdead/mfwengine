@@ -15,6 +15,7 @@
 		#include <malloc.h>
 		#include <mcheck.h>
 	#endif
+	#include <signal.h>
 	#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
 		#include <cstring>
 	#else
@@ -70,6 +71,10 @@ namespace mfw::core
 	{
 	#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
 		__core_internal::debug_init();
+	#endif
+	
+	#if MFW_OS_IS(LINUX)
+		//signal(SIGCHLD, SIG_IGN);
 	#endif
 
 		allocate_all_globals();

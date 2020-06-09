@@ -5,9 +5,9 @@ mfwengine : base_solution
 	projects {
 		stl
 		core
-		//launcher
+		launcher
 		renderer
 		//scripting
-		//engine
+		engine
 	}
 }

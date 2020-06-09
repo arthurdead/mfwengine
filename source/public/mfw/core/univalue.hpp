@@ -323,8 +323,8 @@ namespace mfw
 		{
 		#ifndef __MFW_STD_FILESYSTEM_WIDE_CHAR
 			const ucstring &str{src.get_string()};
-			const upnchar_t *begin{c_str(str)};
-			const upnchar_t *end{begin+src->length()};
+			const pchar_t *begin{c_str(str)};
+			const pchar_t *end{begin+src->length()};
 			dst.assign(begin, end);
 		#else
 			MFW_MESSAGE("fix this")

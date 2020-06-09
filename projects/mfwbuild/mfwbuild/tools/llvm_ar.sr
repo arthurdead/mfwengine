@@ -1,0 +1,6 @@
+#include "bases/ar.sr"
+
+llvm_ar : base_tool
+{
+	shell "llvm-ar"
+}

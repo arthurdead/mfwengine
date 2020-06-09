@@ -19,6 +19,9 @@ namespace mfw::builder
 		{
 		public:
 			bool regen_cache() const { return regen_cache_; }
+			bool no_cache() const { return no_cache_; }
+			
+			bool regen_or_no_cache() const { return regen_cache_ || no_cache_; }
 		
 			virtual void replace_vars(pstring &file) = 0;
 			virtual void replace_vars(ucstring &str) = 0;
@@ -29,6 +32,7 @@ namespace mfw::builder
 		
 		protected:
 			bool regen_cache_{false};
+			bool no_cache_{false};
 		};
 	}
 	

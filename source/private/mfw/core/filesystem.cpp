@@ -68,12 +68,6 @@ namespace mfw::core
 
 		static bool matches_file_pattern(const pstring &file, const pstring &pattern)
 		{
-			if(file == pattern) {
-				return true;
-			} else if(file.native().find(u8'*') != unpstring::npos) {
-				return false;
-			}
-			
 			bool matches{matches_file_pattern(uc_str(file), uc_str(pattern))};
 			return matches;
 		}
@@ -592,9 +586,6 @@ namespace mfw::core
 			}
 
 			if(__filesystem_internal::exists(file)) {
-				continue;
-			} else if(file.native().find(u8'*') != unpstring::npos) {
-				failed = true;
 				continue;
 			} else {
 				::MFW_STD_NAMESPACE::error_code errc{};

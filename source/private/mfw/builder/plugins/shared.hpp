@@ -5,6 +5,8 @@
 
 #include <public/mfw/stl/stdint.hpp>
 #include <public/mfw/stl/defines.hpp>
+#include <public/mfw/core/serializable.hpp>
+#include <private/mfw/builder/references/tool_reference.hpp>
 
 namespace mfw::builder
 {
@@ -81,6 +83,9 @@ namespace mfw::builder
 	
 	compiler_info_t get_compiler_info(const pstring &path);
 	compiler_info_t get_compiler_info(const ucstring &path);
+	
+	const core::univalue *find_output_option(const core::serializable &options, const core::serializable &names);
+	pstring get_output_path(const tool_reference &tool, const core::serializable &options);
 }
 
 #endif

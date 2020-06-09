@@ -13,7 +13,7 @@ namespace mfw::builder
 		info_.process_build_set = true;
 		info_.process_single_input = false;
 		info_.merge_sections_files_options = false;
-		info_.process_out_of_date = true;
+		info_.process_out_of_date = false;
 		info_.ignore_output = true;
 		
 		core::interfaces::filesystem::instance().remove({{}, name()});

@@ -75,11 +75,10 @@ namespace mfw::stl
 
 #ifdef __MFW_STD_FILESYSTEM_WIDE_CHAR
 	using upchar_t = uwchar_t;
-	using upnchar_t = ::MFW_STD_NAMESPACE::filesystem::path::string_type::value_type;
 #else
 	using upchar_t = ucchar_t;
-	using upnchar_t = ::MFW_STD_NAMESPACE::filesystem::path::string_type::value_type;
 #endif
+	using pchar_t = ::MFW_STD_NAMESPACE::filesystem::path::string_type::value_type;
 }
 
 #include <public/mfw/stl/detail/char_traits_funcs.hpp>

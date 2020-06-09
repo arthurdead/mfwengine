@@ -29,13 +29,15 @@ namespace mfw::builder
 			const output_tool_reference *output_tool{nullptr};
 			bool warning_errors{false};
 			ucstring drive{};
+			ucchar_t equal_char{
 		#if MFW_OS_IS(LINUX)
-			ucchar_t equal_char{u8'='};
+			u8'='
 		#elif MFW_IS_IS(WINDOWS)
-			ucchar_t equal_char{u8':'};
+			u8':'
 		#else
 			#error
 		#endif
+			};
 			bool always_equal{false};
 			ucstring base_args{};
 			vector<int32_t> success_codes{};
@@ -80,6 +82,8 @@ namespace mfw::builder
 			pstring path{};
 			ucstring cmd{};
 			pstring workdir{};
+			
+			pstring output_path{};
 		};
 		
 		struct tool_execute_info_t
@@ -203,19 +207,22 @@ namespace mfw::builder
 			core::process proc{};
 			bool started{false};
 			proc_vars_t vars{};
-			bool killed{false};
 			
-			bool start(core::log_context &log);
 			void setup(proc_vars_t &&vars_, const ucstring &str, const tool_info_t &tool_info);
 		};
-
-		using proc_vec_t = vector<proc_info_t>;
-		proc_vec_t processes{};
+		
+		bool start(proc_info_t &proc_info, core::log_context &log);
+		
 		ptr_vector<tool_info_t> toolsinfos{};
 		
 		#define __MFW_PROCESSES_UNLIMITED MFW_UINT64_MAX
 		
-		size_t curr_processes() const { return processes.size(); }
+		using proc_vec_t = vector<proc_info_t>;
+		proc_vec_t processes{};
+		
+		size_t num_started{0};
+		
+		size_t curr_processes() const { return num_started; }
 		size_t max_processes() const { return max_processes_; }
 		bool hit_process_limit() const {
 			if(max_processes_ == __MFW_PROCESSES_UNLIMITED) {
@@ -223,7 +230,7 @@ namespace mfw::builder
 			} else if(max_processes_ == 0) {
 				return true;
 			} else {
-				return processes.size() > max_processes_;
+				return curr_processes() > max_processes_;
 			}
 		}
 		bool multi_process() const {

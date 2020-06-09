@@ -109,4 +109,36 @@ namespace mfw::builder
 		
 		return info;
 	}
+	
+	const core::univalue *find_output_option(const core::serializable &options, const core::serializable &names)
+	{
+		for(const core::serializable &child : names) {
+			const ucstring &name{child.get_name()};
+			const core::serializable *option{options.get_child(name)};
+			if(option) {
+				return &option->get_value();
+			}
+		}
+		return nullptr;
+	}
+	
+	pstring get_output_path(const tool_reference &tool, const core::serializable &options)
+	{
+		pstring path{};
+
+		const core::serializable *args{tool.output_args()};
+		if(args) {
+			const core::univalue *output{find_output_option(options, *args)};
+			if(output) {
+				const ucstring &str{output->get_string()};
+				path = as_string<pstring>(str);
+			}
+		}
+		
+		if(path.empty()) {
+			path = tool.output_default_path();
+		}
+		
+		return path;
+	}
 }

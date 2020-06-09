@@ -71,7 +71,6 @@ namespace mfw::builder
 
 		static pstring get_output_path(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged);
 		static bool output_exists(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged);
-		static const core::univalue *find_output_option(const core::serializable &options, const core::serializable &names);
 
 		struct remap_result_t
 		{
@@ -114,9 +113,6 @@ namespace mfw::builder
 		tool_section_reference *find_or_create_tool_section(project_reference &project, const ucstring &name, const solution_reference &solution);
 
 		bool execute_shell_str(const core::serializable &execute, core::log_context &log);
-
-		bool build_file_timestamp(const file_reference &file, const core::searchpath &timestamp_dir);
-		bool file_out_of_date(const file_reference &file, const core::searchpath &timestamp_dir);
 
 		bool generate_solutions();
 		bool generate_solution(const solution_reference &solution, base_plugin *plugin, core::log_context &log, const base_plugin::plugin_info_t &info);
@@ -285,6 +281,8 @@ namespace mfw::builder
 		//vector<const project_reference *> already_generated{};
 
 		file_timestamp_builder timestamp_builder{};
+
+		bool no_stamps_{false};
 
 		bool began_gen{false};
 

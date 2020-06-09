@@ -578,7 +578,7 @@ namespace mfw::core
 
 		::MFW_STD_NAMESPACE::setbuf(stdout, nullptr);
 
-		log_file = interfaces::filesystem::instance().open_file({u8"console.log"_sv}, open_flags::all);
+		log_file = interfaces::filesystem::instance().open_file({u8"console.log"_sv, u8"executable"_sv}, open_flags::all);
 
 	#if MFW_OS == MFW_OS_WINDOWS
 		if(!AttachConsole(ATTACH_PARENT_PROCESS)) {

@@ -17,7 +17,7 @@ namespace mfw::builder
 		info_.process_sections_args_unmaped = false;
 		info_.process_build_set = false;
 		info_.process_single_input = true;
-		info_.merge_sections_files_options = true;
+		info_.merge_sections_files_options = false;
 		info_.process_out_of_date = false;
 		info_.ignore_output = false;
 	}
@@ -49,13 +49,6 @@ namespace mfw::builder
 		max_processes_ = jobs;
 		printcmdline = cmdline.get_bool(u8"printcmdline"_s);
 		only_compile_commands = cmdline.get_bool(u8"only_compile_commands"_s);
-	}
-
-	bool plugin_process::execute_tool(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const tool_info_t &info, const file_reference &file, const core::serializable &options)
-	{
-		vector<const file_reference *> files{};
-		files.emplace_back(&file);
-		return execute_tool(solution, project, tool_section, info, files, options);
 	}
 
 	bool plugin_process::tool_execute_info_t::setup(const tool_info_t &tool_info, const tool_section_reference &tool_section, const core::serializable &options_)
@@ -167,8 +160,7 @@ namespace mfw::builder
 	{
 		const ucstring &sec_name{tool_section.get_name()};
 		
-		if(sec_name == u8"compiler"_sv ||
-			sec_name == u8"linker"_sv) {
+		if(sec_name == u8"compiler"_sv || sec_name == u8"linker"_sv) {
 			ucstring compiler_lib_dir{};
 			if(!__plugin_process_internal::get_lib_dir(u8"gcc"_s, compiler_lib_dir)) {
 				return false;
@@ -469,6 +461,12 @@ namespace mfw::builder
 				}
 			}
 		}
+		
+		ucstring str{};
+		process_options(options, str, tool_info);
+		tool_info.base_args += str;
+		
+		tool_info.output_path = get_output_path(*tool_info.tool, options);
 		
 		return true;
 	}
@@ -816,8 +814,8 @@ namespace mfw::builder
 		pstring load_path{folder};
 		load_path /= u8"load.c"_p;
 		
-		bool do_load{regen || builder_funcs().regen_cache() || !filesys.exists({load_path})};
-		bool do_asm{regen || builder_funcs().regen_cache() || !filesys.exists({asm_path})};
+		bool do_load{regen || builder_funcs().regen_or_no_cache() || !filesys.exists({load_path})};
+		bool do_asm{regen || builder_funcs().regen_or_no_cache() || !filesys.exists({asm_path})};
 		
 		if(!do_load && !do_asm) {
 			return true;
@@ -944,6 +942,14 @@ namespace mfw::builder
 		
 		return true;
 	}
+	
+	bool plugin_process::execute_tool(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const tool_info_t &info, const file_reference &file, const core::serializable &options)
+	{
+		vector<const file_reference *> files{};
+		files.emplace_back(&file);
+		files.emplace_back(nullptr);
+		return execute_tool(solution, project, tool_section, info, files, options);
+	}
 
 	bool plugin_process::execute_tool(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const tool_info_t &info, const vector<const file_reference *> &files, const core::serializable &options)
 	{
@@ -958,17 +964,23 @@ namespace mfw::builder
 		bool unity_build{vars.unity_build};
 		pstring &unity_file_path{vars.unity_file_path};
 
-		ucstring str{};
+		ucstring str{info.base_args};
+		builder_funcs().replace_vars(str);
 		
 		if(info.is_unix_linker && !compiler.compiler_lib_dirs.empty()) {
 			str += compiler.compiler_lib_dirs;
 			str += u8' ';
 		}
 		
-	#define __MFW_PLUGIN_PROCESS_OPTIONS_FIRST
-	#ifdef __MFW_PLUGIN_PROCESS_OPTIONS_FIRST
-		process_options(options, str, info);
-	#endif
+		bool nasty_hack{false};
+		if(files.back() == nullptr) {
+			const_cast<vector<const file_reference *> &>(files).pop_back();
+			nasty_hack = true;
+		}
+		
+		if(!unity_build && nasty_hack) {
+			process_options(options, str, info);
+		}
 		
 		if(!unity_build) {
 			for(const file_reference *file : files) {
@@ -1031,12 +1043,8 @@ namespace mfw::builder
 			add_file_to_str(unity_file_path, str, info);
 		}
 		
-	#ifndef __MFW_PLUGIN_PROCESS_OPTIONS_FIRST
-		process_options(options, str, info);
-		
 		str.pop_back();
-	#endif
-
+		
 		if(unity_build && !only_compile_commands) {
 			vector<byte> unity_build_file{};
 
@@ -1081,21 +1089,11 @@ namespace mfw::builder
 		}
 		
 		pstring &output_path{vars.output_path};
-		const core::serializable *args{info.tool->output_args()};
-		if(args) {
-			for(const core::serializable &child : *args) {
-				const ucstring &arg_name{child.get_name()};
-				const core::serializable *arg{options.get_child(arg_name)};
-				if(arg) {
-					const core::univalue &value{arg->get_value()};
-					output_path = as_string<pstring>(value);
-					break;
-				}
-			}
-		}
-		
-		if(output_path.empty()) {
-			output_path = info.tool->output_default_path();
+		if(!info.output_path.empty()) {
+			output_path = info.output_path;
+			builder_funcs().replace_vars(output_path);
+		} else {
+			output_path = get_output_path(*info.tool, options);
 		}
 		
 		if(!output_path.empty()) {
@@ -1105,8 +1103,6 @@ namespace mfw::builder
 				filesys.create_directories({output_path.parent_path()});
 			}
 		}
-		
-		str.insert(0, info.base_args);
 		
 		if(printcmdline) {
 			ucstring tmp{};
@@ -1172,7 +1168,7 @@ namespace mfw::builder
 				proc_info_t proc_info{};
 				proc_info.setup(move(vars), str, info);
 				
-				if(!proc_info.start(log())) {
+				if(!start(proc_info, log())) {
 					return false;
 				}
 				
@@ -1182,7 +1178,7 @@ namespace mfw::builder
 				proc_info.setup(move(vars), str, info);
 				
 				if(!hit_process_limit()) {
-					if(!proc_info.start(log())) {
+					if(!start(proc_info, log())) {
 						return false;
 					}
 				}
@@ -1205,8 +1201,12 @@ namespace mfw::builder
 		proc.set_args(str);
 	}
 	
-	bool plugin_process::proc_info_t::start(core::log_context &log)
+	bool plugin_process::start(proc_info_t &proc_info, core::log_context &log)
 	{
+		bool &started{proc_info.started};
+		core::process &proc{proc_info.proc};
+		proc_vars_t &vars{proc_info.vars};
+		
 		if(!started) {
 			core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 			
@@ -1222,6 +1222,8 @@ namespace mfw::builder
 				if(!output_path.empty()) {
 					filesys.remove({output_path});
 				}
+			} else {
+				num_started++;
 			}
 		}
 		return started;
@@ -1230,6 +1232,11 @@ namespace mfw::builder
 	bool plugin_process::process_done(core::process &proc, const proc_vars_t &vars, const tool_info_t &info)
 	{
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+		
+		proc.kill();
+		if(num_started) {
+			num_started--;
+		}
 		
 		const ucstring &output{proc.output()};
 		int32_t exit_code{proc.exit_code()};
@@ -1360,7 +1367,7 @@ namespace mfw::builder
 			return false;
 		}
 		
-		bool running{true};
+		bool running{false};
 		tool_info_t &tool_info{toolsinfos.back()};
 		
 		proc_vec_t::iterator it{processes.begin()};
@@ -1369,35 +1376,31 @@ namespace mfw::builder
 			core::process &proc{proc_info.proc};
 			const proc_vars_t &vars{proc_info.vars};
 			
-			if(!hit_process_limit()) {
-				if(!proc_info.start(log())) {
-					err = true;
-					return false;
-				}
-			}
-			
-			if(!proc_info.started) {
-				running = true;
-				continue;
-			}
-			
-			if(proc.running()) {
-				running = true;
-			} else {
-				if(!process_done(proc, vars, tool_info)) {
-					err = true;
-					return false;
+			if(proc_info.started) {
+				if(proc.running()) {
+					running = true;
 				} else {
-					processes.erase(it);
-					continue;
+					if(!process_done(proc, vars, tool_info)) {
+						processes.clear();
+						err = true;
+						return false;
+					} else {
+						processes.erase(it);
+						continue;
+					}
+				}
+			} else {
+				running = true;
+				
+				if(!hit_process_limit()) {
+					if(!start(proc_info, log())) {
+						err = true;
+						return false;
+					}
 				}
 			}
 			
 			it++;
-		}
-		
-		if(processes.empty()) {
-			running = false;
 		}
 		
 		err = false;

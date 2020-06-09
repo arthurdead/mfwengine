@@ -76,8 +76,14 @@ namespace mfw::builder
 			$(optional,min=1,description="list of projects to build")
 			projects
 
-			$(optional,count=0,description="ignores cache")
+			$(optional,count=0,description="regens cache")
 			regen_cache
+			
+			$(optional,count=0,description="ignores cache")
+			no_cache
+			
+			$(optional,count=0,description="ignores timestamps")
+			no_stamps
 			
 			$(required,min=1,description="list of plugins to use while building")
 			plugins
@@ -136,6 +142,8 @@ namespace mfw::builder
 		filesys.set_working_dir({{}, u8"data"_sv});
 
 		regen_cache_ = cmdline.get_bool(u8"regen_cache"_s);
+		no_cache_ = cmdline.get_bool(u8"no_cache"_s);
+		no_stamps_ = cmdline.get_bool(u8"no_stamps"_s);
 		
 		if(!parse_plugins()) {
 			return core::exit_status::fatal;
@@ -267,6 +275,8 @@ namespace mfw::builder
 		cache_search.path /= name;
 		cache_search.path.replace_extension(u8".cache.sr"_p);
 
+		log_builder().info(u8"saving {} cache"_sv, name);
+
 		return main_section.to_file(cache_search);
 	}
 
@@ -328,13 +338,13 @@ namespace mfw::builder
 		cache_search.path /= name;
 		cache_search.path.replace_extension(u8".cache.sr"_p);
 		
-		if(!filesys.exists(cache_search)) {
+		if(regen_or_no_cache()) {
 			cached = false;
 		} else {
-			if(regen_cache_) {
-				cached = false;
-			} else {
+			if(filesys.exists(cache_search)) {
 				cached = true;
+			} else {
+				cached = false;
 			}
 		}
 		
@@ -349,36 +359,41 @@ namespace mfw::builder
 			timestamp_dir.path /= u8"tools"_p;
 		}
 
-		if(cached) {
-			core::searchpath timestamp_search{timestamp_dir};
-			//timestamp_search.path /= filter;
-			timestamp_search.path /= name;
-			timestamp_search.path.replace_extension(u8".timestamp.sr"_p);
+		core::searchpath output{timestamp_dir};
+		output.path /= resolved.filename();
+		output.path.concat(u8".timestamp.bin"_s);
 
-			core::serializable timestamps{};
-			if(timestamps.from_file(timestamp_search)) {
-				if(timestamp_builder.timestamps_changed(timestamps, as_string<ucstring>(resolved), timestamp_dir)) {
+		if((regen_cache_ || !filesys.exists({output})) && !no_cache_) {
+			log_builder().info(u8"generating timestamp for {}"_sv, name);
+			
+			if(!timestamp_builder.generate({resolved}, output)) {
+				return false;
+			}
+		} else {
+			if(cached) {
+				log_builder().info(u8"checking if {} changed"_sv, name);
+				
+				if(timestamp_builder.check(output)) {
 					cached = false;
 				}
-			} else {
-				cached = false;
 			}
 		}
 
 		if(cached) {
+			log_builder().info(u8"loading {} from cache"_sv, name);
+			
 			if(root_file.from_file(cache_search)) {
 				base_cached_file &main_section{*reinterpret_cast<base_cached_file *>(root_file.get_child(name))};
 				main_section.loaded_from_cache_ = true;
 			} else {
-				cached = false;
 				return false;
 			}
 		} else {
+			log_builder().info(u8"loading {}"_sv, name);
+			
 			if(!root_file.from_file({resolved})) {
 				return false;
 			}
-			
-			timestamp_builder.build_for_file({resolved}, timestamp_dir);
 		}
 
 		return true;
@@ -409,7 +424,7 @@ namespace mfw::builder
 				return false;
 			}
 
-			if(!cached) {
+			if(!cached && !no_cache_) {
 				save_cached_file_solution(name, solution_main);
 			}
 
@@ -485,7 +500,7 @@ namespace mfw::builder
 			return false;
 		}
 
-		if(!cached) {
+		if(!cached && !no_cache_) {
 			save_cached_file_tool(name, *tool_main);
 		}
 
@@ -704,7 +719,7 @@ namespace mfw::builder
 			return nullptr;
 		}
 
-		if(!cached) {
+		if(!cached && !no_cache_) {
 			save_cached_file_project(name, cache_filter, project_main);
 		}
 
@@ -996,51 +1011,6 @@ namespace mfw::builder
 		options.merge(newoptions);
 	}
 
-	bool builder::file_out_of_date(const file_reference &file, const core::searchpath &timestamp_dir)
-	{
-		core::searchpath timestamp_search{timestamp_dir};
-
-		pstring file_path{as_string<pstring>(file.get_name())};
-
-		pstring basename{file_path.filename()};
-		pstring ext{basename.extension()};
-		basename.replace_extension();
-
-		timestamp_search.path /= basename;
-		timestamp_search.path.replace_extension(u8".timestamp.sr"_p);
-
-		ucstring name{as_string<ucstring>(file_path)};
-
-		bool changed{false};
-		core::serializable timestamps{};
-		if(timestamps.from_file(timestamp_search)) {
-			if(timestamp_builder.timestamps_changed(timestamps, name, timestamp_dir)) {
-				changed = true;
-			}
-		} else {
-			changed = true;
-			timestamp_builder.build_for_file({file_path}, timestamp_dir);
-		}
-
-		return changed;
-	}
-
-	bool builder::build_file_timestamp(const file_reference &file, const core::searchpath &timestamp_dir)
-	{
-		core::searchpath timestamp_search{timestamp_dir};
-
-		pstring file_path{as_string<pstring>(file.get_name())};
-
-		pstring basename{file_path.filename()};
-		pstring ext{basename.extension()};
-		basename.replace_extension();
-
-		timestamp_search.path /= basename;
-		timestamp_search.path.replace_extension(u8".timestamp.sr"_p);
-
-		return timestamp_builder.build_for_file({file_path}, timestamp_dir);
-	}
-
 	bool builder::parse_tool_section(tool_section_reference &tool_section, project_reference &project, const solution_reference &solution)
 	{
 		const ucstring &tool_name{tool_section.get_name()};
@@ -1125,7 +1095,10 @@ namespace mfw::builder
 			}
 		}
 		
-		bool no_timestamp{tool_section.get_value() == u8"ignore"_sv};
+		bool no_timestamp{
+			no_stamps_ ||
+			tool_section.get_value() == u8"ignore"_sv
+		};
 		
 		core::searchpath timestamp_dir{{}, u8"builder"_sv};
 		timestamp_dir.path /= u8"projects"_p;
@@ -1151,8 +1124,22 @@ namespace mfw::builder
 					file_reference &file_main{reinterpret_cast<file_reference &>(child)};
 					file_main.flags_ |= file_reference::flags::out_of_date;
 
-					if(!no_timestamp) {
-						build_file_timestamp(file_main, timestamp_dir);
+					if(!no_timestamp && !no_cache_) {
+						pstring fullpath{file_main.path()};
+						
+						core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+						
+						if(filesys.exists({fullpath})) {
+							core::searchpath output{timestamp_dir};
+							output.path /= fullpath.filename();
+							output.path.concat(u8".timestamp.bin"_s);
+							
+							log_builder().info(u8"generating {} timestamp"_sv, fullpath);
+							
+							if(!timestamp_builder.generate({fullpath}, output)) {
+								return false;
+							}
+						}
 					}
 
 					if(!child.empty() && solution.tools_.empty()) {
@@ -1183,11 +1170,23 @@ namespace mfw::builder
 			if(files) {
 				for(core::serializable &child : *files) {
 					file_reference &file_main{reinterpret_cast<file_reference &>(child)};
-
-					if(no_timestamp || file_out_of_date(file_main, timestamp_dir)) {
+					
+					if(no_timestamp || regen_or_no_cache()) {
 						file_main.flags_ |= file_reference::flags::out_of_date;
 					} else {
-						file_main.flags_ &= ~file_reference::flags::out_of_date;
+						pstring fullpath{file_main.path()};
+
+						core::searchpath output{timestamp_dir};
+						output.path /= fullpath.filename();
+						output.path.concat(u8".timestamp.bin"_s);
+
+						log_builder().info(u8"checking if {} changed"_sv, fullpath);
+
+						if(timestamp_builder.check(output)) {
+							file_main.flags_ |= file_reference::flags::out_of_date;
+						} else {
+							file_main.flags_ &= ~file_reference::flags::out_of_date;
+						}
 					}
 				}
 			}
@@ -1246,18 +1245,6 @@ namespace mfw::builder
 		}
 
 		return false;
-	}
-
-	const core::univalue *builder::find_output_option(const core::serializable &options, const core::serializable &names)
-	{
-		for(const core::serializable &child : names) {
-			const ucstring &name{child.get_name()};
-			const core::serializable *option{options.get_child(name)};
-			if(option) {
-				return &option->get_value();
-			}
-		}
-		return nullptr;
 	}
 
 	void builder::replace_vars(ucstring &str)
@@ -1677,14 +1664,14 @@ namespace mfw::builder
 				plugin_sec->merge(section);
 			}
 
-			bool is_single_input{unity_build};
-			if(tool && tool->single_input()) {
-				is_single_input = true;
-			}
-			bool process_single_input{info.process_single_input};
-			bool actually_do_single_input{is_single_input && process_single_input};
+			bool actually_do_single_input{
+				(
+					unity_build ||
+					(tool && tool->single_input())
+				) &&
+				info.process_single_input
+			};
 
-			bool section_out_of_date{tool_section.out_of_date()};
 			bool process_out_of_date{info.process_out_of_date};
 
 			vector<const file_reference *> single_input_files{};
@@ -1735,6 +1722,8 @@ namespace mfw::builder
 			}
 
 			const core::serializable *patterns{tool->get_child(u8"patterns"_sv)};
+
+			bool section_out_of_date{no_cache_ || tool_section.out_of_date()};
 
 			for(const core::serializable &child : *files) {
 				const file_reference &file_main{reinterpret_cast<const file_reference &>(child)};
@@ -1788,13 +1777,17 @@ namespace mfw::builder
 					file_options.merge(section_opts, false, __builder_internal::merge_replace_vars);
 				}
 
-				bool out_exists{info.ignore_output || output_exists(tool_section, section_opts, file_options, do_merge)};
-				bool file_out_of_date{
-					section_out_of_date ||
-					bool_cast(file_main.flags_ & file_reference::flags::out_of_date) ||
-					!out_exists
+				bool actually_out_of_date{
+					process_out_of_date ||
+					(
+						section_out_of_date ||
+						bool_cast(file_main.flags_ & file_reference::flags::out_of_date) ||
+						(
+							!info.ignore_output &&
+							!output_exists(tool_section, section_opts, file_options, do_merge)
+						)
+					)
 				};
-				bool actually_out_of_date{file_out_of_date || process_out_of_date};
 
 				if(actually_do_single_input) {
 					if(actually_out_of_date) {

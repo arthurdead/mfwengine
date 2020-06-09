@@ -353,43 +353,45 @@ namespace mfw::core
 			::close(fd[0]);
 			::close(fd[1]);
 			return false;
-		} else if(handle == 0) {
-			::close(fd[0]);
-			dup3(fd[1], STDOUT_FILENO, 0);
-			dup3(fd[1], STDERR_FILENO, 0);
-			setpgid(handle, handle);
-			interfaces::filesystem &filesys{interfaces::filesystem::instance()};
-			pstring lastwork{};
-			if(!workingdir_.empty()) {
-				lastwork = filesys.get_working_dir();
-				filesys.set_working_dir({workingdir_});
-			}
-			__process_internal::argv_t argv{};
-			ucstring tmp{};
-			__process_internal::args_absolute(tmp, *this, true);
-			__process_internal::copy_to_argv(path_, argv, shell_command_);
-			__process_internal::str_to_argv(tmp, argv, shell_command_);
-			bool error{execvpe(argv.path(), argv.data(), environ) == -1};
-			argv.clear();
-			if(!lastwork.empty()) {
-				filesys.set_working_dir({lastwork});
-			}
-			if(error) {
-				exit(W_EXITCODE(1, SIGTERM));
-			} else {
-				exit(W_EXITCODE(0, SIGTERM));
-			}
 		} else {
-			::close(fd[1]);
-			FILE *stream{fdopen(fd[0], "rb")};
-			stdout_handle = new file{stream, {}};
-			if(w) {
-				wait();
-				if(WIFSTOPPED(status_) || WIFSIGNALED(status_)) {
-					return false;
+			setpgid(handle, handle);
+			if(handle == 0) {
+				::close(fd[0]);
+				dup3(fd[1], STDOUT_FILENO, 0);
+				dup3(fd[1], STDERR_FILENO, 0);
+				interfaces::filesystem &filesys{interfaces::filesystem::instance()};
+				pstring lastwork{};
+				if(!workingdir_.empty()) {
+					lastwork = filesys.get_working_dir();
+					filesys.set_working_dir({workingdir_});
 				}
+				__process_internal::argv_t argv{};
+				ucstring tmp{};
+				__process_internal::args_absolute(tmp, *this, true);
+				__process_internal::copy_to_argv(path_, argv, shell_command_);
+				__process_internal::str_to_argv(tmp, argv, shell_command_);
+				bool error{execvpe(argv.path(), argv.data(), environ) == -1};
+				argv.clear();
+				if(!lastwork.empty()) {
+					filesys.set_working_dir({lastwork});
+				}
+				if(error) {
+					exit(W_EXITCODE(1, SIGTERM));
+				} else {
+					exit(W_EXITCODE(0, SIGTERM));
+				}
+			} else {
+				::close(fd[1]);
+				FILE *stream{fdopen(fd[0], "rb")};
+				stdout_handle = new file{stream, {}};
+				if(w) {
+					wait();
+					if(WIFSTOPPED(status_) || WIFSIGNALED(status_)) {
+						return false;
+					}
+				}
+				return true;
 			}
-			return true;
 		}
 	#else
 		#error
@@ -406,7 +408,10 @@ namespace mfw::core
 
 		delete stdout_handle;
 	#if MFW_OS == MFW_OS_LINUX
-		::kill(-handle, kill ? SIGKILL : SIGTERM);
+		//::kill(-handle, kill ? SIGKILL : SIGTERM);
+		::killpg(handle, kill ? SIGKILL : SIGTERM);
+		int32_t tmp{0};
+		waitpid(handle, &tmp, 0);
 	#else
 		#error
 	#endif
@@ -424,11 +429,16 @@ namespace mfw::core
 	#if MFW_OS == MFW_OS_LINUX
 		int32_t ret{waitpid(handle, &status_, WNOHANG|WUNTRACED|WEXITED|WCONTINUED)};
 		if(ret == -1) {
+			kill();
 			return false;
 		} else if(ret == 0) {
 			return true;
 		} else {
-			return !(WIFEXITED(status_) || WIFSTOPPED(status_) || WIFSIGNALED(status_) || WIFCONTINUED(status_));
+			bool running{!(WIFEXITED(status_) || WIFSTOPPED(status_) || WIFSIGNALED(status_) || WIFCONTINUED(status_))};
+			if(!running) {
+				kill();
+			}
+			return running;
 		}
 	#else
 		#error
@@ -442,8 +452,6 @@ namespace mfw::core
 		}
 
 		while(running()) {}
-
-		close();
 	}
 
 	void process::capture_vars(size_t max)
@@ -456,7 +464,7 @@ namespace mfw::core
 	{
 		if(handle != invalid_handle) {
 		#if MFW_OS == MFW_OS_LINUX
-			waitpid(handle, &status_, WNOHANG);
+			waitpid(handle, &status_, WNOHANG|WUNTRACED|WEXITED|WCONTINUED);
 		#else
 			#error
 		#endif
@@ -587,7 +595,7 @@ namespace mfw::core
 				proc.handle = pid;
 				proc.can_kill_ = false;
 				
-				waitpid(pid, &proc.status_, WNOHANG);
+				waitpid(pid, &proc.status_, WNOHANG|WUNTRACED|WEXITED|WCONTINUED);
 				
 				proc.set_path({exepath});
 				

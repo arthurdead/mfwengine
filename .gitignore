@@ -16,6 +16,7 @@ source/**/generated/*
 !source/**/generated/generated.sh
 !source/**/generated/generated.bat
 source/.vscode/
+source/compile_commands.json
 source/**/*.gch
 
 projects/**/generated/
