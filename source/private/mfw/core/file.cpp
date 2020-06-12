@@ -1,5 +1,6 @@
 #include <private/mfw/core/file.hpp>
 #include <public/mfw/stl/stdint.hpp>
+#include <public/mfw/stl/system_error.hpp>
 #if MFW_OS == MFW_OS_WINDOWS
 	#include <Windows.h>
 #elif MFW_OS == MFW_OS_LINUX
@@ -109,8 +110,9 @@ namespace mfw::core
 	size_t core::file::get_handle_size(file::handle_t hndl)
 	{
 		pstring filepath{__file_internal::get_handle_path(hndl)};
-		uintmax_t st_size{stl::filesystem::file_size(filepath)};
-		if(st_size == 0) {
+		error_code errc{};
+		uintmax_t st_size{stl::filesystem::file_size(filepath, errc)};
+		if(errc || st_size == 0) {
 			ssize_t offset_{tell_handle(hndl)};
 			byte data{0};
 			while(true) {

@@ -185,11 +185,11 @@ namespace mfw::core
 		reverse_iterator rbegin() { return childs.rbegin(); }
 		reverse_iterator rend() { return childs.rend(); }
 
-		const_iterator begin() const { return cbegin(); }
-		const_iterator end() const { return cend(); }
+		const_iterator begin() const { return childs.begin(); }
+		const_iterator end() const { return childs.end(); }
 
-		const_reverse_iterator rbegin() const { return crbegin(); }
-		const_reverse_iterator rend() const { return crend(); }
+		const_reverse_iterator rbegin() const { return childs.rbegin(); }
+		const_reverse_iterator rend() const { return childs.rend(); }
 
 		MFW_CORE_API serializable & MFW_CORE_CALL find_or_emplace(const ucstring_view &str, const_iterator it);
 

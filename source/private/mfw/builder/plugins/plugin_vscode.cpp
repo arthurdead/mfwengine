@@ -15,7 +15,7 @@ namespace mfw::builder
 		info_.merge_sections_files_options = false;
 		info_.process_out_of_date = false;
 		info_.ignore_output = true;
-		
+
 		core::interfaces::filesystem::instance().remove({{}, name()});
 	}
 
@@ -100,12 +100,12 @@ namespace mfw::builder
 		json_project_t &json{json_projects.back()};
 
 		const ucstring &section_name{section.get_name()};
-		
+
 		if(section_name == u8"plugin"_sv) {
 			parse_ide(section, json, false);
 			//parse_ide(section, solution_json);
 		}
-		
+
 		return true;
 	}
 
@@ -219,13 +219,13 @@ namespace mfw::builder
 
 		return true;
 	}
-	
+
 	void plugin_vscode::json_workspace_t::write_cpp_properties(json::file &cpp_properties)
 	{
 		if(solution) {
 			cpp_properties.Key(u8"cpp_properties"_sv);
 		}
-		
+
 		cpp_properties.StartObject();
 		cpp_properties.Key(u8"version"_sv);
 		cpp_properties.Int(4);
@@ -335,13 +335,13 @@ namespace mfw::builder
 		cpp_properties.EndArray();
 		cpp_properties.EndObject();
 	}
-	
+
 	void plugin_vscode::json_workspace_t::write_tasks(json::file &tasks)
 	{
 		if(solution) {
 			tasks.Key(u8"tasks"_sv);
 		}
-		
+
 		tasks.StartObject();
 		tasks.Key(u8"version"_sv);
 		tasks.String(u8"2.0.0"_sv);
@@ -387,7 +387,7 @@ namespace mfw::builder
 		if(solution) {
 			launch.Key(u8"launch"_sv);
 		}
-		
+
 		launch.StartObject();
 		launch.Key(u8"version"_sv);
 		launch.String(u8"0.2.0"_sv);
@@ -509,7 +509,7 @@ namespace mfw::builder
 			EndObject();
 		}
 		EndArray();
-		
+
 		if(solution) {
 			write_launch(*this);
 			write_tasks(*this);
@@ -518,31 +518,31 @@ namespace mfw::builder
 			EndObject();
 		}
 	}
-	
+
 	void plugin_vscode::json_project_t::write_all()
 	{
 		super::write_all();
-		
+
 		write_cpp_properties(cpp_properties);
 		write_launch(launch);
 		write_tasks(tasks);
 	}
-	
+
 	void plugin_vscode::json_project_t::save()
 	{
 		super::save();
-		
+
 		pstring cpp_path{path/u8".vscode/c_cpp_properties.json"_p};
 		pstring launch_path{path/u8".vscode/launch.json"_p};
 		pstring tasks_path{path/u8".vscode/tasks.json"_p};
-		
+
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
-		
+
 		if(filesys.exists({compile_commands})) {
 			pstring link{path / compile_commands.filename()};
 			filesys.create_symlink({compile_commands}, {link});
 		}
-		
+
 		cpp_properties.save({cpp_path});
 		//launch.save({launch_path});
 		//tasks.save({tasks_path});
@@ -589,7 +589,7 @@ namespace mfw::builder
 
 		return true;
 	}
-	
+
 	void plugin_vscode::json_workspace_t::clear()
 	{
 		exclude_files.clear();
@@ -612,7 +612,7 @@ namespace mfw::builder
 		name.clear();
 		path.clear();
 	}
-	
+
 	void plugin_vscode::cleanup(cleanup_type_t type)
 	{
 		if(type == cleanup_type_t::solution) {
@@ -635,16 +635,16 @@ namespace mfw::builder
 		solution_json.path = filesys.resolve({sln_name, name()}, false);
 
 		json::file projects_json{};
-		
+
 		projects_json.StartArray();
 		for(json_project_t &proj : json_projects) {
-			
+
 			json_workspace_t::folder_t &folder{solution_json.folders.emplace_back()};
 			folder.name = proj.name;
 			folder.path = proj.path;
-			
+
 			proj.save();
-			
+
 			projects_json.StartObject();
 			projects_json.Key(u8"name"_sv);
 			projects_json.String(proj.name);
@@ -660,11 +660,11 @@ namespace mfw::builder
 			projects_json.EndObject();
 		}
 		projects_json.EndArray();
-		
+
 		projects_json.save({solution_json.path/u8"projects.json"_p});
-		
+
 		solution_json.save();
 
 		return true;
 	}
-};
+}

@@ -19,17 +19,18 @@ function build
 {
 	mkdir -p "build_${1}"
 	cd "build_${1}"
-	
-	cmake ".." -DCMAKE_BUILD_TYPE="${1}" ${clang_args} -DCMAKE_EXPORT_COMPILE_COMMANDS=True
+
+	cmake ".." -DCMAKE_BUILD_TYPE="${1}" ${gcc_args} -DCMAKE_EXPORT_COMPILE_COMMANDS=True
 	check_if_success
-	
+
 	make -s -S #2>&1 | tee "build.log"
 	check_if_success
-	
+
 	cd ".."
 }
 
-build "Debug"
+#build "Debug"
+build "RelWithDebInfo"
 #build "Release"
 
 exit

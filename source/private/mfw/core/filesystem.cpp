@@ -8,6 +8,7 @@
 #include <public/mfw/stl/unordered_map.hpp>
 #include <public/mfw/stl/defines.hpp>
 #include <public/mfw/stl/version.hpp>
+#include <public/mfw/stl/system_error.hpp>
 #include <public/mfw/pch_literals.hpp>
 #if MFW_OS == MFW_OS_WINDOWS
 	#include <Windows.h>
@@ -588,7 +589,7 @@ namespace mfw::core
 			if(__filesystem_internal::exists(file)) {
 				continue;
 			} else {
-				::MFW_STD_NAMESPACE::error_code errc{};
+				error_code errc{};
 				if(!__filesystem_internal::create_directories(file, errc)) {
 					failed = true;
 					continue;

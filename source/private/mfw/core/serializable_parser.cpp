@@ -1223,7 +1223,14 @@ namespace mfw::core
 	{
 		skip_newlines();
 
-		if(expect({context.close_type()})) {
+		token::extended_type close{context.close_type()};
+		if(close == token::extended_type::unknown) {
+			MFW_DEBUGBREAK();
+			error(u8"what the fuck"_sv);
+			return false;
+		}
+
+		if(expect({close})) {
 			if(parents.size() == 1) {
 				error(u8"unexpected closing: {}"_sv, peek(-1));
 				return false;
@@ -1287,17 +1294,12 @@ namespace mfw::core
 
 	serializable_parser::token::extended_type serializable_parser::parent_context::close_type() const
 	{
-		if(open_type == token::extended_type::bracket_left) {
-			return token::extended_type::bracket_right;
-		} else if(open_type == token::extended_type::lesser) {
-			return token::extended_type::greater;
-		} else if(open_type == token::extended_type::brace_left) {
-			return token::extended_type::brace_right;
-		} else if(open_type == token::extended_type::parenthesis_left) {
-			return token::extended_type::parenthesis_right;
-		} else {
-			MFW_DEBUGBREAK();
-			return token::extended_type::unknown;
+		switch(open_type) {
+			case token::extended_type::bracket_left: { return token::extended_type::bracket_right; }
+			case token::extended_type::lesser: { return token::extended_type::greater; }
+			case token::extended_type::brace_left: { return token::extended_type::brace_right; }
+			case token::extended_type::parenthesis_left: { return token::extended_type::parenthesis_right; }
+			default: { return token::extended_type::unknown; }
 		}
 	}
 }

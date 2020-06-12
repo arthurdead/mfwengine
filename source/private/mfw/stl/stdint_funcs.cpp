@@ -1,4 +1,5 @@
 #include <public/mfw/stl/stdint.hpp>
+#include <public/mfw/stl/system_error.hpp>
 
 #if MFW_STD_FLAGGED(HEADERS_CONFORMING)
 	#include <charconv>
@@ -18,8 +19,6 @@ namespace mfw::stl
 			
 			using ::MFW_STD_NAMESPACE::to_chars_result;
 			using ::MFW_STD_NAMESPACE::to_chars;
-			MFW_MESSAGE("move errc elsewhere")
-			using ::MFW_STD_NAMESPACE::errc;
 
 			while(true) {
 				char *begin{reinterpret_cast<char *>(&(*dst.begin()))};

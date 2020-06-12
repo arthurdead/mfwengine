@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 20)
 if(UNIX)
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG -DDEBUG")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_NDEBUG -DNDEBUG")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -D_NDEBUG -DNDEBUG")
 endif(UNIX)
 
 set(project_name "builder")
@@ -18,9 +19,11 @@ set(thirdparty_dir "${base_dir}/thirdparty")
 
 set(include_dirs ${source_dir} ${thirdparty_dir})
 
-list(APPEND include_dirs
-	"${thirdparty_dir}/libsupc++"
-)
+if(UNIX)
+	list(APPEND include_dirs
+		"${thirdparty_dir}/libsupc++"
+	)
+endif(UNIX)
 
 file(GLOB_RECURSE ${project_name}_files
 	"${source_dir}/*/mfw/${project_name}/*.cpp"
@@ -73,6 +76,8 @@ list(APPEND files ${rapidjson_files})
 
 if(UNIX)
 	add_compile_options(-Wfatal-errors -Wall -Wextra -Wdeprecated -Wpedantic -pedantic -pedantic-errors)
+	add_compile_options("$<$<CONFIG:DEBUG>:-pg>")
+	add_link_options("$<$<CONFIG:DEBUG>:-pg>")
 endif(UNIX)
 
 if(WIN32)
@@ -112,10 +117,9 @@ target_include_directories(${project_name} PUBLIC ${include_dirs})
 
 set_target_properties(${project_name}
 	PROPERTIES
-	RUNTIME_OUTPUT_DIRECTORY_RELEASE "${base_dir}/build_tools/mfwbuilder"
-	RUNTIME_OUTPUT_DIRECTORY_DEBUG "${base_dir}/build_tools/mfwbuilder"
 	DEBUG_POSTFIX "_debug"
 	RELEASE_POSTFIX "_release"
+	RELWITHDEBINFO_POSTFIX "_release_debug"
 )
 
 if(WIN32)

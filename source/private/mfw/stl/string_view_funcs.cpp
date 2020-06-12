@@ -1,6 +1,7 @@
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/string_view.hpp>
 #include <public/mfw/stl/limits.hpp>
+#include <public/mfw/stl/system_error.hpp>
 
 #if MFW_STD_FLAGGED(HEADERS_CONFORMING)
 	#include <charconv>
@@ -34,8 +35,6 @@ namespace mfw::stl
 			
 			using ::MFW_STD_NAMESPACE::from_chars_result;
 			using ::MFW_STD_NAMESPACE::from_chars;
-			MFW_MESSAGE("move errc elsewhere")
-			using ::MFW_STD_NAMESPACE::errc;
 
 			const char *begin{reinterpret_cast<const char *>(&(*src.cbegin()))};
 			const char *end{reinterpret_cast<const char *>(&(*src.cend()))};

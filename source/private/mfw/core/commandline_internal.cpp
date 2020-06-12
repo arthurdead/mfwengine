@@ -158,7 +158,7 @@ namespace mfw::core
 		}
 	#endif
 
-		static void get_commandline_string(ucstring &dst)
+		static bool get_commandline_string(ucstring &dst)
 		{
 		#if MFW_OS == MFW_OS_WINDOWS
 			const wchar_t *cmdstr{GetCommandLineW()};
@@ -168,6 +168,9 @@ namespace mfw::core
 			dst.erase(0, off + 2);
 		#elif MFW_OS == MFW_OS_LINUX
 			FILE *cmdline{fopen("/proc/self/cmdline", "r")};
+			if(!cmdline) {
+				return false;
+			}
 			size_t len{core::file::get_handle_size(cmdline)};
 			dst.resize(len);
 			fread(c_str(dst), sizeof(ucchar_t), len, cmdline);
@@ -175,7 +178,7 @@ namespace mfw::core
 			size_t off{dst.find(u8'\0', 0)};
 			if(off == ucstring::npos || off == len-1) {
 				dst.clear();
-				return;
+				return true;
 			}
 			dst.erase(0, off + 1);
 
@@ -188,6 +191,7 @@ namespace mfw::core
 		#else
 			#error
 		#endif
+			return true;
 		}
 	}
 

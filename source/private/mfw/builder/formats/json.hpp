@@ -74,40 +74,40 @@ namespace mfw::builder
 		using pretty_writer = ::rapidjson::PrettyWriter<T, char_traits, char_traits, baseallocator, 0>;
 		template <typename T>
 		using writer = ::rapidjson::Writer<T, char_traits, char_traits, baseallocator, 0>;
-		
+
 		template <typename T>
 	#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
 		using default_writer = pretty_writer<T>;
 	#else
 		using default_writer = writer<T>;
 	#endif
-		
+
 		class file : public string_buffer, public default_writer<string_buffer>
 		{
 		public:
 			using super = default_writer<string_buffer>;
-		
+
 			file(const file &) = delete;
 			file(file &&) = default;
 			file()
 				: string_buffer{}, default_writer<string_buffer>{*static_cast<string_buffer *>(this)}
 			{}
-			
+
 			bool Key(ucstring_view name)
 			{ return super::Key(name.data(), name.length(), false); }
 			bool String(ucstring_view name)
 			{ return super::String(name.data(), name.length(), false); }
-			
+
 			bool Key(const ucstring &name)
 			{ return super::Key(name); }
 			bool String(const ucstring &name)
 			{ return super::String(name); }
-			
+
 			bool Key(const pstring &name)
 			{ return super::Key(uc_str(name), name.native().length(), false); }
 			bool String(const pstring &name)
 			{ return super::String(uc_str(name), name.native().length(), false); }
-			
+
 			void save(const core::searchpath &search)
 			{
 				ucstring text{GetString(), GetLength()+1};
@@ -124,6 +124,6 @@ namespace mfw::builder
 
 		str = buffer.GetString();
 	}
-};
+}
 
 #endif
