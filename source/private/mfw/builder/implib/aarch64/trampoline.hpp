@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 Yury Gribov
+ * Copyright 2018-2020 Yury Gribov
  *
  * The MIT License (MIT)
  *
@@ -19,7 +19,7 @@ $sym:
   // TODO: can we do this faster on newer ARMs?
   adrp ip0, _${lib_suffix}_tramp_table+$offset
   ldr ip0, [ip0, #:lo12:_${lib_suffix}_tramp_table+$offset]
- 
+
   cbz ip0, 2f
 
   // Fast path
