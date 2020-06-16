@@ -55,8 +55,8 @@ namespace mfw::core
 				{u8"MFW_PROCESSOR"_sv, MFW_PROCESSOR},
 				{u8"MFW_PROCESSOR_X86_64"_sv, MFW_PROCESSOR_X86_64},
 				{u8"MFW_PROCESSOR_X86"_sv, MFW_PROCESSOR_X86},
-				{u8"MFW_PROCESSOR_ARMV7"_sv, MFW_PROCESSOR_ARMV7},
-				{u8"MFW_PROCESSOR_ARMV8"_sv, MFW_PROCESSOR_ARMV8},
+				{u8"MFW_PROCESSOR_ARM"_sv, MFW_PROCESSOR_ARM},
+				{u8"MFW_PROCESSOR_AARCH64"_sv, MFW_PROCESSOR_AARCH64},
 				{u8"MFW_PROCESSOR_64BITS_FLAG"_sv, MFW_PROCESSOR_64BITS_FLAG},
 				{u8"MFW_PROCESSOR_32BITS_FLAG"_sv, MFW_PROCESSOR_32BITS_FLAG},
 				{u8"MFW_PROCESSOR_X86_FLAG"_sv, MFW_PROCESSOR_X86_FLAG},
@@ -96,11 +96,93 @@ namespace mfw::core
 
 	bool accessor_parser::get_internal_variable(const ucstring_view &name, type_holder &var) const
 	{
-		const __accessor_parser_internal::predefined_macros_t &map{__accessor_parser_internal::predefined_macros()};
-		__accessor_parser_internal::predefined_macros_t::const_iterator it{map.find(name)};
-		if(it != map.end()) {
-			var.deduce(it->second);
+		if(name == u8"cmdline"_sv) {
+			var.deduce(&commandline::instance());
 			return true;
+		} else {
+			const __accessor_parser_internal::predefined_macros_t &map{__accessor_parser_internal::predefined_macros()};
+			__accessor_parser_internal::predefined_macros_t::const_iterator it{map.find(name)};
+			if(it != map.end()) {
+				var.deduce(it->second);
+				return true;
+			}
+		}
+
+		return false;
+	}
+	
+	bool accessor_parser::get_internal_member_variable(const type_holder &obj, const ucstring_view &name, type_holder &var) const
+	{
+		const ucstring &obj_name{obj.info().name()};
+		
+		if(obj_name == u8"mfw::core::commandline"_sv) {
+			commandline *cmdline{obj.get_var<commandline *>()};
+		}
+		
+		return false;
+	}
+	
+	bool accessor_parser::get_internal_member_function(const type_holder &obj, const ucstring_view &name, const vector<univalue> &args, type_holder &var) const
+	{
+		size_t num{args.size()};
+
+		const ucstring &obj_name{obj.info().name()};
+
+		if(obj_name == u8"mfw::core::commandline"_sv) {
+			commandline *cmdline{obj.get_var<commandline *>()};
+			if(name == u8"has"_sv) {
+				if(num != 1 && num != 2) {
+					error(u8"function takes 1 or 2 args but {} were provided"_sv, num);
+					return false;
+				}
+
+				if(num == 1) {
+					if(args[0].is_int()) {
+						var.deduce(cmdline->has(args[0].get_int()));
+					} else {
+						var.deduce(cmdline->has(args[0].get_string()));
+					}
+				} else if(num == 2) {
+					var.deduce(cmdline->has(args[0].get_string(), args[1]));
+				}
+				return true;
+			} else if(name == u8"empty"_sv) {
+				if(num != 0) {
+					error(u8"function takes 0 args but {} were provided"_sv, num);
+					return false;
+				}
+
+				var.deduce(cmdline->empty());
+				return true;
+			} else if(name == u8"value"_sv) {
+				if(num != 1) {
+					error(u8"function takes 1 arg but {} were provided"_sv, num);
+					return false;
+				}
+
+				const ucstring &arg_name{args[0].get_string()};
+				const univalue *value{cmdline->value(arg_name)};
+				if(!value) {
+					if(cmdline->has(arg_name)) {
+						var.deduce(true);
+					} else {
+						var.deduce(false);
+					}
+				} else {
+					if(value->empty()) {
+						var.deduce(true);
+					} else if(value->is_bool()) {
+						var.deduce(value->get_bool());
+					} else if(value->is_float()) {
+						var.deduce(value->get_float());
+					} else if(value->is_int()) {
+						var.deduce(value->get_int());
+					} else {
+						var.deduce(*value);
+					}
+				}
+				return true;
+			}
 		}
 
 		return false;
@@ -166,9 +248,11 @@ namespace mfw::core
 					}
 
 					if(!result.valid()) {
-						if(callbacks_) {
-							const ucstring &func_name{tmp.get_string()};
-							callbacks_->get_member_function(currentvar, func_name, args, result);
+						const ucstring &func_name{tmp.get_string()};
+						if(!get_internal_member_function(currentvar, func_name, args, result)) {
+							if(callbacks_) {
+								callbacks_->get_member_function(currentvar, func_name, args, result);
+							}
 						}
 					}
 
@@ -240,8 +324,10 @@ namespace mfw::core
 						}
 
 						if(!member.valid()) {
-							if(callbacks_) {
-								callbacks_->get_member_variable(currentvar, var_name, member);
+							if(!get_internal_member_variable(currentvar, var_name, member)) {
+								if(callbacks_) {
+									callbacks_->get_member_variable(currentvar, var_name, member);
+								}
 							}
 						}
 

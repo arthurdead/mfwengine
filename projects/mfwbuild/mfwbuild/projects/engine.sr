@@ -5,7 +5,7 @@ engine : base_project, standards.cpp20, output_shared
 	builder::depends {
 		stl
 		core
-		//renderer
+		renderer
 		//scripting
 	}
 }

@@ -122,13 +122,14 @@ namespace mfw::core
 	
 	bool core_load_library(ucstring_view name)
 	{
-		return
+		::mfw::core::library *lib{
 	#ifdef __MFW_APPLICATION_CORE_AVAILABLE
-		::mfw::core::library::load_library(name)
+			::mfw::core::library::load_library(name)
 	#else
-		__application_internal::core_load_library_ptr(name)
+			__application_internal::core_load_library_ptr(name)
 	#endif
-		!= nullptr;
+		};
+		return lib != nullptr;
 	}
 	
 	exit_status core_update()
@@ -381,15 +382,12 @@ bool thread
 	}
 }
 	#else
-void __shared_start() MFW_ATTRIBUTE(__constructor__);
-void __shared_exit() MFW_ATTRIBUTE(__destructor__);
-
-void __shared_start()
+MFW_ATTRIBUTE(__constructor__) void __shared_start()
 {
 	::mfw::core::__application_internal::call_main();
 }
 
-void __shared_exit()
+MFW_ATTRIBUTE(__destructor__) void __shared_exit()
 {
 	::mfw::core::__application_internal::call_exit();
 }

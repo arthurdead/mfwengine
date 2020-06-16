@@ -46,9 +46,9 @@ namespace mfw::builder
 			ucstring which_{};
 		};
 
-		void replace_vars(pstring &file) override;
-		void replace_vars(ucstring &str) override;
-		void replace_vars(core::univalue &val) override;
+		void replace_vars(pstring &file) const override;
+		void replace_vars(ucstring &str) const override;
+		void replace_vars(core::univalue &val) const override;
 
 	private:
 		enum class cache_type : uchar_t
@@ -69,8 +69,8 @@ namespace mfw::builder
 		bool open_cached_file_project(const ucstring &name, const pstring &filter, root_file_base &root_file, bool &cached);
 		bool save_cached_file_project(const ucstring &name, const pstring &filter, const core::serializable &main_section);
 
-		static pstring get_output_path(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged);
-		static bool output_exists(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged);
+		pstring get_output_path(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged) const;
+		bool output_exists(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged) const;
 
 		struct remap_result_t
 		{
@@ -146,6 +146,8 @@ namespace mfw::builder
 		void parse_files(const core::serializable &files, core::serializable *target, const pstring &filter, parse_files_flags flags, core::serializable *removed, core::serializable *parent, tool_section_reference &tool_section);
 		void parse_folders(const core::serializable &folders, core::serializable *target, bool remove, core::serializable *removed, core::serializable *parent);
 		void parse_options(core::serializable &options, tool_section_reference &tool_section);
+
+		bool file_changed(const pstring &fullpath, const pstring &filter, const core::searchpath &timestamp_dir) const;
 
 		const tool_reference *find_or_load_tool(const ucstring_view &name, const solution_reference *solution);
 

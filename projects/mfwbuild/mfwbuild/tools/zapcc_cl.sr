@@ -1,0 +1,6 @@
+#include "bases/clang_cl.sr"
+
+zapcc_cl : base_tool
+{
+	shell "zapcc-cl"
+}

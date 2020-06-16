@@ -2,7 +2,7 @@
 #include <public/mfw/core/filesystem_interface.hpp>
 #include <public/mfw/core/commandline.hpp>
 #include <public/mfw/core/logging_interface.hpp>
-//#include <public/mfw/renderer/renderer_interface.hpp>
+#include <public/mfw/renderer/renderer_interface.hpp>
 
 namespace mfw::engine
 {
@@ -72,7 +72,7 @@ namespace mfw::engine
 			//return core::exit_code::error;
 		}*/
 		
-		//renderer::interfaces::renderer::instance().do_stuff();
+		renderer::interfaces::renderer::instance().do_stuff();
 
 		return {};
 	}

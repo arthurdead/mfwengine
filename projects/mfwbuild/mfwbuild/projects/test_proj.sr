@@ -1,14 +1,7 @@
-test_proj
-{
+test_proj {
 	compiler {
-		options {
-			"-c"
-			output "/home/arthurdead/Desktop/temp/code/main.o"
-		}
 		files {
-			"/home/arthurdead/Desktop/temp/code/main.cpp" {
-				output "/home/arthurdead/Desktop/temp/code/test.o"
-			}
+			"/home/arthurdead/Desktop/temp/code/main.cpp"
 		}
 	}
 }

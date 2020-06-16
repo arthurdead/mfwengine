@@ -112,7 +112,8 @@ namespace mfw::core
 		MFW_CORE_API bool MFW_CORE_CALL passes_condition(const interfaces::expression_parser_callbacks *callbacks = nullptr) const;
 
 		MFW_CORE_API serializable & MFW_CORE_CALL child(const ucstring_view &str);
-		MFW_CORE_API serializable & MFW_CORE_CALL create_child(const ucstring_view &str);
+		MFW_CORE_API serializable & MFW_CORE_CALL create_child(const ucstring_view &str)
+		{ return create_child(str, cend()); }
 		MFW_CORE_API serializable * MFW_CORE_CALL get_child(const ucstring_view &str);
 		MFW_CORE_API const serializable * MFW_CORE_CALL get_child(const ucstring_view &str) const;
 		const serializable &get_child(size_t i) const { return childs[i]; }
@@ -192,11 +193,14 @@ namespace mfw::core
 		const_reverse_iterator rend() const { return childs.rend(); }
 
 		MFW_CORE_API serializable & MFW_CORE_CALL find_or_emplace(const ucstring_view &str, const_iterator it);
+		serializable &find_or_emplace(const ucstring_view &str)
+		{ return find_or_emplace(str, cend()); }
 
 	private:
 		virtual serializable *allocate_child(ssize_t depth, const ucstring_view &name, const core::serializable *parent) const;
 		virtual void merge_child(size_t depth, serializable &child, const serializable &other) const;
 		void to_string(ucstring &str, int32_t ident) const;
+		serializable &create_child(const ucstring_view &str, const_iterator it);
 
 		ucstring name{};
 		univalue value{};

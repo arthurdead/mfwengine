@@ -9,8 +9,8 @@ namespace mfw::stl
 	inline void to_string(const pstring &src, core::univalue &dst)
 	{
 		MFW_MESSAGE("fix this")
-		ucstring str{src.u8string()};
-		dst.set_string(str);
+		u8npstring str{src.u8string()};
+		dst.set_cstr(uc_str(str));
 	}
 #else
 	#error

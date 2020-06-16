@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <private/mfw/builder/base_cached_file.hpp>
 #include <public/mfw/core/serializable.hpp>
 #include <private/mfw/builder/references/builder_section_reference.hpp>
 
@@ -10,7 +11,7 @@ namespace mfw::builder
 {
 	class output_tool_reference;
 
-	class tool_reference final : public core::serializable
+	class tool_reference final : public base_cached_file
 	{
 	public:
 		bool single_input() const;

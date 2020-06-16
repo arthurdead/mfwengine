@@ -1,0 +1,6 @@
+#include "bases/emcc.sr"
+
+"em++" : base_tool
+{
+	shell "em++"
+}

@@ -13,6 +13,8 @@ namespace mfw::stl
 
 	MFW_STL_API void MFW_STL_CALL to_string(ucstring_view src, uwstring &dst);
 	MFW_STL_API void MFW_STL_CALL to_string(uwstring_view src, ucstring &dst);
+	
+	void to_string(ucstring_view src, pstring &dst);
 
 	const char *c_str(ucstring_view src);
 	const wchar_t *c_str(uwstring_view src);

@@ -5,6 +5,7 @@
 
 #include <private/mfw/renderer/mesh.hpp>
 #include <private/mfw/renderer/vulkan/helpers.hpp>
+#include <public/mfw/stl/array.hpp>
 
 namespace mfw::renderer::vulkan
 {

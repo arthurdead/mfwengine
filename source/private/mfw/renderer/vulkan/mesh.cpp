@@ -8,7 +8,7 @@ namespace mfw::renderer::vulkan
 
 		MFW_EXECUTE_N_TIMES(1, {
 			binding.setBinding(0);
-			binding.setStride(sizeof(float32) * 2 + sizeof(float32) * 3);
+			binding.setStride(sizeof(float32_t) * 2 + sizeof(float32_t) * 3);
 			binding.setInputRate(vk::VertexInputRate::eVertex);
 		})
 
@@ -33,4 +33,4 @@ namespace mfw::renderer::vulkan
 
 		return attributedesc;
 	}
-};
+}

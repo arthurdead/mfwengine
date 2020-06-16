@@ -5,5 +5,6 @@ base_tool
 	builder::macros {
 		is_gcc true
 		is_clang false
+		is_em false
 	}
 }

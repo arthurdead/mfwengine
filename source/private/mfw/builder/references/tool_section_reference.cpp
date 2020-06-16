@@ -20,7 +20,11 @@ namespace mfw::builder
 		}
 		file_reference *file{nullptr};
 		if(!found) {
+		#if 0
+			file = &reinterpret_cast<file_reference &>(files.child(as_string<ucstring>(path)));
+		#else
 			file = &reinterpret_cast<file_reference &>(files.find_or_emplace(as_string<ucstring>(path), files.cbegin()));
+		#endif
 		} else {
 			file = &reinterpret_cast<file_reference &>(*it);
 		}

@@ -9,17 +9,15 @@ core : base_project, standards.cpp20, output_shared
 	builder {
 		dependency {
 			linker {
-				options {
-					libraries {
-					$if os == "linux"
-						dl
-					$endif
-					}
+				options::libraries {
+				$if os == "linux"
+					dl
+				$endif
 				}
 				files {
 			#ifndef __MFW_USE_CORE_DELAY_LOADED
 				$if !is_self && os == "linux"
-					"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/${dependency_name}.so"
+					"${shared_out_dir}/${dependency_name}.so"
 				$endif
 			#endif
 				}

@@ -5,6 +5,8 @@ test_sln
 	}
 
 	tools {
-		compiler gcc
+		compiler "em++"
+		linker wasm_ld
+		archiver emar
 	}
 }

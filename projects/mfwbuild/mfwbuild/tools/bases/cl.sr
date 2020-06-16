@@ -47,6 +47,7 @@ base_tool
 		is_cl true
 		is_gcc false
 		is_clang false
+		is_em false
 	}
 
 	preprocessor_definitions {

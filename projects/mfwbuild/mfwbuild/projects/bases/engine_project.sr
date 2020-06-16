@@ -14,6 +14,9 @@ base_project {
 			$endif
 			}
 		}
+		macros {
+			shared_out_dir "${package_folder}/core/bin/${os}_${platform}_${configuration}"
+		}
 	}
 	compiler {
 		options {
@@ -45,11 +48,13 @@ base_project {
 		}
 		files {
 			"public" filter {
+			/*
 			$if is_gcc
 				"${source_folder}/public/mfw/pch.hpp" dynamic {
 					output "${source_folder}/public/mfw/pch.hpp.gch/${project_name}_${os}_${configuration}_${platform}.gch"
 				}
 			$endif
+			*/
 				"${source_folder}/public/mfw/*.*"
 			}
 			"${source_folder}/private/mfw/${project_name}/**/*.*"
@@ -100,5 +105,17 @@ output_executable_windows {
 	}
 	builder::dependency::compiler::options::preprocessor_definitions {
 		"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE_WINDOWS"
+	}
+}
+
+output_shared {
+	linker::options {
+		output "${shared_out_dir}/${project_name}${output_ext}"
+	}
+}
+
+output_executable_console|output_executable_windows {
+	linker::options {
+		output "${package_folder}/${project_name}${output_ext}"
 	}
 }

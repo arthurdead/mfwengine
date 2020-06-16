@@ -27,6 +27,8 @@ namespace mfw::core
 
 		bool get_internal_variable(const ucstring_view &name, type_holder &var) const;
 		bool get_internal_function(const ucstring_view &name, const vector<univalue> &args, type_holder &var) const;
+		bool get_internal_member_variable(const type_holder &obj, const ucstring_view &name, type_holder &var) const;
+		bool get_internal_member_function(const type_holder &obj, const ucstring_view &name, const vector<univalue> &args, type_holder &var) const;
 
 		void error(const ucstring_view &str) override;
 		using super::error;

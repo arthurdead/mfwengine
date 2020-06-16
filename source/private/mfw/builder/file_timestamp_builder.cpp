@@ -65,11 +65,11 @@ namespace mfw::builder
 		return true;
 	}
 	
-	bool file_timestamp_builder::check(const core::searchpath &output)
+	bool file_timestamp_builder::check(const core::searchpath &output) const
 	{
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 		
-		core::interfaces::file *file{filesys.open_file(output, core::open_flags::read)};
+		core::interfaces::file *file{filesys.open_file(output, core::open_flags::readwrite)};
 		if(!file) {
 			return true;
 		}
@@ -89,6 +89,8 @@ namespace mfw::builder
 			file->read(&oldtime, 1, sizeof(uint64_t));
 			size_t newtime{filesys.get_file_modified_time({path})};
 			if(oldtime != newtime) {
+				file->seek(-sizeof(uint64_t), core::seek::current);
+				file->write(&newtime, 1, sizeof(uint64_t));
 				changed = true;
 				break;
 			}

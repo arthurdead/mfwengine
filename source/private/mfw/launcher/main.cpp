@@ -8,11 +8,11 @@ extern "C" {
 bool application_load_libraries()
 {
 	for(::mfw::ucstring_view it : {
-		//u8"renderer"_sv,
+		u8"renderer"_sv,
 		u8"engine"_sv,
 		//u"scripting"_sv,
 	}) {
-		if(::mfw::core::core_load_library(it)) {
+		if(!::mfw::core::core_load_library(it)) {
 			return false;
 		}
 	}

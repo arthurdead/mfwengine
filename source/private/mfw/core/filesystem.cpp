@@ -12,7 +12,7 @@
 #include <public/mfw/pch_literals.hpp>
 #if MFW_OS == MFW_OS_WINDOWS
 	#include <Windows.h>
-#elif MFW_OS == MFW_OS_LINUX
+#elif MFW_LIBC_FLAGGED(UNIX)
 	#include <fnmatch.h>
 	#include <sys/stat.h>
 #endif
@@ -49,19 +49,14 @@ namespace mfw::core
 			return fullpath;
 		}
 
-		static bool check_if_exists(const pstring &path, bool check)
-		{
-			if(check) {
-				return exists(path);
-			} else {
-				return true;
-			}
-		}
-
 		static bool matches_file_pattern(const upchar_t *file, const upchar_t *pattern)
 		{
-		#if MFW_OS == MFW_OS_LINUX
-			return (fnmatch(c_str(pattern), c_str(file), FNM_CASEFOLD|FNM_EXTMATCH) == 0);
+		#if MFW_LIBC_FLAGGED(UNIX)
+			return (fnmatch(c_str(pattern), c_str(file), FNM_CASEFOLD
+			#if !MFW_LIBC_IS(MUSL)
+			|FNM_EXTMATCH
+			#endif
+			) == 0);
 		#else
 			#error
 		#endif
@@ -70,6 +65,12 @@ namespace mfw::core
 		static bool matches_file_pattern(const pstring &file, const pstring &pattern)
 		{
 			bool matches{matches_file_pattern(uc_str(file), uc_str(pattern))};
+			return matches;
+		}
+		
+		static bool matches_file_pattern(const pstring &file, ucstring_view pattern)
+		{
+			bool matches{matches_file_pattern(uc_str(file), pattern.data())};
 			return matches;
 		}
 
@@ -310,7 +311,7 @@ namespace mfw::core
 			vector<pstring>::const_reverse_iterator it{resolved.crbegin()};
 			while(it != resolved.crend()) {
 				const pstring &file{*it};
-				if(__filesystem_internal::check_if_exists(file, exists)) {
+				if(!exists || __filesystem_internal::exists(file)) {
 					fullpath = file;
 					__filesystem_internal::clean_path(fullpath);
 					break;
@@ -337,7 +338,7 @@ namespace mfw::core
 		if(dir.is_absolute()) {
 			tmp = dir;
 			__filesystem_internal::clean_path(tmp);
-			if(__filesystem_internal::check_if_exists(tmp, exists)) {
+			if(!exists || __filesystem_internal::exists(tmp)) {
 				paths.emplace_back(tmp);
 			}
 		} else {
@@ -358,7 +359,7 @@ namespace mfw::core
 						tmp = file;
 					}
 					__filesystem_internal::clean_path(tmp);
-					if(__filesystem_internal::check_if_exists(tmp, exists)) {
+					if(!exists || __filesystem_internal::exists(tmp)) {
 						paths.emplace_back(tmp);
 					}
 					it++;
@@ -372,13 +373,13 @@ namespace mfw::core
 					tmp = file;
 				}
 				__filesystem_internal::clean_path(tmp);
-				if(__filesystem_internal::check_if_exists(tmp, exists)) {
+				if(!exists || __filesystem_internal::exists(tmp)) {
 					paths.emplace_back(tmp);
 				}
 			#endif
 				tmp = dir;
 				__filesystem_internal::clean_path(tmp);
-				if(__filesystem_internal::check_if_exists(tmp, exists)) {
+				if(!exists || __filesystem_internal::exists(tmp)) {
 					paths.emplace_back(tmp);
 				}
 			}
@@ -539,7 +540,8 @@ namespace mfw::core
 		}
 
 		for(const pstring &file : resolved) {
-			if(__filesystem_internal::remove_all(file) == 0) {
+			error_code errc{};
+			if(__filesystem_internal::remove_all(file, errc) == 0) {
 				return false;
 			}
 		}

@@ -42,8 +42,6 @@ namespace mfw::builder
 					info.flags |= compiler_info_t::flags_t::unix_;
 					if(path.find(u8"musl"_sv) != ucstring::npos) {
 						info.flags |= compiler_info_t::flags_t::musl;
-					} else if(path.find(u8"ccache"_sv) != ucstring::npos) {
-						info.flags |= compiler_info_t::flags_t::ccache;
 					}
 				}
 			} else if(path.find(u8"clang"_sv) != ucstring::npos) {
@@ -57,25 +55,23 @@ namespace mfw::builder
 					info.flags |= compiler_info_t::flags_t::unix_|compiler_info_t::flags_t::clang;
 					if(path.find(u8"musl"_sv) != ucstring::npos) {
 						info.flags |= compiler_info_t::flags_t::musl;
-					} else if(path.find(u8"ccache"_sv) != ucstring::npos) {
-						info.flags |= compiler_info_t::flags_t::ccache;
 					}
 				}
 			} else if(path.find(u8"g++"_sv) != ucstring::npos) {
 				info.type = compiler_info_t::type_t::gcc;
 				info.flags |= compiler_info_t::flags_t::unix_;
-				if(path.find(u8"ccache"_sv) != ucstring::npos) {
-					info.flags |= compiler_info_t::flags_t::ccache;
-				}
-			} else if(path.find(u8"clang++"_sv) != ucstring::npos) {
+			} else if(path.find(u8"clang++"_sv) != ucstring::npos ||
+						path.find(u8"zapcc++"_sv) != ucstring::npos ||
+						path.find(u8"zapcc"_sv) != ucstring::npos ||
+						path.find(u8"em++"_sv) != ucstring::npos ||
+						path.find(u8"emcc"_sv) != ucstring::npos ||
+						path.find(u8"include-what-you-use"_sv) != ucstring::npos) {
 				info.type = compiler_info_t::type_t::clang;
 				info.flags |= compiler_info_t::flags_t::unix_|compiler_info_t::flags_t::clang;
-				if(path.find(u8"ccache"_sv) != ucstring::npos) {
-					info.flags |= compiler_info_t::flags_t::ccache;
-				}
-			} else if(path.find(u8"include-what-you-use"_sv) != ucstring::npos) {
-				info.type = compiler_info_t::type_t::clang;
-				info.flags |= compiler_info_t::flags_t::unix_|compiler_info_t::flags_t::clang;
+			}
+			
+			if(path.find(u8"ccache"_sv) != ucstring::npos) {
+				info.flags |= compiler_info_t::flags_t::ccache;
 			}
 		}
 		
@@ -94,7 +90,8 @@ namespace mfw::builder
 					info.flags |= linker_info_t::flags_t::gold;
 				} else if(path.find(u8"bfd"_sv) != ucstring::npos) {
 					info.flags |= linker_info_t::flags_t::bfd;
-				} else if(path.find(u8"lld"_sv) != ucstring::npos) {
+				} else if(path.find(u8"lld"_sv) != ucstring::npos ||
+							path.find(u8"wasm"_sv) != ucstring::npos) {
 					info.flags |= linker_info_t::flags_t::lld;
 				}
 				info.flags |= linker_info_t::flags_t::unix_;

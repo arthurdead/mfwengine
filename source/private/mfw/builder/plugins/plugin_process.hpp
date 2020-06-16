@@ -78,6 +78,7 @@ namespace mfw::builder
 			implib_t implib{};
 			
 			bool is_unix_linker{false};
+			bool is_unix_compiler{false};
 			
 			pstring path{};
 			ucstring cmd{};
@@ -103,7 +104,10 @@ namespace mfw::builder
 			
 			bool setup(const tool_info_t &tool_info, const tool_section_reference &tool_section, const core::serializable &options_);
 			
+			compiler_info_t info{};
+			
 			ucstring compiler_lib_dirs{};
+			//ucstring compiler_inc_dirs{};
 		};
 		
 		compiler_tool_info_t compiler{};

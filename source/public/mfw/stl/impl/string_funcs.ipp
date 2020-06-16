@@ -7,8 +7,10 @@ namespace mfw::stl
 		{ return ucstring{ptr, len}; }
 		inline uwstring operator""_s(const uwchar_t *ptr, size_t len)
 		{ return uwstring{ptr, len}; }
-		inline pstring operator""_p(const upchar_t *ptr, size_t len)
-		{ return pstring{ptr, ptr+len}; }
+		inline pstring operator""_p(const upchar_t *ptr, size_t len) {
+			const char *c_ptr{c_str(ptr)};
+			return pstring{c_ptr, c_ptr+len};
+		}
 	}
 
 	#ifdef __MFW_STD_FILESYSTEM_WIDE_CHAR
@@ -22,11 +24,6 @@ namespace mfw::stl
 	inline const char *c_str(const pstring &src)
 	{ return reinterpret_cast<const char *>(src.c_str()); }
 	#endif
-
-	inline void to_string(const ucstring &src, pstring &dst)
-	{
-		dst = src;
-	}
 
 	inline char *c_str(ucstring &src)
 	{ return reinterpret_cast<char *>(src.data()); }

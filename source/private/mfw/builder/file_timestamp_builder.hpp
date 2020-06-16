@@ -20,7 +20,7 @@ namespace mfw::builder
 		using includes_dirs_t = vector<pstring>;
 
 		bool generate(const core::searchpath &path, const core::searchpath &output);
-		bool check(const core::searchpath &output);
+		bool check(const core::searchpath &output) const;
 
 		bool add_include_dir(const core::searchpath &search);
 

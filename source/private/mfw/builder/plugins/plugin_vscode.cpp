@@ -13,7 +13,7 @@ namespace mfw::builder
 		info_.process_build_set = true;
 		info_.process_single_input = false;
 		info_.merge_sections_files_options = false;
-		info_.process_out_of_date = false;
+		info_.process_out_of_date = true;
 		info_.ignore_output = true;
 
 		core::interfaces::filesystem::instance().remove({{}, name()});
@@ -47,6 +47,9 @@ namespace mfw::builder
 			if(program) {
 				const core::univalue &value{program->get_value()};
 				json.program = as_string<pstring>(value);
+				if(replace) {
+					builder_funcs().replace_vars(json.program);
+				}
 				if(json.cwd.empty()) {
 					pstring folder{json.program};
 					folder.remove_filename();
@@ -107,6 +110,71 @@ namespace mfw::builder
 		}
 
 		return true;
+	}
+
+	namespace __plugin_vscode_internal
+	{
+		static void normalize_c_standard(ucstring &str, bool cpp, bool gnu)
+		{
+			if(cpp) {
+				if(gnu) {
+					str = u8"gnu18"_sv;
+				} else {
+					str = u8"c18"_sv;
+				}
+			} else {
+				bool iso{str.find(u8"iso9899"_sv) != ucstring::npos};
+				
+				if(iso) {
+					size_t start{8u};
+					
+					if(str.compare(start, 4, u8"1990"_sv) == 0 ||
+						str.compare(start, 6, u8"199409"_sv) == 0) {
+						str = u8"c89"_sv;
+					} else if(str.compare(start, 4, u8"1999"_sv) == 0 ||
+								str.compare(start, 4, u8"199x"_sv) == 0) {
+						str = u8"c99"_sv;
+					} else if(str.compare(start, 4, u8"2011"_sv) == 0 ||
+								str.compare(start, 4, u8"2017"_sv) == 0) {
+						str = u8"c11"_sv;
+					} else if(str.compare(start, 4, u8"2018"_sv) == 0) {
+						str = u8"c18"_sv;
+					}
+				} else {
+					size_t start{gnu ? 3u : 1u};
+				
+					if(str.compare(start, 2, u8"90"_sv) == 0) {
+						str.replace(start, ucstring::npos, u8"89"_sv);
+					} else if(str.compare(start, 2, u8"9x"_sv) == 0) {
+						str.replace(start, ucstring::npos, u8"99"_sv);
+					} else if(str.compare(start, 2, u8"1x"_sv) == 0) {
+						str.replace(start, ucstring::npos, u8"11"_sv);
+					} else if(str.compare(start, 2, u8"2x"_sv) == 0) {
+						str.replace(start, ucstring::npos, u8"18"_sv);
+					}
+				}
+			}
+		}
+		
+		static void normalize_cpp_standard(ucstring &str, bool cpp, bool gnu)
+		{
+			if(!cpp) {
+				str = u8"c++98"_sv;
+			} else {
+				size_t start{gnu ? 5u : 3u};
+				
+				if(str.compare(start, 2, u8"0x"_sv) == 0) {
+					str.replace(start, ucstring::npos, u8"11"_sv);
+				} else if(str.compare(start, 2, u8"1y"_sv) == 0) {
+					str.replace(start, ucstring::npos, u8"14"_sv);
+				} else if(str.compare(start, 2, u8"1z"_sv) == 0) {
+					str.replace(start, ucstring::npos, u8"17"_sv);
+				} else if(str.compare(start, 2, u8"2a"_sv) == 0 ||
+							str.compare(start, 7, u8"latest"_sv) == 0) {
+					str.replace(start, ucstring::npos, u8"20"_sv);
+				}
+			}
+		}
 	}
 
 	bool plugin_vscode::generate(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const core::serializable &options)
@@ -180,11 +248,15 @@ namespace mfw::builder
 				if(standard) {
 					const core::univalue &value{standard->get_value()};
 					const ucstring &str{value.get_string()};
-					if(str.find(u8"c++"_sv) != ucstring::npos) {
-						json.cpp_standard = str;
-					} else {
-						json.c_standard = str;
-					}
+					bool cpp{
+						str.find(u8"c++"_sv) != ucstring::npos ||
+						str.find(u8"gnu++"_sv) != ucstring::npos
+					};
+					bool gnu{str.find(u8"gnu"_sv) != ucstring::npos};
+					json.cpp_standard = str;
+					json.c_standard = str;
+					__plugin_vscode_internal::normalize_c_standard(json.c_standard, cpp, gnu);
+					__plugin_vscode_internal::normalize_cpp_standard(json.cpp_standard, cpp, gnu);
 				}
 			}
 			const core::serializable *plugin{tool_section.plugin_section()};
@@ -235,8 +307,7 @@ namespace mfw::builder
 		cpp_properties.Key(u8"name"_sv);
 		if(compiler_type == compiler_info_t::type_t::msvc) {
 			cpp_properties.String(u8"Win32"_sv);
-		} else if(compiler_type == compiler_info_t::type_t::gcc ||
-					compiler_type == compiler_info_t::type_t::clang) {
+		} else if(compiler_type & compiler_info_t::flags_t::unix_) {
 			cpp_properties.String(u8"Linux"_sv);
 		} else {
 			cpp_properties.String(u8"${default}"_sv);
@@ -259,7 +330,7 @@ namespace mfw::builder
 			cpp_properties.String(u8"msvc-x64"_sv);
 		} else if(compiler_type == compiler_info_t::type_t::gcc) {
 			cpp_properties.String(u8"gcc-x64"_sv);
-		} else if(compiler_type == compiler_info_t::type_t::clang) {
+		} else if(compiler_type & compiler_info_t::flags_t::clang) {
 			cpp_properties.String(u8"clang-x64"_sv);
 		} else {
 			cpp_properties.String(u8"${default}"_sv);
@@ -357,8 +428,7 @@ namespace mfw::builder
 		if(problem_matcher.empty()) {
 			if(compiler_type == compiler_info_t::type_t::msvc) {
 				problem_matcher.emplace_back(u8"$msCompile"_s);
-			} else if(compiler_type == compiler_info_t::type_t::gcc ||
-						compiler_type == compiler_info_t::type_t::clang) {
+			} else if(compiler_type & compiler_info_t::flags_t::unix_) {
 				problem_matcher.emplace_back(u8"$gcc"_s);
 			}
 		}
@@ -458,7 +528,7 @@ namespace mfw::builder
 			Key(u8"projectManager.projectsLocation"_sv);
 			String(path/u8"projects.json"_p);
 		} else {
-			if(compiler_type == compiler_info_t::type_t::clang) {
+			if(compiler_type & compiler_info_t::flags_t::unix_) {
 				Key(u8"clangd.arguments"_sv);
 				StartArray();
 				for(const core::serializable &arg : compiler_options) {

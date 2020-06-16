@@ -21,7 +21,7 @@
 	#error
 #endif
 
-#define MFW_PATH_FROM_CHARARRAY(name, len) reinterpret_cast<const upchar_t *>(name), reinterpret_cast<const upchar_t *>(name+len)
+#define MFW_PATH_FROM_CHARARRAY(name, len) c_str(name), (c_str(name)+len)
 
 namespace mfw::stl
 {
@@ -40,6 +40,11 @@ namespace mfw::stl
 
 	using pstring = ::MFW_STD_NAMESPACE::filesystem::path;
 	using npstring = pstring::string_type;
+	#ifdef __MFW_FILESYSTEM_CHAR8
+	using u8npstring = ::MFW_STD_NAMESPACE::u8string;
+	#else
+	using u8npstring = ::MFW_STD_NAMESPACE::string;
+	#endif
 	#ifdef __MFW_STD_FILESYSTEM_WIDE_CHAR
 	using unpstring = uwstring;
 	#else
@@ -65,10 +70,15 @@ namespace MFW_STD_NAMESPACE
 		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::pstring &str) const
 		{
 			MFW_MESSAGE("remove this later")
-		#if MFW_LIBCPP_FLAGGED(UNIX)
-			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), str.native().length() * sizeof(::mfw::stl::upchar_t));
+			size_t length{str.native().length() * sizeof(::mfw::stl::pchar_t)};
+		#if MFW_LIBCPP_IS(LLVM)
+			return ::MFW_STD_NAMESPACE::__do_string_hash(str.c_str(), str.c_str() + length);
+		#elif MFW_LIBCPP_FLAGGED(UNIX)
+			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), length);
+		#elif MFW_LIBCPP_IS(MSVC)
+			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), length);
 		#else
-			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), str.native().length() * sizeof(::mfw::stl::upchar_t));
+			#error
 		#endif
 		}
 	};
@@ -81,10 +91,15 @@ namespace MFW_STD_NAMESPACE
 		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::ucstring &str) const
 		{
 			MFW_MESSAGE("remove this later")
-		#if MFW_LIBCPP_FLAGGED(UNIX)
-			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), str.length() * sizeof(::mfw::stl::ucchar_t));
+			size_t length{str.length() * sizeof(::mfw::stl::ucchar_t)};
+		#if MFW_LIBCPP_IS(LLVM)
+			return ::MFW_STD_NAMESPACE::__do_string_hash(str.c_str(), str.c_str() + length);
+		#elif MFW_LIBCPP_FLAGGED(UNIX)
+			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), length);
+		#elif MFW_LIBCPP_IS(MSVC)
+			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), length);
 		#else
-			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), str.length() * sizeof(::mfw::stl::ucchar_t));
+			#error
 		#endif
 		}
 	};
@@ -96,10 +111,15 @@ namespace MFW_STD_NAMESPACE
 		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::uwstring &str) const
 		{
 			MFW_MESSAGE("remove this later")
-		#if MFW_LIBCPP_FLAGGED(UNIX)
+			size_t length{str.length() * sizeof(::mfw::stl::uwchar_t)};
+		#if MFW_LIBCPP_IS(LLVM)
+			return ::MFW_STD_NAMESPACE::__do_string_hash(str.c_str(), str.c_str() + length);
+		#elif MFW_LIBCPP_FLAGGED(UNIX)
 			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), str.length() * sizeof(::mfw::stl::uwchar_t));
-		#else
+		#elif MFW_LIBCPP_IS(MSVC)
 			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), str.length() * sizeof(::mfw::stl::uwchar_t));
+		#else
+			#error
 		#endif
 		}
 	};

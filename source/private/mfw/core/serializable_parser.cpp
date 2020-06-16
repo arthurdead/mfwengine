@@ -676,9 +676,6 @@ namespace mfw::core
 			MFW_DEBUGBREAK();
 		} else if(name == u8"this"_sv) {
 			MFW_DEBUGBREAK();
-		} else if(name == u8"cmdline"_sv) {
-			var.deduce(&commandline::instance());
-			return true;
 		} else {
 			const serializable *inherit{get_inherit(name)};
 			if(inherit) {
@@ -713,74 +710,6 @@ namespace mfw::core
 					return true;
 				}
 			}
-		} else if(obj_name == u8"mfw::core::commandline"_sv) {
-			commandline *cmdline{obj.get_var<commandline *>()};
-		}
-
-		return false;
-	}
-
-	bool serializable_parser::get_member_function(const type_holder &obj, const ucstring_view &name, const vector<univalue> &args, type_holder &result) const
-	{
-		size_t num{args.size()};
-
-		const ucstring &obj_name{obj.info().name()};
-
-		if(obj_name == u8"mfw::core::commandline"_sv) {
-			commandline *cmdline{obj.get_var<commandline *>()};
-			if(name == u8"has"_sv) {
-				if(num != 1 && num != 2) {
-					error(u8"function takes 1 or 2 args but {} were provided"_sv, num);
-					return false;
-				}
-
-				if(num == 1) {
-					if(args[0].is_int()) {
-						result.deduce(cmdline->has(args[0].get_int()));
-					} else {
-						result.deduce(cmdline->has(args[0].get_string()));
-					}
-				} else if(num == 2) {
-					result.deduce(cmdline->has(args[0].get_string(), args[1]));
-				}
-				return true;
-			} else if(name == u8"empty"_sv) {
-				if(num != 0) {
-					error(u8"function takes 0 args but {} were provided"_sv, num);
-					return false;
-				}
-
-				result.deduce(cmdline->empty());
-				return true;
-			} else if(name == u8"value"_sv) {
-				if(num != 1) {
-					error(u8"function takes 1 arg but {} were provided"_sv, num);
-					return false;
-				}
-
-				const ucstring &arg_name{args[0].get_string()};
-				const univalue *value{cmdline->value(arg_name)};
-				if(!value) {
-					if(cmdline->has(arg_name)) {
-						result.deduce(true);
-					} else {
-						result.deduce(false);
-					}
-				} else {
-					if(value->empty()) {
-						result.deduce(true);
-					} else if(value->is_bool()) {
-						result.deduce(value->get_bool());
-					} else if(value->is_float()) {
-						result.deduce(value->get_float());
-					} else if(value->is_int()) {
-						result.deduce(value->get_int());
-					} else {
-						result.deduce(*value);
-					}
-				}
-				return true;
-			}
 		}
 
 		return false;
@@ -804,9 +733,6 @@ namespace mfw::core
 			const univalue &arg{args[0]};
 			pstring path{as_string<pstring>(arg.get_string())};
 			var.deduce(filesys.exists(path));
-			return true;
-		} else if(name == u8"defined"_sv) {
-			var.deduce(true);
 			return true;
 		}
 

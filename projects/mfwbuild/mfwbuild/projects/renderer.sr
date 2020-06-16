@@ -2,9 +2,18 @@
 
 renderer : base_project, standards.cpp20, output_shared
 {
-	builder::depends {
-		core,
-		stl
+	builder {
+		dependency::linker {
+			files {
+			$if !is_self && os == "linux"
+				"${shared_out_dir}/${dependency_name}.so"
+			$endif
+			}
+		}
+		depends {
+			core,
+			stl
+		}
 	}
 	compiler::options::preprocessor_definitions {
 		MFW_APPLICATION_MAIN_DEFINED

@@ -342,7 +342,7 @@ namespace mfw::core
 				}
 				#define __MFW_COUNT_CODE_START(var, op, extra) \
 					if(var) { \
-						size_t var##_val{var->get_value()};
+						size_t var##_val{static_cast<size_t>(var->get_value().get_int())};
 				#define __MFW_COUNT_CODE_MAX(var, op, extra) \
 					__MFW_COUNT_CODE_START(var, op, extra) \
 						if(var##_val == 0) { \

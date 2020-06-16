@@ -65,7 +65,6 @@ namespace mfw::core
 		bool get_variable(const ucstring_view &name, type_holder &var) const override;
 		bool get_member_variable(const type_holder &obj, const ucstring_view &name, type_holder &var) const override;
 		bool get_function(const ucstring_view &name, const vector<univalue> &args, type_holder &var) const override;
-		bool get_member_function(const type_holder &obj, const ucstring_view &name, const vector<univalue> &args, type_holder &var) const override;
 
 		pstring filename() const;
 

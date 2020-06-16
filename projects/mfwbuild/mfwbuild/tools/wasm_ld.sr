@@ -1,0 +1,6 @@
+#include "bases/unix_cpp_linker.sr"
+
+wasm_ld : base_tool
+{
+	shell "wasm-ld"
+}

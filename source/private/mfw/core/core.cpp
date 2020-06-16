@@ -8,12 +8,18 @@
 #include <public/mfw/stl/defines.hpp>
 #if MFW_OS == MFW_OS_WINDOWS
 	#include <Windows.h>
-#elif MFW_OS == MFW_OS_LINUX
+#elif MFW_LIBC_FLAGGED(UNIX)
 	#include <wordexp.h>
 	#include <errno.h>
 	#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
 		#include <malloc.h>
-		#include <mcheck.h>
+		__MFW_MESSAGE("dont like below")
+		#ifndef M_CHECK_ACTION
+			#define M_CHECK_ACTION -5
+		#endif
+		#if !defined __MFW_BROWSER_DETECTED
+			#include <mcheck.h>
+		#endif
 	#endif
 	#include <signal.h>
 	#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
@@ -55,10 +61,12 @@ namespace mfw::core
 			);
 
 			_CrtSetBreakAlloc(16);
-		#elif MFW_OS == MFW_OS_LINUX
+		#elif MFW_LIBC_FLAGGED(UNIX)
+			#ifndef __MFW_BROWSER_DETECTED
 			mcheck(nullptr);
 			mcheck_pedantic(nullptr);
 			mtrace();
+			#endif
 			mallopt(M_CHECK_ACTION, 3);
 		#else
 			#error
@@ -73,7 +81,7 @@ namespace mfw::core
 		__core_internal::debug_init();
 	#endif
 	
-	#if MFW_OS_IS(LINUX)
+	#if MFW_LIBC_FLAGGED(UNIX)
 		//signal(SIGCHLD, SIG_IGN);
 	#endif
 
@@ -97,7 +105,7 @@ namespace mfw::core
 		return status;
 	}
 
-#if MFW_OS == MFW_OS_LINUX
+#if MFW_LIBC_FLAGGED(UNIX)
 	MFW_CORE_API void MFW_CORE_CALL expand_shell(const ucstring_view &src, vector<ucstring> &dst)
 	{
 		wordexp_t exp{};
@@ -132,7 +140,7 @@ namespace mfw::core
 	{
 	#if MFW_OS == MFW_OS_WINDOWS
 		return GetLastError();
-	#elif MFW_OS == MFW_OS_LINUX
+	#elif MFW_LIBC_FLAGGED(UNIX)
 		return errno;
 	#else
 		#error
@@ -152,7 +160,7 @@ namespace mfw::core
 		if(pos != ucstring::npos) {
 			str.erase(pos, 2);
 		}
-	#elif MFW_OS == MFW_OS_LINUX
+	#elif MFW_LIBC_FLAGGED(UNIX)
 		strerror_r(code, c_str(str), str.size());
 	#else
 		#error
@@ -161,18 +169,12 @@ namespace mfw::core
 
 	MFW_CORE_API int64_t MFW_CORE_CALL time_now()
 	{
-		using time_nano_t = __core_internal::time_point<__core_internal::system_clock, __core_internal::nanoseconds>;
-		//using time_mili_t = __core_internal::time_point<__core_internal::system_clock, __core_internal::milliseconds>;
-
-		time_nano_t time_nano{__core_internal::high_resolution_clock::now()};
-
-	#if 0
-		time_mili_t time_mili{__core_internal::time_point_cast<__core_internal::milliseconds>(time_point)};
-		__core_internal::milliseconds since_epoch{time_mili.time_since_epoch()};
-	#else
-		__core_internal::nanoseconds since_epoch{time_nano.time_since_epoch()};
-	#endif
-
-		return since_epoch.count();
+		using clock_t = __core_internal::high_resolution_clock;
+		using duration_t = __core_internal::microseconds;
+		
+		using time_micro_t = __core_internal::time_point<clock_t, duration_t>;
+		time_micro_t time_point{__core_internal::time_point_cast<time_micro_t::duration>(clock_t::now())};
+		
+		return time_point.time_since_epoch().count();
 	}
 }

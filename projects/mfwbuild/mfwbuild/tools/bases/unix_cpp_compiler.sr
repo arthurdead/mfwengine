@@ -32,6 +32,7 @@ base_tool
 		}
 		error {
 			"error:"
+			"Stack dump:"
 		}
 	}
 
@@ -47,6 +48,7 @@ base_tool
 
 	forced_includes {
 		"--include"
+		"-include"
 	}
 
 	standard "-std"
@@ -55,14 +57,14 @@ base_tool
 
 	options_map {
 		$(files,needs_values)
-		forced_includes "--include"
+		forced_includes "-include"
 		$(needs_values)
-		preprocessor_definitions "--define-macro"
-		no_linking "--compile"
+		preprocessor_definitions "-D"
+		no_linking "-c"
 		$(file)
-		output "--output"
+		output "-o"
 		$(folders)
-		includes_paths "--include-directory"
+		includes_paths "-I"
 		$(needs_equal)
 		standard "-std" {
 			"c++latest" "c++2a"
@@ -87,4 +89,11 @@ base_tool
 		$(needs_values,no_space)
 		libraries "-l"
 	}
+
+$if cmdline.value("ccache")
+	subprocess
+	{
+		shell "ccache"
+	}
+$endif
 }

@@ -85,6 +85,9 @@ namespace mfw::builder
 			$(optional,count=0,description="ignores timestamps")
 			no_stamps
 			
+			$(optional,count=0,description="debug")
+			debug
+			
 			$(required,min=1,description="list of plugins to use while building")
 			plugins
 			
@@ -144,6 +147,7 @@ namespace mfw::builder
 		regen_cache_ = cmdline.get_bool(u8"regen_cache"_s);
 		no_cache_ = cmdline.get_bool(u8"no_cache"_s);
 		no_stamps_ = cmdline.get_bool(u8"no_stamps"_s);
+		debugging_ = cmdline.get_bool(u8"debug"_s);
 		
 		if(!parse_plugins()) {
 			return core::exit_status::fatal;
@@ -275,7 +279,9 @@ namespace mfw::builder
 		cache_search.path /= name;
 		cache_search.path.replace_extension(u8".cache.sr"_p);
 
-		log_builder().info(u8"saving {} cache"_sv, name);
+		if(debugging_) {
+			log_builder().info(u8"saving {} cache"_sv, name);
+		}
 
 		return main_section.to_file(cache_search);
 	}
@@ -364,14 +370,18 @@ namespace mfw::builder
 		output.path.concat(u8".timestamp.bin"_s);
 
 		if((regen_cache_ || !filesys.exists({output})) && !no_cache_) {
-			log_builder().info(u8"generating timestamp for {}"_sv, name);
+			if(debugging_) {
+				log_builder().info(u8"generating timestamp for {}"_sv, name);
+			}
 			
 			if(!timestamp_builder.generate({resolved}, output)) {
 				return false;
 			}
 		} else {
 			if(cached) {
-				log_builder().info(u8"checking if {} changed"_sv, name);
+				if(debugging_) {
+					log_builder().info(u8"checking if {} changed"_sv, name);
+				}
 				
 				if(timestamp_builder.check(output)) {
 					cached = false;
@@ -380,7 +390,9 @@ namespace mfw::builder
 		}
 
 		if(cached) {
-			log_builder().info(u8"loading {} from cache"_sv, name);
+			if(debugging_) {
+				log_builder().info(u8"loading {} from cache"_sv, name);
+			}
 			
 			if(root_file.from_file(cache_search)) {
 				base_cached_file &main_section{*reinterpret_cast<base_cached_file *>(root_file.get_child(name))};
@@ -389,7 +401,9 @@ namespace mfw::builder
 				return false;
 			}
 		} else {
-			log_builder().info(u8"loading {}"_sv, name);
+			if(debugging_) {
+				log_builder().info(u8"loading {}"_sv, name);
+			}
 			
 			if(!root_file.from_file({resolved})) {
 				return false;
@@ -436,6 +450,10 @@ namespace mfw::builder
 
 	bool builder::parse_tool(tool_reference &tool)
 	{
+		if(tool.loaded_from_cache_) {
+			return true;
+		}
+		
 		#define __MFW_BUILDER_ADD_SELF_OPTION(name) \
 			core::serializable &name{tool.child(MFW_MACRO_CONCATENATE(u8, MFW_MACRO_CONCATENATE(#name, _sv)))}; \
 			name.child(MFW_MACRO_CONCATENATE(u8, MFW_MACRO_CONCATENATE(#name, _sv))); \
@@ -1124,24 +1142,6 @@ namespace mfw::builder
 					file_reference &file_main{reinterpret_cast<file_reference &>(child)};
 					file_main.flags_ |= file_reference::flags::out_of_date;
 
-					if(!no_timestamp && !no_cache_) {
-						pstring fullpath{file_main.path()};
-						
-						core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
-						
-						if(filesys.exists({fullpath})) {
-							core::searchpath output{timestamp_dir};
-							output.path /= fullpath.filename();
-							output.path.concat(u8".timestamp.bin"_s);
-							
-							log_builder().info(u8"generating {} timestamp"_sv, fullpath);
-							
-							if(!timestamp_builder.generate({fullpath}, output)) {
-								return false;
-							}
-						}
-					}
-
 					if(!child.empty() && solution.tools_.empty()) {
 						pstring filter{file_main.filter()};
 						add_variable(u8"file_filter"_s, as_string<ucstring>(filter));
@@ -1173,20 +1173,6 @@ namespace mfw::builder
 					
 					if(no_timestamp || regen_or_no_cache()) {
 						file_main.flags_ |= file_reference::flags::out_of_date;
-					} else {
-						pstring fullpath{file_main.path()};
-
-						core::searchpath output{timestamp_dir};
-						output.path /= fullpath.filename();
-						output.path.concat(u8".timestamp.bin"_s);
-
-						log_builder().info(u8"checking if {} changed"_sv, fullpath);
-
-						if(timestamp_builder.check(output)) {
-							file_main.flags_ |= file_reference::flags::out_of_date;
-						} else {
-							file_main.flags_ &= ~file_reference::flags::out_of_date;
-						}
 					}
 				}
 			}
@@ -1194,8 +1180,22 @@ namespace mfw::builder
 
 		return true;
 	}
+	
+	bool builder::file_changed(const pstring &fullpath, const pstring &filter, const core::searchpath &timestamp_dir) const
+	{
+		core::searchpath output{timestamp_dir};
+		output.path /= filter;
+		output.path /= fullpath.filename();
+		output.path.concat(u8".timestamp.bin"_s);
 
-	pstring builder::get_output_path(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged)
+		if(debugging_) {
+			log_builder().info(u8"checking if {} changed"_sv, fullpath);
+		}
+
+		return timestamp_builder.check(output);
+	}
+
+	pstring builder::get_output_path(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged) const
 	{
 		const tool_reference *tool{tool_section.tool()};
 
@@ -1226,12 +1226,19 @@ namespace mfw::builder
 			path = tool->output_default_path();
 		}
 		
+		if(!merged) {
+			replace_vars(path);
+		}
+		
 		return path;
 	}
 
-	bool builder::output_exists(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged)
+	bool builder::output_exists(const tool_section_reference &tool_section, const core::serializable &options, const core::serializable &file_options, bool merged) const
 	{
 		pstring path{get_output_path(tool_section, options, file_options, merged)};
+		if(path.empty()) {
+			return true;
+		}
 
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 		if(filesys.exists({path})) {
@@ -1247,7 +1254,7 @@ namespace mfw::builder
 		return false;
 	}
 
-	void builder::replace_vars(ucstring &str)
+	void builder::replace_vars(ucstring &str) const
 	{
 		if(str.empty()) {
 			return;
@@ -1264,7 +1271,7 @@ namespace mfw::builder
 		}
 	}
 
-	void builder::replace_vars(core::univalue &val)
+	void builder::replace_vars(core::univalue &val) const
 	{
 		if(val.empty()) {
 			return;
@@ -1275,7 +1282,7 @@ namespace mfw::builder
 		val = move(str);
 	}
 
-	void builder::replace_vars(pstring &file)
+	void builder::replace_vars(pstring &file) const
 	{
 		if(file.empty()) {
 			return;
@@ -1725,6 +1732,16 @@ namespace mfw::builder
 
 			bool section_out_of_date{no_cache_ || tool_section.out_of_date()};
 
+			core::searchpath timestamp_dir{{}, u8"builder"_sv};
+			timestamp_dir.path /= u8"projects"_p;
+			timestamp_dir.path /= project.get_name();
+			timestamp_dir.path /= tool_section.get_name();
+
+			bool no_timestamp{
+				no_stamps_ ||
+				tool_section.get_value() == u8"ignore"_sv
+			};
+
 			for(const core::serializable &child : *files) {
 				const file_reference &file_main{reinterpret_cast<const file_reference &>(child)};
 
@@ -1776,16 +1793,38 @@ namespace mfw::builder
 				if(do_merge) {
 					file_options.merge(section_opts, false, __builder_internal::merge_replace_vars);
 				}
+				
+				bool created_timestamp{false};
+				
+				if(!no_timestamp && !no_cache_ && !process_out_of_date) {
+					core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+					
+					core::searchpath output{timestamp_dir};
+					output.path /= filter;
+					output.path /= fullpath.filename();
+					output.path.concat(u8".timestamp.bin"_s);
+					
+					if(!filesys.exists({output})) {
+						if(debugging_) {
+							log_builder().info(u8"generating {} timestamp"_sv, fullpath);
+						}
+						
+						if(!timestamp_builder.generate({fullpath}, output)) {
+							//return false;
+						} else {
+							created_timestamp = true;
+						}
+					}
+				}
 
 				bool actually_out_of_date{
 					process_out_of_date ||
 					(
 						section_out_of_date ||
 						bool_cast(file_main.flags_ & file_reference::flags::out_of_date) ||
-						(
-							!info.ignore_output &&
-							!output_exists(tool_section, section_opts, file_options, do_merge)
-						)
+						(!info.ignore_output && !output_exists(tool_section, section_opts, file_options, do_merge)) ||
+						created_timestamp ||
+						(!created_timestamp && file_changed(fullpath, filter, timestamp_dir))
 					)
 				};
 

@@ -78,22 +78,28 @@ namespace mfw::stl
 	) noexcept(false)
 	{
 		if(ptr == nullptr ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xABABABABABABABAB ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xABADCAFE ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xBAADF00D ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xBADCAB1E ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xBEEFCACE ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xCCCCCCCCCCCCCCCC ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xCDCDCDCDCDCDCDCD ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xDDDDDDDDDDDDDDDD ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xEDEDEDEDEDEDEDED ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xDEADDEAD ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xFDFDFDFDFDFDFDFD ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xFEEEFEEEEEEEEEEE ||
-		reinterpret_cast<uintptr_t>(ptr) == 0xFFFFFFFFFFFFFFFF ||
-		(reinterpret_cast<uintptr_t>(ptr) & 7) == 7 ||
-		reinterpret_cast<uintptr_t>(ptr) >= UINTPTR_MAX ||
-		reinterpret_cast<intptr_t>(ptr) <= 0) {
+		#if MFW_PROCESSOR_FLAGGED(64BITS)
+			reinterpret_cast<uintptr_t>(ptr) == 0xABABABABABABABAB ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xCCCCCCCCCCCCCCCC ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xCDCDCDCDCDCDCDCD ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xDDDDDDDDDDDDDDDD ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xEDEDEDEDEDEDEDED ||
+		#else
+			reinterpret_cast<uintptr_t>(ptr) == 0xABABABAB ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xCCCCCCCC ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xCDCDCDCD ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xDDDDDDDD ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xEDEDEDED ||
+		#endif
+			reinterpret_cast<uintptr_t>(ptr) == 0xABADCAFE ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xBAADF00D ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xBADCAB1E ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xBEEFCACE ||
+			reinterpret_cast<uintptr_t>(ptr) == 0xDEADDEAD ||
+			(reinterpret_cast<uintptr_t>(ptr) & 7) == 7 ||
+			reinterpret_cast<uintptr_t>(ptr) >= UINTPTR_MAX ||
+			reinterpret_cast<intptr_t>(ptr) <= 0
+		) {
 			return false;
 		}
 

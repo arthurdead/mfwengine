@@ -1,0 +1,44 @@
+#include "cl.sr"
+
+#if MFW_OS == MFW_OS_LINUX
+	#define BASE "/home/arthurdead/wine/msvc-wine/dist_release"
+#else
+	#error
+#endif
+
+#define MSVCVER "14.26.28801"
+#define SDKVER "10.0.19041.0"
+#define ARCH "x64"
+#define SDK "kits/10"
+#define MSVCDIR "BASE/vc/tools/msvc/MSVCVER"
+#define SDKINCLUDE "BASE/SDK/include/SDKVER"
+#define SDKLIB "BASE/SDK/lib/SDKVER"
+#define BINDIR "BASE/vc/tools/msvc/MSVCVER/bin/Hostx64/ARCH"
+#define SDKBINDIR "BASE/SDK/bin/SDKVER/x64"
+
+base_tool
+{
+	equal_char ':'
+
+	non_fatal_codes {
+		3,2
+	}
+
+	$(separator=';')
+	environment
+	{
+		INCLUDE {
+			"MSVCDIR/include"
+			"SDKINCLUDE/shared"
+			"SDKINCLUDE/ucrt"
+			"SDKINCLUDE/um"
+			"SDKINCLUDE/winrt"
+		}
+
+		LIB|LIBPATH {
+			"MSVCDIR/lib/ARCH"
+			"SDKLIB/ucrt/ARCH"
+			"SDKLIB/um/ARCH"
+		}
+	}
+}

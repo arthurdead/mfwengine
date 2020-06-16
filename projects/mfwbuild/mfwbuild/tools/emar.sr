@@ -1,0 +1,6 @@
+#include "bases/ar.sr"
+
+emar : base_tool
+{
+	shell "emar"
+}

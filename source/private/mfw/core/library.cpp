@@ -17,9 +17,19 @@
 
 namespace mfw::core
 {
+	MFW_DECLARE_LOG_CONTEXT(log_library, u8"core/library"_p)
+	
 	namespace __library_internal
 	{
 		static library::library_list_t libraries{};
+		
+	#if MFW_OS == MFW_OS_LINUX
+		ucstring dl_err_str()
+		{
+			char *ptr{dlerror()};
+			return ucstring{uc_str(ptr)};
+		}
+	#endif
 	}
 
 	MFW_CORE_API bool MFW_CORE_CALL library::add_directory(const searchpath &search)
@@ -488,15 +498,26 @@ namespace mfw::core
 		
 		module_ = dlopen(c_str(path), dlopen_flags);
 		if(!module_) {
-			environment_var envvar{u8"LD_RUN_PATH"_sv, u8':'};
-			for(const ucstring &i : envvar) {
-				pstring tmp{i};
-				tmp /= filename;
-				path = as_string<ucstring>(tmp);
-				module_ = dlopen(c_str(path), dlopen_flags);
-				if(module_) {
-					break;
+			ucstring err{__library_internal::dl_err_str()};
+			if(err.find(u8": cannot open shared object file: No such file or directory"_sv) != ucstring::npos) {
+				environment_var envvar{u8"LD_RUN_PATH"_sv, u8':'};
+				for(const ucstring &i : envvar) {
+					pstring tmp{i};
+					tmp /= filename;
+					path = as_string<ucstring>(tmp);
+					module_ = dlopen(c_str(path), dlopen_flags);
+					if(!module_) {
+						err = __library_internal::dl_err_str();
+						if(err.find(u8": cannot open shared object file: No such file or directory"_sv) == ucstring::npos) {
+							log_library().error(u8"failed to load {}: {}", path, err);
+							break;
+						}
+					} else {
+						break;
+					}
 				}
+			} else {
+				log_library().error(u8"failed to load {}: {}", path, err);
 			}
 		}
 		

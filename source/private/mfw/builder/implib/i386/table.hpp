@@ -12,6 +12,7 @@ u8R"(
 
   .globl _${lib_suffix}_tramp_table
   .hidden _${lib_suffix}_tramp_table
+  .align 4
 _${lib_suffix}_tramp_table:
   .zero $table_size
 

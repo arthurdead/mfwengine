@@ -15,11 +15,13 @@ namespace mfw::core
 		searchpath(const pstring &path_)
 			: path{path_} {}
 
-		searchpath(const ucstring &name)
-			: path{name} {}
+		searchpath(const ucstring &name) {
+			to_string(name, path);
+		}
 
-		searchpath(const ucstring_view &name)
-			: path{name} {}
+		searchpath(const ucstring_view &name) {
+			to_string(name, path);
+		}
 					
 		searchpath(const pstring &path_, const ucstring_view &name)
 			: path{path_}, name_{name} {}
@@ -37,7 +39,12 @@ namespace mfw::core
 	{
 		inline searchpath operator""_sp(const upchar_t *ptr, size_t len)
 		{
-			pstring path{ptr, ptr+len};
+		#ifdef __MFW_STD_FILESYSTEM_WIDE_CHAR
+			#error
+		#else
+			const char *c_ptr{c_str(ptr)};
+		#endif
+			pstring path{c_ptr, c_ptr+len};
 			return searchpath{move(path)};
 		}
 	}

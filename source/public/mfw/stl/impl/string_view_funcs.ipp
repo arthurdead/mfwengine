@@ -13,6 +13,16 @@ namespace mfw::stl
 	{ return reinterpret_cast<const char *>(src.data()); }
 	inline const wchar_t *c_str(uwstring_view src)
 	{ return reinterpret_cast<const wchar_t *>(src.data()); }
+	
+	inline void to_string(ucstring_view src, pstring &dst)
+	{
+	#ifdef __MFW_STD_FILESYSTEM_WIDE_CHAR
+		#error
+	#else
+		const char *ptr{c_str(src)};
+		dst.assign(ptr, ptr + src.length());
+	#endif
+	}
 
 	namespace __string_view_funcs_internal
 	{

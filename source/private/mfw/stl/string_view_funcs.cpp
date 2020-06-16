@@ -10,7 +10,7 @@
 	#error
 #endif
 
-#if MFW_OS_IS(LINUX)
+#if MFW_LIBC_FLAGGED(UNIX)
 	#include <fnmatch.h>
 #endif
 
@@ -166,8 +166,12 @@ namespace mfw::stl
 			return true;
 		}
 		
-	#if MFW_OS == MFW_OS_LINUX
-		return (fnmatch(c_str(pattern), c_str(str), FNM_CASEFOLD|FNM_EXTMATCH) != FNM_NOMATCH);
+	#if MFW_LIBC_FLAGGED(UNIX)
+		return (fnmatch(c_str(pattern), c_str(str), FNM_CASEFOLD
+		#if !MFW_LIBC_IS(MUSL)
+		|FNM_EXTMATCH
+		#endif
+		) != FNM_NOMATCH);
 	#else
 		#error
 	#endif

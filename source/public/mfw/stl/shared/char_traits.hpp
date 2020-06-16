@@ -47,6 +47,10 @@
 using char8_t = char;
 #endif
 
+#if defined _GLIBCXX_USE_CHAR8_T || (MFW_LIBCPP_IS(MSVC) && defined MFW_CPP_CHAR8_SUPPORTED)
+	#define __MFW_FILESYSTEM_CHAR8
+#endif
+
 namespace mfw::stl
 {
 #if MFW_STD_FLAGGED(API_CONFORMING)
@@ -77,6 +81,11 @@ namespace mfw::stl
 	using upchar_t = uwchar_t;
 #else
 	using upchar_t = ucchar_t;
+#endif
+#ifdef __MFW_FILESYSTEM_CHAR8
+	using pchar8_t = char8_t;
+#else
+	using pchar8_t = char;
 #endif
 	using pchar_t = ::MFW_STD_NAMESPACE::filesystem::path::string_type::value_type;
 }

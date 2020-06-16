@@ -29,8 +29,8 @@ function build
 	cd ".."
 }
 
-#build "Debug"
-build "RelWithDebInfo"
+build "Debug"
+#build "RelWithDebInfo"
 #build "Release"
 
 exit

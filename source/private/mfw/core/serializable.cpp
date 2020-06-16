@@ -161,13 +161,13 @@ namespace mfw::core
 		return new serializable{};
 	}
 
-	MFW_CORE_API serializable & MFW_CORE_CALL serializable::create_child(const ucstring_view &str)
+	serializable &serializable::create_child(const ucstring_view &str, const_iterator it)
 	{
 		serializable *ptr{allocate_child(0, str, this)};
 		if(!ptr) {
 			ptr = new serializable{};
 		}
-		unique_ptr<serializable> &child{childs.child_vec_t::super::super::emplace_back()};
+		unique_ptr<serializable> &child{*childs.child_vec_t::super::super::emplace(it)};
 		child.reset(ptr);
 		child->parent_ = this;
 		child->set_name(str);
@@ -190,8 +190,7 @@ namespace mfw::core
 			return *tmp;
 		}
 		
-		serializable &value{*childs.emplace(it)};
-		value.set_name(str);
+		serializable &value{create_child(str, it)};
 		return value;
 	}
 	

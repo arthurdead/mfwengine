@@ -19,18 +19,22 @@
 	struct _ThrowInfo;
 	#endif
 	#include <rttidata.h>
-#elif MFW_OS == MFW_OS_LINUX
+#elif MFW_LIBCPP_FLAGGED(UNIX)
 	#ifdef __MFW_USE_IBERTY
-	#include <libiberty/demangle.h>
+		#include <libiberty/demangle.h>
 	#endif
 	#include <cxxabi.h>
-	#if MFW_COMPILER == MFW_COMPILER_CLANG
-		MFW_WARNING_PUSH()
-		MFW_WARNING_DISABLE("-Wnull-pointer-arithmetic")
-	#endif
-	#include <libsupc++/tinfo.h>
-	#if MFW_COMPILER == MFW_COMPILER_CLANG
-		MFW_WARNING_POP()
+	#if MFW_LIBCPP_IS(LLVM)
+		#include <llvm-project/libcxxabi/src/private_typeinfo.h>
+	#else
+		#if MFW_COMPILER == MFW_COMPILER_CLANG
+			MFW_WARNING_PUSH()
+			MFW_WARNING_DISABLE("-Wnull-pointer-arithmetic")
+		#endif
+		#include <gcc/libsupc++/tinfo.h>
+		#if MFW_COMPILER == MFW_COMPILER_CLANG
+			MFW_WARNING_POP()
+		#endif
 	#endif
 #endif
 
@@ -159,8 +163,10 @@ namespace mfw::core
 		using raw_type_info = ::std::type_info;
 		using base_class_info = ::abi::__base_class_type_info;
 		using base_class_array = base_class_info[];
+		#if MFW_LIBCPP_IS(GNU)
 		using ::abi::adjust_pointer;
 		using ::abi::vtable_prefix;
+		#endif
 		using ::abi::__cxa_demangle;
 	#else
 		#error
@@ -170,7 +176,13 @@ namespace mfw::core
 		static const _RTTICompleteObjectLocator *get_complete_object_locator_from_object(const void *pointerToObject)
 		{
 			const _RTTICompleteObjectLocator *locator{reinterpret_cast<const _RTTICompleteObjectLocator **const *>(pointerToObject)[0][-1]};
-			if(reinterpret_cast<uintptr_t>(locator) == 0xEDEDEDEDEDEDEDED) {
+			if(reinterpret_cast<uintptr_t>(locator) == 
+			#if MFW_PROCESSOR_FLAGGED(64BITS)
+				0xEDEDEDEDEDEDEDED
+			#else
+				0xEDEDEDED
+			#endif
+			) {
 				return nullptr;
 			}
 			return locator;
@@ -199,6 +211,7 @@ namespace mfw::core
 				return nullptr;
 			}
 
+			#if MFW_LIBCPP_IS(GNU)
 			const vtable_prefix *prefix{adjust_pointer<vtable_prefix>(vtable, -offsetof(vtable_prefix, origin))};
 			const void *whole_ptr{adjust_pointer<void>(pointerToObject, prefix->whole_object)};
 
@@ -209,6 +222,10 @@ namespace mfw::core
 			if(whole_prefix->whole_type != whole_type) {
 				return nullptr;
 			}
+			#else
+			const ::abi::__class_type_info *whole_type{nullptr};
+			__MFW_MESSAGE("TODO!!!")
+			#endif
 
 			return whole_type;
 		}
@@ -414,7 +431,13 @@ namespace mfw::core
 		const ::abi::__vmi_class_type_info *multiple{reinterpret_cast<const ::abi::__vmi_class_type_info *>(class_info)};
 		if(multiple->__flags == 4159700632 || multiple->__base_count == 32767) {
 			return;
-		} else if(reinterpret_cast<uintptr_t>(single->__base_type) != 0x200000000) {
+		} else if(reinterpret_cast<uintptr_t>(single->__base_type) != 
+	#if MFW_PROCESSOR_FLAGGED(64BITS)
+			0x200000000
+	#else
+			0x20000
+	#endif
+		) {
 			rtti &inf{baselist.emplace_front()};
 			inf.initialize_internal(single->__base_type);
 		} else if(multiple->__flags != 1432999672 && multiple->__base_count != 21845) {

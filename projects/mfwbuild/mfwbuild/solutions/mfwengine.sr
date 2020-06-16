@@ -10,4 +10,10 @@ mfwengine : base_solution
 		//scripting
 		engine
 	}
+
+	plugin::debug {
+		program "${package_folder}/launcher"
+		cwd "${package_folder}"
+		type "gdb"
+	}
 }

@@ -7,7 +7,7 @@
 
 #if MFW_STD_FLAGGED(HEADERS_CONFORMING)
 	#include <cfloat>
-	#if MFW_COMPILER_FLAGGED(UNIX)
+	#if MFW_COMPILER_FLAGGED(UNIX) && !defined __MFW_BROWSER_DETECTED
 		#include <bits/floatn.h>
 	#endif
 #else
@@ -46,7 +46,7 @@
 
 namespace mfw::stl
 {
-#if MFW_COMPILER_IS(MSVC)
+#if MFW_COMPILER_IS(MSVC) || defined __MFW_BROWSER_DETECTED
 	using float16_t = float;
 	using float32_t = float;
 	using float64_t = double;

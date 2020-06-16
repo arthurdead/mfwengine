@@ -39,8 +39,6 @@ namespace mfw::stl
 	#else
 	void to_string(const pstring &src, ucstring &dst);
 	#endif
-
-	void to_string(const ucstring &src, pstring &dst);
 #else
 	#error
 #endif

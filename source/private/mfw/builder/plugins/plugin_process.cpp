@@ -154,13 +154,112 @@ namespace mfw::builder
 			pstring tool_path{core::process::get_path(name)};
 			return get_lib_dirs(tool_path, compiler_lib_dir, true);
 		}
+		
+		static void collect_dirs(size_t start, size_t end, const ucstring &output, ucstring &compiler_inc_dirs)
+		{
+			size_t pos{start};
+			while(true) {
+				pos++;
+				if(pos >= end) {
+					break;
+				}
+				
+				size_t newline{output.find(u'\n', pos)};
+				if(newline == ucstring::npos || newline >= end) {
+					break;
+				}
+				pos++;
+				ucstring line{output.substr(pos, (newline-pos))};
+				if(line.empty()) {
+					break;
+				}
+				compiler_inc_dirs += u8"-I \""_sv;
+				compiler_inc_dirs += line;
+				compiler_inc_dirs += u8"\" "_sv;
+				
+				pos = newline;
+			}
+		}
+		
+		static bool get_inc_dirs(const pstring &tool_path, ucstring &compiler_inc_dirs, bool cpp)
+		{
+			core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+			
+			pstring temp_file_path{u8"__inc_search_dirs"_p};
+			if(cpp) {
+				temp_file_path.replace_extension(u8".cpp"_p);
+			} else {
+				temp_file_path.replace_extension(u8".c"_p);
+			}
+			
+			temp_file_path = filesys.resolve({temp_file_path, u8"process"_sv}, false);
+			
+			core::interfaces::file *file_handle{filesys.open_file({temp_file_path}, core::open_flags::all)};
+			if(!file_handle) {
+				return false;
+			}
+			
+			file_handle->write(u8"int main(int argc, char **argv) { return 0; }"_sv);
+			
+			delete file_handle;
+			
+			ucstring args{u8"-E -v \""_s};
+			args += as_string<ucstring>(temp_file_path);
+			args += u8'"';
+			
+			core::process proc{};
+			proc.set_path(tool_path);
+			proc.set_args(args);
+			proc.start(true);
+			
+			filesys.remove({temp_file_path});
+			
+			const ucstring &output{proc.output()};
+			if(output.empty() || proc.exit_code() != 0) {
+				return false;
+			}
+			
+			ucstring_view find_str{u8"#include \"...\" search starts here:"_sv};
+			size_t start{output.find(find_str)};
+			if(start == ucstring::npos) {
+				return false;
+			}
+			start += find_str.length();
+			
+			size_t dirs1{start};
+			
+			find_str = u8"#include <...> search starts here:"_sv;
+			start = output.find(find_str);
+			if(start == ucstring::npos) {
+				return false;
+			}
+			start += find_str.length();
+			
+			size_t dirs2{start};
+			
+			find_str = u8"End of search list."_sv;
+			start = output.find(find_str);
+			if(start == ucstring::npos) {
+				return false;
+			}
+			start += find_str.length();
+			
+			size_t end{start};
+			
+			collect_dirs(dirs1, dirs2, output, compiler_inc_dirs);
+			collect_dirs(dirs2, end, output, compiler_inc_dirs);
+			
+			compiler_inc_dirs.pop_back();
+			
+			return true;
+		}
 	}
 
 	bool plugin_process::populate_vars(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section)
 	{
 		const ucstring &sec_name{tool_section.get_name()};
 		
-		if(sec_name == u8"compiler"_sv || sec_name == u8"linker"_sv) {
+		if(sec_name == u8"linker"_sv) {
 			ucstring compiler_lib_dir{};
 			if(!__plugin_process_internal::get_lib_dir(u8"gcc"_s, compiler_lib_dir)) {
 				return false;
@@ -177,8 +276,6 @@ namespace mfw::builder
 			return false;
 		}
 		
-		compiler_info_t info{};
-		
 		const tool_reference *tool{tool_section.tool()};
 		
 		pstring tool_path{tool->path()};
@@ -192,6 +289,9 @@ namespace mfw::builder
 			if(!__plugin_process_internal::get_lib_dirs(tool_path, compiler_lib_dirs, false)) {
 				return false;
 			}
+			/*if(!__plugin_process_internal::get_inc_dirs(tool_path, compiler_inc_dirs, true)) {
+				return false;
+			}*/
 		}
 		
 		return true;
@@ -219,7 +319,7 @@ namespace mfw::builder
 		const ucstring &tool_name{tool_info.name};
 	
 		const core::serializable *subprocess{tool->get_child(u8"subprocess"_sv)};
-		if(subprocess) {
+		if(subprocess && subprocess->passes_condition(&builder_funcs())) {
 			const core::serializable *path{subprocess->get_child(u8"path"_sv)};
 			if(path) {
 				const core::univalue &value{path->get_value()};
@@ -296,6 +396,9 @@ namespace mfw::builder
 		if(tool_name == u8"compiler"_sv) {
 			if(!compiler.setup(tool_info, tool_section, options)) {
 				return false;
+			}
+			if(compiler.info & compiler_info_t::flags_t::unix_) {
+				tool_info.is_unix_compiler = true;
 			}
 		} else if(tool_name == u8"linker"_sv) {
 			linker_info_t lnkinf{};
@@ -971,6 +1074,10 @@ namespace mfw::builder
 			str += compiler.compiler_lib_dirs;
 			str += u8' ';
 		}
+		/*if(info.is_unix_compiler && !compiler.compiler_inc_dirs.empty()) {
+			str += compiler.compiler_inc_dirs;
+			str += u8' ';
+		}*/
 		
 		bool nasty_hack{false};
 		if(files.back() == nullptr) {
@@ -1104,7 +1211,7 @@ namespace mfw::builder
 			}
 		}
 		
-		if(printcmdline) {
+		if(printcmdline || builder_funcs().debugging()) {
 			ucstring tmp{};
 			if(!info.path.empty()) {
 				tmp += as_string<ucstring>(info.path);

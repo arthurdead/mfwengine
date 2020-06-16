@@ -79,6 +79,7 @@ base_project {
 		$if is_unix_compiler
 			"-fvisibility=hidden"
 			"-fvisibility-inlines-hidden"
+			"-g"
 		$endif
 			preprocessor_definitions {
 			$if os == "windows"
@@ -118,6 +119,7 @@ base_project {
 			"--hash-style=gnu"
 			"-m" "elf_x86_64"
 			"--build-id"
+			"--export-dynamic"
 		$endif
 		}
 	}
@@ -128,7 +130,7 @@ base_project {
 	$endif
 	}
 	compiler::options {
-		output "${intermediary_folder}/${file_basename}${output_ext}"
+		output "${intermediary_folder}/${file_filter}/${file_basename}${output_ext}"
 	}
 	archiver|linker {
 		options {
@@ -175,7 +177,6 @@ output_shared {
 	}
 	compiler::options {
 		pic
-		shared
 	}
 	linker {
 		options {

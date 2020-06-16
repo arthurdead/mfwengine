@@ -1,0 +1,8 @@
+#include "clang.sr"
+
+base_tool
+{
+	builder::macros {
+		is_em true
+	}
+}
