@@ -569,7 +569,9 @@ namespace mfw::builder
 		process_options(options, str, tool_info);
 		tool_info.base_args += str;
 		
-		tool_info.output_path = get_output_path(*tool_info.tool, options);
+		if(!only_compile_commands) {
+			tool_info.output_path = get_output_path(*tool_info.tool, options);
+		}
 		
 		return true;
 	}
@@ -1196,14 +1198,16 @@ namespace mfw::builder
 		}
 		
 		pstring &output_path{vars.output_path};
-		if(!info.output_path.empty()) {
-			output_path = info.output_path;
-			builder_funcs().replace_vars(output_path);
-		} else {
-			output_path = get_output_path(*info.tool, options);
+		if(!only_compile_commands) {
+			if(!info.output_path.empty()) {
+				output_path = info.output_path;
+				builder_funcs().replace_vars(output_path);
+			} else {
+				output_path = get_output_path(*info.tool, options);
+			}
 		}
 		
-		if(!output_path.empty()) {
+		if(!output_path.empty() && !only_compile_commands) {
 			if(output_path.has_extension()) {
 				filesys.create_directories({output_path});
 			} else {

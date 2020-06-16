@@ -27,15 +27,15 @@ base_solution
 
 	plugin::build {
 	$if plugin_name == "vscode"
-		command "\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" --jobs=6 --ccache"
+		command "\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --os=\"${os}\" --platform=\"${platform}\" --configuration=\"${configuration}\" --jobs=6"
 	$endif
 	}
 
 	builder {
 		pre_generate {
 		$if plugin_name == "vscode"
-			$(message="Generating compile_commands.json")
-			"\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --sections=\"compiler\" --only_compile_commands"
+			//$(message="Generating compile_commands.json")
+			//"\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --sections=\"compiler\" --only_compile_commands"
 		$endif
 		}
 		macros {
@@ -56,14 +56,9 @@ base_solution
 		linker lld_link
 		archiver lib
 	$else
-		/*
 		compiler "g++"
 		linker ld_gold
 		archiver gcc_ar
-		*/
-		compiler "em++"
-		linker wasm_ld
-		archiver emar
 	$endif
 	}
 }
