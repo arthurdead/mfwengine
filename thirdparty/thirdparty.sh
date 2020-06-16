@@ -14,7 +14,7 @@ build_scripts="${sh_dir}/../build_scripts"
 sh "${build_scripts}/git_download.sh" -u "https://github.com/gcc-mirror/gcc.git" -p "libstdc++-v3/libsupc++/tinfo.h" -o "${sh_dir}/gcc/libsupc++"
 sh "${build_scripts}/git_download.sh" -u "https://github.com/llvm/llvm-project.git" -p "libcxxabi/src/private_typeinfo.h" -o "${sh_dir}/llvm-project/libcxxabi/src"
 
-#sh "${build_scripts}/git_clone.sh" "https://github.com/yugr/Implib.so.git" master "Implib.so"
+sh "${build_scripts}/git_clone.sh" "https://github.com/yugr/Implib.so.git" master "Implib.so"
 
 #sh "${build_scripts}/git_clone.sh" "https://github.com/microsoft/GSL.git" master GSL
 #sh "${build_scripts}/git_clone.sh" "https://github.com/foonathan/debug_assert.git" master debug_assert

@@ -1,0 +1,3 @@
+wasm_opt {
+	shell "wasm-opt"
+}

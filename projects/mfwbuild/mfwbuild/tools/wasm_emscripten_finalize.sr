@@ -1,0 +1,3 @@
+wasm_emscripten_finalize {
+	shell "wasm-emscripten-finalize"
+}

@@ -92,16 +92,80 @@ namespace mfw::builder
 
 	namespace __plugin_process_internal
 	{
-		static bool get_lib_dirs(const pstring &tool_path, ucstring &compiler_lib_dirs, bool only_first)
+		enum class compiler_output_e : uchar_t
 		{
+			default_,
+			clang,
+			emscripten,
+			include_what_you_use,
+		};
+		
+		static bool get_lib_dirs(const pstring &tool_path, ucstring &compiler_lib_dirs, bool only_first, compiler_output_e output_type)
+		{
+			bool emscripten{output_type == compiler_output_e::emscripten};
+			bool include_what_you_use{output_type == compiler_output_e::include_what_you_use};
+			bool clang{
+				output_type == compiler_output_e::clang ||
+				emscripten ||
+				include_what_you_use
+			};
+			
+			core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+			
+			pstring temp_file_path{};
+			
+			if(emscripten) {
+				temp_file_path = u8"__lib_search_dir.cpp"_p;
+				
+				temp_file_path = filesys.resolve({temp_file_path, u8"process"_sv}, false);
+				
+				core::interfaces::file *file_handle{filesys.open_file({temp_file_path}, core::open_flags::all)};
+				if(!file_handle) {
+					return false;
+				}
+				
+				file_handle->write(u8"int main(int argc, char **argv) { return 0; }"_sv);
+				
+				delete file_handle;
+			}
+			
 			core::process proc{};
 			proc.set_path(tool_path);
-			proc.set_args(u8"-print-search-dirs"_s);
+			ucstring args{};
+			if(clang && only_first) {
+				if(emscripten) {
+					args += u8'"';
+					args += as_string<ucstring>(temp_file_path);
+					args += u8"\" "_sv;
+				}
+				args += u8"-print-resource-dir"_sv;
+			} else {
+				args = u8"-print-search-dirs"_sv;
+			}
+			proc.set_args(args);
 			proc.start(true);
+			
+			if(emscripten) {
+				filesys.remove({temp_file_path});
+			}
 			
 			const ucstring &output{proc.output()};
 			if(output.empty() || proc.exit_code() != 0) {
 				return false;
+			}
+			
+			if(clang && only_first) {
+				if(output_type == compiler_output_e::clang) {
+					compiler_lib_dirs = output;
+				} else if(emscripten && output.find(u8"warning"_sv) != ucstring::npos) {
+					size_t start{output.find(u8'\n')};
+					size_t end{output.find(u8'\n', start)};
+					compiler_lib_dirs = output.substr(start, (end-start));
+				} else if(include_what_you_use || emscripten) {
+					size_t end{output.find(u8'\n')};
+					compiler_lib_dirs = output.substr(0, end);
+				}
+				return true;
 			}
 			
 			constexpr ucstring_view find_str{u8"libraries: ="_sv};
@@ -133,9 +197,9 @@ namespace mfw::builder
 					compiler_lib_dirs += move(str);
 					break;
 				} else {
-					compiler_lib_dirs += u8"-L"_sv;
+					compiler_lib_dirs += u8"-L \""_sv;
 					compiler_lib_dirs += move(str);
-					compiler_lib_dirs += u8' ';
+					compiler_lib_dirs += u8"\" "_sv;
 				}
 				
 				start++;
@@ -149,10 +213,10 @@ namespace mfw::builder
 			return true;
 		}
 		
-		static bool get_lib_dir(const ucstring &name, ucstring &compiler_lib_dir)
+		static bool get_lib_dir(const ucstring &name, ucstring &compiler_lib_dir, compiler_output_e output_type)
 		{
 			pstring tool_path{core::process::get_path(name)};
-			return get_lib_dirs(tool_path, compiler_lib_dir, true);
+			return get_lib_dirs(tool_path, compiler_lib_dir, true, output_type);
 		}
 		
 		static void collect_dirs(size_t start, size_t end, const ucstring &output, ucstring &compiler_inc_dirs)
@@ -261,7 +325,7 @@ namespace mfw::builder
 		
 		if(sec_name == u8"linker"_sv) {
 			ucstring compiler_lib_dir{};
-			if(!__plugin_process_internal::get_lib_dir(u8"gcc"_s, compiler_lib_dir)) {
+			if(!__plugin_process_internal::get_lib_dir(u8"gcc"_s, compiler_lib_dir, __plugin_process_internal::compiler_output_e::default_)) {
 				return false;
 			}
 			builder_funcs().add_variable(u8"gcc_lib_dir"_s, compiler_lib_dir);
@@ -286,7 +350,17 @@ namespace mfw::builder
 		}
 		
 		if(info & compiler_info_t::flags_t::unix_) {
-			if(!__plugin_process_internal::get_lib_dirs(tool_path, compiler_lib_dirs, false)) {
+			__plugin_process_internal::compiler_output_e output_type{__plugin_process_internal::compiler_output_e::default_};
+			MFW_MESSAGE("remove this later")
+			if(tool_path.native().find("em++"s) != npstring::npos ||
+				tool_path.native().find("emcc"s) != npstring::npos) {
+				output_type = __plugin_process_internal::compiler_output_e::emscripten;
+			} else if(tool_path.native().find("include-what-you-use"s) != npstring::npos) {
+				output_type = __plugin_process_internal::compiler_output_e::include_what_you_use;
+			} else if(tool_path.native().find("clang"s) != npstring::npos) {
+				output_type = __plugin_process_internal::compiler_output_e::clang;
+			}
+			if(!__plugin_process_internal::get_lib_dirs(tool_path, compiler_lib_dirs, false, output_type)) {
 				return false;
 			}
 			/*if(!__plugin_process_internal::get_inc_dirs(tool_path, compiler_inc_dirs, true)) {
