@@ -115,9 +115,7 @@ namespace mfw::builder
 			pstring temp_file_path{};
 			
 			if(emscripten) {
-				temp_file_path = u8"__lib_search_dir.cpp"_p;
-				
-				temp_file_path = filesys.resolve({temp_file_path, u8"process"_sv}, false);
+				temp_file_path = filesys.resolve({u8"__lib_search_dir.cpp"_p, u8"process"_sv}, false);
 				
 				core::interfaces::file *file_handle{filesys.open_file({temp_file_path}, core::open_flags::all)};
 				if(!file_handle) {
