@@ -7,7 +7,6 @@ mfwbuilder="${root_dir}/build_tools/mfwbuilder/builder_debug"
 #mfwbuilder="valgrind --tool=callgrind ${mfwbuilder}"
 #mfwbuilder="gdb -ex run --args ${mfwbuilder}"
 
-${mfwbuilder} --path="$(pwd)" --solutions="mfwengine" --plugins="process" --sections="compiler" --only_compile_commands
 ${mfwbuilder} --path="$(pwd)" --solutions="mfwengine" --plugins="vscode"
 
 exit

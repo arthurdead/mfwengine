@@ -86,6 +86,39 @@ namespace mfw::builder
 	
 	const core::univalue *find_output_option(const core::serializable &options, const core::serializable &names);
 	pstring get_output_path(const tool_reference &tool, const core::serializable &options);
+	
+	#define __MFW_QUOTE_STR_BEGIN(var, quote_var, check) \
+		bool quote_var{var.find(u8' ', 0) != ucstring::npos}; \
+		if(check) { \
+			str += u8'"'; \
+		}
+			
+	#define __MFW_QUOTE_STR_END(var, quote_var, check) \
+		if(check) { \
+			str += u8'"'; \
+		} \
+		
+	#define __MFW_QUOTE_STR_NAME(var, quote_var) \
+		__MFW_QUOTE_STR_BEGIN(var, quote_var, quote_var) \
+		str += var; \
+		__MFW_QUOTE_STR_END(var, quote_var, quote_var)
+		
+	#define __MFW_QUOTE_STR_VALUE(var, quote_var) \
+		__MFW_QUOTE_STR_BEGIN(var, quote_var, quote_var || is_file) \
+		if(is_file && !drive.empty()) { \
+			str += drive; \
+		} \
+		str += var; \
+		__MFW_QUOTE_STR_END(var, quote_var, quote_var || is_file)
+
+	#define __MFW_APPEND_VALUE(sep) \
+		if(!value.empty()) { \
+			if(sep != u8'\0') { \
+				str += sep; \
+			} \
+			const ucstring &val_str{value.get_string()}; \
+			__MFW_QUOTE_STR_VALUE(val_str, quote_value) \
+		}
 }
 
 #endif

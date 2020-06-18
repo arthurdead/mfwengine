@@ -1,10 +1,5 @@
 #include <public/mfw/core/application.hpp>
 
-extern "C" {
-	MFW_SHARED_EXPORT ::mfw::uint32_t NvOptimusEnablement{0x00000001};
-	MFW_SHARED_EXPORT ::mfw::int32_t AmdPowerXpressRequestHighPerformance{1};
-}
-
 bool application_load_libraries()
 {
 	for(::mfw::ucstring_view it : {

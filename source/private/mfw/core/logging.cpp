@@ -654,7 +654,7 @@ namespace mfw::core
 		FreeConsole();
 		#endif
 	#elif MFW_OS == MFW_OS_LINUX
-		//print_console(u8"\x1b[0m"_sv);
+		print_console(u8"\x1b[0m"_sv, false);
 	#endif
 	}
 

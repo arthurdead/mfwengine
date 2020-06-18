@@ -33,6 +33,7 @@ namespace mfw::core
 		using stl::filesystem::create_directories;
 		using stl::filesystem::is_directory;
 		using stl::filesystem::create_symlink;
+		using stl::filesystem::create_directory_symlink;
 		using stl::filesystem::remove_all;
 		using stl::filesystem::weakly_canonical;
 		using stl::filesystem::is_symlink;
@@ -549,7 +550,7 @@ namespace mfw::core
 		return true;
 	}
 
-	bool core::filesystem::create_symlink(const searchpath &from, const searchpath &to) const
+	bool core::filesystem::create_symlink(const searchpath &from, const searchpath &to, bool dir) const
 	{
 		pstring to_resolved{resolve(to, false)};
 		if(to_resolved.empty()) {
@@ -560,7 +561,13 @@ namespace mfw::core
 			return true;
 		}
 
-		if(!create_directories({to_resolved})) {
+		bool created{false};
+		if(dir) {
+			created = create_directories({to_resolved.parent_path()});
+		} else {
+			created = create_directories({to_resolved});
+		}
+		if(!created) {
 			return false;
 		}
 
@@ -569,8 +576,13 @@ namespace mfw::core
 			return false;
 		}
 
-		__filesystem_internal::create_symlink(from_resolved, to_resolved);
-		return true;
+		error_code errc{};
+		if(dir) {
+			__filesystem_internal::create_directory_symlink(from_resolved, to_resolved, errc);
+		} else {
+			__filesystem_internal::create_symlink(from_resolved, to_resolved, errc);
+		}
+		return !errc;
 	}
 
 	bool core::filesystem::create_directories(const searchpath &search) const

@@ -1,15 +1,31 @@
 standards {
 	cpp11::compiler::options {
+	$if os == "linux"
+		standard "gnu++11"
+	$else
 		standard "c++11"
+	$endif
 	}
 	cpp14::compiler::options {
+	$if os == "linux"
+		standard "gnu++14"
+	$else
 		standard "c++14"
+	$endif
 	}
 	cpp17::compiler::options {
+	$if os == "linux"
+		standard "gnu++17"
+	$else
 		standard "c++17"
+	$endif
 	}
 	cpp20::compiler::options {
+	$if os == "linux"
+		standard "gnu++20"
+	$else
 		standard "c++20"
+	$endif
 	}
 	cpp11|cpp14|cpp17 {
 		compiler::options {
@@ -21,18 +37,23 @@ standards {
 crt {
 $if os == "linux"
 	static {
+		$(file)
 		"/usr/lib/crt1.o"
 	}
 	shared {
+		$(file)
 		"/usr/lib/Scrt1.o"
 	}
 	shared|static {
+		$(file)
 		"/usr/lib/crti.o"
 	}
 	static {
+		$(file)
 		"${gcc_lib_dir}/crtbegin.o"
 	}
 	shared {
+		$(file)
 		"${gcc_lib_dir}/crtbeginS.o"
 	}
 	shared|static {
@@ -47,12 +68,15 @@ $if os == "linux"
 		"-lc"
 	}
 	static {
+		$(file)
 		"${gcc_lib_dir}/crtend.o"
 	}
 	shared {
+		$(file)
 		"${gcc_lib_dir}/crtendS.o"
 	}
 	shared|static {
+		$(file)
 		"/usr/lib/crtn.o"
 	}
 $endif

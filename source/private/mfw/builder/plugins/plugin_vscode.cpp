@@ -16,7 +16,36 @@ namespace mfw::builder
 		info_.process_out_of_date = true;
 		info_.ignore_output = true;
 
-		core::interfaces::filesystem::instance().remove({{}, name()});
+		//core::interfaces::filesystem::instance().remove({{}, name()});
+	}
+
+	void plugin_vscode::initialize(interfaces::builder_funcs &funcs)
+	{
+		super::initialize(funcs);
+		
+		MFW_MESSAGE("TODO delete symlinks")
+		/*
+		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+		
+		core::interfaces::file *file{filesys.open_file(, core::open_flags::read)};
+		if(!file) {
+			return;
+		}
+		
+		size_t siz{0};
+		file->read(&siz, 1, sizeof(size_t));
+		for(size_t i{0}; i < siz; i++) {
+			size_t len{0};
+			file->read(&len, 1, sizeof(size_t));
+			pchar_t *name{new pchar_t[len]{u8'\0'}};
+			file->read(name, len, sizeof(pchar_t));
+			pstring path{name};
+			delete[] name;
+			filesys.remove({path});
+		}
+		
+		delete file;
+		*/
 	}
 
 	void plugin_vscode::parse_ide(const core::serializable &options, json_workspace_t &json, bool replace)
@@ -159,7 +188,11 @@ namespace mfw::builder
 		static void normalize_cpp_standard(ucstring &str, bool cpp, bool gnu)
 		{
 			if(!cpp) {
-				str = u8"c++98"_sv;
+				if(gnu) {
+					str = u8"gnu++98"_sv;
+				} else {
+					str = u8"c++98"_sv;
+				}
 			} else {
 				size_t start{gnu ? 5u : 3u};
 				
@@ -169,8 +202,9 @@ namespace mfw::builder
 					str.replace(start, ucstring::npos, u8"14"_sv);
 				} else if(str.compare(start, 2, u8"1z"_sv) == 0) {
 					str.replace(start, ucstring::npos, u8"17"_sv);
-				} else if(str.compare(start, 2, u8"2a"_sv) == 0 ||
-							str.compare(start, 7, u8"latest"_sv) == 0) {
+				} else if(str.compare(start, 2, u8"2a"_sv) == 0) {
+					str.replace(start, ucstring::npos, u8"20"_sv);
+				} else if(str.compare(start, 7, u8"latest"_sv) == 0) {
 					str.replace(start, ucstring::npos, u8"20"_sv);
 				}
 			}
@@ -268,6 +302,24 @@ namespace mfw::builder
 
 		return true;
 	}
+	
+	bool plugin_vscode::create_symlink(const core::searchpath &from, const core::searchpath &to, bool dir) const
+	{
+		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+		
+		pstring resolved{filesys.resolve(to, false)};
+		if(resolved.empty()) {
+			return false;
+		}
+		
+		if(!filesys.create_symlink(from, resolved, dir)) {
+			return false;
+		}
+		
+		MFW_MESSAGE("TODO create symlink list")
+		//symlinks.emplace_back(move(resolved));
+		return true;
+	}
 
 	bool plugin_vscode::generate(const solution_reference &solution, const project_reference &project, const tool_section_reference &tool_section, const file_reference &file, const core::serializable &options)
 	{
@@ -277,8 +329,6 @@ namespace mfw::builder
 
 		json_project_t &json{json_projects.back()};
 
-		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
-
 		pstring link{};
 		link /= as_string<pstring>(solution.get_name());
 		link /= as_string<pstring>(project.get_name());
@@ -287,9 +337,84 @@ namespace mfw::builder
 		pstring filepath{file.path()};
 		link /= filepath.filename();
 
-		filesys.create_symlink({filepath}, {link, name()});
+		create_symlink({filepath}, {link, name()});
 
 		return true;
+	}
+	
+	void plugin_vscode::process_option(const core::serializable &option, ucstring &str)
+	{
+		MFW_MESSAGE("TODO get below from tool")
+		ucstring drive{};
+		
+		const core::serializable *flags{option.get_flags()};
+		MFW_MESSAGE("TODO get below from tool")
+		bool needs_equal{false};
+		bool is_file{false};
+		bool no_space{false};
+		bool needs_values{false};
+		if(flags) {
+			if(flags->get_child_bool(u8"needs_equal"_sv)) {
+				needs_equal = true;
+			}
+			if(flags->get_child_bool(u8"no_space"_sv)) {
+				no_space = true;
+			}
+			if(flags->get_child_bool(u8"needs_values"_sv)) {
+				needs_values = true;
+			}
+			if(flags->get_child_bool(u8"folders"_sv) ||
+				flags->get_child_bool(u8"files"_sv)) {
+				needs_values = true;
+				is_file = true;
+			}
+			if(flags->get_child_bool(u8"folder"_sv) ||
+				flags->get_child_bool(u8"file"_sv)) {
+				is_file = true;
+			}
+		}
+		
+		MFW_MESSAGE("TODO get this from tool")
+	#if MFW_OS_IS(WINDOWS)
+		ucchar_t equal_char{u8':'};
+	#else
+		ucchar_t equal_char{u8'='};
+	#endif
+		
+		const ucstring &arg_name{option.get_name()};
+		if(option.empty()) {
+			const core::univalue &value{option.get_value()};
+			if(needs_values && value.empty()) {
+				return;
+			}
+			__MFW_QUOTE_STR_NAME(arg_name, quote_arg)
+			char8_t sep{u8' '};
+			if(no_space) {
+				sep = u8'\0';
+			} else if(needs_equal) {
+				sep = equal_char;
+			}
+			__MFW_APPEND_VALUE(sep)
+		} else {
+			for(const core::serializable &child : option) {
+				const ucstring &name{child.get_name()};
+				const core::univalue &value{child.get_value()};
+				__MFW_QUOTE_STR_NAME(arg_name, quote_arg)
+				char8_t sep{u8' '};
+				if(no_space) {
+					sep = u8'\0';
+				} else if(needs_equal) {
+					sep = equal_char;
+				}
+				if(sep != u8'\0') {
+					str += sep;
+				}
+				__MFW_QUOTE_STR_VALUE(name, quote_name)
+				__MFW_APPEND_VALUE(u8'=')
+				str += u8' ';
+			}
+			str.pop_back();
+		}
 	}
 
 	void plugin_vscode::json_workspace_t::write_cpp_properties(json::file &cpp_properties)
@@ -340,28 +465,9 @@ namespace mfw::builder
 		cpp_properties.Key(u8"compilerArgs"_sv);
 		cpp_properties.StartArray();
 		for(const core::serializable &arg : compiler_options) {
-			const ucstring &name{arg.get_name()};
-			if(arg.empty()) {
-				ucstring tmp{name};
-				const core::univalue &value{arg.get_value()};
-				if(!value.empty()) {
-					tmp += u8' ';
-					tmp += value.get_string();
-				}
-				cpp_properties.String(tmp);
-			} else {
-				for(const core::serializable &arg_value : arg) {
-					ucstring tmp{name};
-					tmp += u8' ';
-					tmp += arg_value.get_name();
-					const core::univalue &value{arg_value.get_value()};
-					if(!value.empty()) {
-						tmp += u8'=';
-						tmp += value.get_string();
-					}
-					cpp_properties.String(tmp);
-				}
-			}
+			ucstring str{};
+			process_option(arg, str);
+			cpp_properties.String(str);
 		}
 		cpp_properties.EndArray();
 		cpp_properties.Key(u8"forcedInclude"_sv);
@@ -373,10 +479,13 @@ namespace mfw::builder
 		cpp_properties.Key(u8"browse"_sv);
 		cpp_properties.StartObject();
 		cpp_properties.Key(u8"databaseFilename"_sv);
-		/*pstring database{path};
+	#if 1
+		pstring database{path};
 		database /= u8".vscode/browse.db"_p;
-		cpp_properties.String(database);*/
+		cpp_properties.String(database);
+	#else
 		cpp_properties.String(u8""_sv);
+	#endif
 		cpp_properties.Key(u8"limitSymbolsToIncludedHeaders"_sv);
 		cpp_properties.Bool(true);
 		cpp_properties.Key(u8"path"_sv);
@@ -532,28 +641,9 @@ namespace mfw::builder
 				Key(u8"clangd.arguments"_sv);
 				StartArray();
 				for(const core::serializable &arg : compiler_options) {
-					const ucstring &name{arg.get_name()};
-					if(arg.empty()) {
-						ucstring tmp{name};
-						const core::univalue &value{arg.get_value()};
-						if(!value.empty()) {
-							tmp += u8' ';
-							tmp += value.get_string();
-						}
-						String(tmp);
-					} else {
-						for(const core::serializable &arg_value : arg) {
-							ucstring tmp{name};
-							tmp += u8' ';
-							tmp += arg_value.get_name();
-							const core::univalue &value{arg_value.get_value()};
-							if(!value.empty()) {
-								tmp += u8'=';
-								tmp += value.get_string();
-							}
-							String(tmp);
-						}
-					}
+					ucstring str{};
+					process_option(arg, str);
+					String(str);
 				}
 				EndArray();
 			}
@@ -610,7 +700,12 @@ namespace mfw::builder
 
 		if(filesys.exists({compile_commands})) {
 			pstring link{path / compile_commands.filename()};
+			MFW_MESSAGE("TODO generate symlink list")
+		#if 0
+			create_symlink({compile_commands}, {link});
+		#else
 			filesys.create_symlink({compile_commands}, {link});
+		#endif
 		}
 
 		cpp_properties.save({cpp_path});

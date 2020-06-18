@@ -16,17 +16,29 @@
 	#include <dlfcn.h>
 #endif
 
-#if MFW_CORE_BUILD & MFW_BUILD_STATIC_FLAG || defined __MFW_CORE_IS_DELAY_LOADED
+#if MFW_CORE_BUILD & MFW_BUILD_STATIC_FLAG || defined __MFW_CORE_USING_IMPLIB
 	#define __MFW_APPLICATION_CORE_AVAILABLE
 #endif
 
-#if defined __MFW_APPLICATION_CORE_AVAILABLE && MFW_BUILD & MFW_BUILD_SHARED_FLAG
+#ifdef __MFW_CORE_USING_IMPLIB
+extern "C" void __core_tramp_resolve_all();
+#endif
+
+#ifdef __MFW_APPLICATION_CORE_AVAILABLE
+	#if MFW_OS_IS(LINUX) && !defined __MFW_CORE_USING_IMPLIB
+		#define __MFW_LOGGING_ENABLED
+	#elif MFW_OS_IS(WINDOWS)
+		#define __MFW_LOGGING_ENABLED
+	#endif
+#endif
+
+#if defined __MFW_LOGGING_ENABLED
 	#include <public/mfw/core/logging_interface.hpp>
 #endif
 
 #if MFW_COMPILER_FLAGGED(CLANG)
-	MFW_WARNING_DISABLE("-Wmissing-prototypes")
-	MFW_WARNING_DISABLE("-Wmissing-variable-declarations")
+	MFW_WARNING_DISABLE_UNIX("-Wmissing-prototypes")
+	MFW_WARNING_DISABLE_UNIX("-Wmissing-variable-declarations")
 #endif
 
 namespace mfw::core
@@ -37,14 +49,14 @@ namespace mfw::core
 	namespace __application_internal
 	{
 	#if MFW_BUILD & MFW_BUILD_SHARED_FLAG
-		#if defined __MFW_APPLICATION_CORE_AVAILABLE && !defined __MFW_CORE_IS_DELAY_LOADED
+		#if defined __MFW_LOGGING_ENABLED
 		MFW_DECLARE_LOG_CONTEXT(log_application, u8"core/application"_p)
 		#endif
 	
 		template <typename ...Args>
 		static void print(ucstring_view fmt, Args... args)
 		{
-		#if defined __MFW_APPLICATION_CORE_AVAILABLE && !defined __MFW_CORE_IS_DELAY_LOADED
+		#if defined __MFW_LOGGING_ENABLED
 			log_application().print(fmt, forward<Args>(args)...);
 		#else
 			ucstring str{};
@@ -116,7 +128,8 @@ namespace mfw::core
 		#error
 	#endif
 	
-		pstring exepath{MFW_PATH_FROM_CHARARRAY(exefile, len)};
+		pstring exepath{};
+		exepath.assign(exefile, exefile+len);
 		return exepath;
 	}
 	
@@ -145,109 +158,110 @@ namespace mfw::core
 	namespace __application_internal
 	{
 	#if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
-		#if MFW_OS == MFW_OS_WINDOWS
-			#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
-		static FARPROC MFW_CALL_SHARED dll_failed_hook(uint32_t dliNotify, PDelayLoadInfo pdli)
-		{
-			MFW_DEBUGBREAK();
-			return nullptr;
-		}
-		static FARPROC MFW_CALL_SHARED dll_notify_hook(uint32_t dliNotify, PDelayLoadInfo pdli)
-		{
-			if(pdli->dwLastError == ERROR_SUCCESS) {
-				return nullptr;
-			}
-
-			MFW_DEBUGBREAK();
-			return nullptr;
-		}
+		#if MFW_CORE_BUILD == MFW_BUILD_SHARED
+			#if MFW_OS == MFW_OS_LINUX
+				#define __MFW_OS_TARGET "linux"
+			#elif MFW_OS == MFW_OS_WINDOWS
+				#define __MFW_OS_TARGET "windows"
+			#else
+				#error
 			#endif
-		#endif
+				
+			#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
+				#define __MFW_CONFIGURATION_TARGET "debug"
+			#else
+				#define __MFW_CONFIGURATION_TARGET "release"
+			#endif
 
-		static bool load_libraries()
-		{
-		#if MFW_OS == MFW_OS_LINUX
-			#define __MFW_OS_TARGET "linux"
-		#elif MFW_OS == MFW_OS_WINDOWS
-			#define __MFW_OS_TARGET "windows"
-		#else
-			#error
-		#endif
-			
-		#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
-			#define __MFW_CONFIGURATION_TARGET "debug"
-		#else
-			#define __MFW_CONFIGURATION_TARGET "release"
-		#endif
-
-		#if MFW_PROCESSOR == MFW_PROCESSOR_X86_64
-			#define __MFW_PROCESSOR_TARGET "x86_64"
-		#elif MFW_PROCESSOR == MFW_PROCESSOR_X86
-			#define __MFW_PROCESSOR_TARGET "x86"
-		#else
-			#error
-		#endif
+			#if MFW_PROCESSOR == MFW_PROCESSOR_X86_64
+				#define __MFW_PROCESSOR_TARGET "x86_64"
+			#elif MFW_PROCESSOR == MFW_PROCESSOR_X86
+				#define __MFW_PROCESSOR_TARGET "x86"
+			#else
+				#error
+			#endif
 
 			MFW_MESSAGE("get rid of the above")
-
-		#if MFW_CORE_BUILD == MFW_BUILD_SHARED
+		
+			#if MFW_OS_IS(LINUX)
+		static void *core_lib_dlopen()
+		{
+			void *core_dl{dlmopen(LM_ID_BASE, "core/bin/" __MFW_OS_TARGET "_" __MFW_PROCESSOR_TARGET "_" __MFW_CONFIGURATION_TARGET "/core.so", RTLD_LAZY|RTLD_GLOBAL)};
+			if(!core_dl) {
+				ucstring reason{uc_str(dlerror())};
+				__application_internal::print(u8"could not load core library: {}"_sv, reason);
+			}
+			return core_dl;
+		}
+			#endif
+	
+		static bool load_core_lib()
+		{
 			#if MFW_OS == MFW_OS_WINDOWS
 			if(!LoadLibraryExW(L"core/bin/" __MFW_OS_TARGET L"_" __MFW_PROCESSOR_TARGET L"_" __MFW_CONFIGURATION_TARGET L"/core.dll", nullptr, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS)) {
 				__application_internal::print(u8"could not load core library"_sv);
 				return false;
 			}
 			#elif MFW_OS == MFW_OS_LINUX
-			void *core_dl{dlopen("core/bin/" __MFW_OS_TARGET "_" __MFW_PROCESSOR_TARGET "_" __MFW_CONFIGURATION_TARGET "/core.so", RTLD_NOW|RTLD_GLOBAL|RTLD_DEEPBIND)};
-				#ifndef __MFW_APPLICATION_CORE_AVAILABLE
+			void *core_dl{core_lib_dlopen()};
 			if(core_dl) {
+				#ifdef __MFW_CORE_USING_IMPLIB
+				__core_tramp_resolve_all();
+				#else
 				constexpr const char *core_load_library_name{"_ZN3mfw4core7library12load_libraryERKNS0_10searchpathE"};
 				core_load_library_ptr = reinterpret_cast<core_load_library_t>(dlsym(core_dl, core_load_library_name));
 				if(!core_load_library_ptr) {
-					::mfw::core::__application_internal::print(u8"core library missing library::load_library symbol"_sv);
+					__application_internal::print(u8"core library missing library::load_library symbol"_sv);
 					return false;
 				}
 				
 				constexpr const char *core_update_name{"_ZN3mfw4core6updateEv"};
 				core_update_ptr = reinterpret_cast<core_update_t>(dlsym(core_dl, core_update_name));
 				if(!core_update_ptr) {
-					::mfw::core::__application_internal::print(u8"core library missing update symbol"_sv);
+					__application_internal::print(u8"core library missing update symbol"_sv);
 					return false;
 				}
 				
 				constexpr const char *core_initialize_name{"_ZN3mfw4core10initializeEv"};
 				core_initialize_ptr = reinterpret_cast<core_initialize_t>(dlsym(core_dl, core_initialize_name));
 				if(!core_initialize_ptr) {
-					::mfw::core::__application_internal::print(u8"core library missing initialize symbol"_sv);
+					__application_internal::print(u8"core library missing initialize symbol"_sv);
 					return false;
 				}
 				
 				constexpr const char *core_shutdown_name{"_ZN3mfw4core8shutdownEv"};
 				core_shutdown_ptr = reinterpret_cast<core_shutdown_t>(dlsym(core_dl, core_shutdown_name));
 				if(!core_shutdown_ptr) {
-					::mfw::core::__application_internal::print(u8"core library missing shutdown symbol"_sv);
+					__application_internal::print(u8"core library missing shutdown symbol"_sv);
 					return false;
 				}
 				
 				constexpr const char *core_filesystem_instance_name{"_ZN3mfw4core10interfaces10filesystem8instanceEv"};
 				core_filesystem_instance_ptr = reinterpret_cast<core_filesystem_instance_t>(dlsym(core_dl, core_filesystem_instance_name));
 				if(!core_filesystem_instance_ptr) {
-					::mfw::core::__application_internal::print(u8"core library missing interfaces::filesystem::instance symbol"_sv);
+					__application_internal::print(u8"core library missing interfaces::filesystem::instance symbol"_sv);
 					return false;
 				}
-			} else {
-				ucstring reason{uc_str(dlerror())};
-				__application_internal::print(u8"could not load core library: {}"_sv, reason);
-				return false;
-			}
 				#endif
+			}
+			return core_dl != nullptr;
 			#else
 				#error
 			#endif
+		}
 		#endif
 
+		static bool load_libraries()
+		{
+		#if MFW_CORE_BUILD == MFW_BUILD_SHARED
+			if(!load_core_lib()) {
+				return false;
+			}
+		#endif
+			
 			pstring exepath{executable_path()};
 			exepath.remove_filename();
-			__application_internal::core_filesystem_instance().initialize(exepath);
+			core_filesystem_instance().initialize(exepath);
 
 			if(!application_load_libraries()) {
 				return false;
@@ -287,7 +301,7 @@ namespace mfw::core
 				return main_status;
 			}
 			
-			main_status = __application_internal::core_initialize();
+			main_status = core_initialize();
 		#endif
 
 			if(main_status.succeded()) {
@@ -304,12 +318,12 @@ namespace mfw::core
 			exit_status exit{call_exit()};
 			main_status += exit;
 
-			#if defined __MFW_APPLICATION_CORE_AVAILABLE
+			#ifdef __MFW_APPLICATION_CORE_AVAILABLE
 			main_status.add_error(error_count());
 			main_status.add_warning(warning_count());
 			#endif
 
-			#if defined __MFW_APPLICATION_CORE_AVAILABLE && !defined __MFW_CORE_IS_DELAY_LOADED
+			#ifdef __MFW_LOGGING_ENABLED
 			if(main_status.absolutely_succeded()) {
 				log_application().set_severity(log_context::severity::success);
 			} else if(main_status.succeded()) {
@@ -320,7 +334,7 @@ namespace mfw::core
 			#endif
 			__application_internal::print(u8"exited with code: {} [warnings: {}, errors: {}]"_sv, main_status.code(), main_status.warnings(), main_status.errors());
 
-			exit_status core_status{__application_internal::core_shutdown()};
+			exit_status core_status{core_shutdown()};
 			main_status += core_status;
 
 			return main_status;
@@ -443,7 +457,35 @@ MFW_ATTRIBUTE(__destructor__) void __shared_exit()
 #endif
 
 #if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
+extern "C" {
+	MFW_SHARED_EXPORT ::mfw::uint32_t NvOptimusEnablement{0x00000001};
+	MFW_SHARED_EXPORT ::mfw::int32_t AmdPowerXpressRequestHighPerformance{1};
+}
+	#if MFW_OS_IS(LINUX) && defined __MFW_CORE_USING_IMPLIB
+extern "C" void *__load_core_lib(const char *)
+{
+	return ::mfw::core::__application_internal::core_lib_dlopen();
+}
+	#endif
 	#if MFW_OS == MFW_OS_WINDOWS && MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
+namespace mfw::core::__application_internal
+{
+	static FARPROC MFW_CALL_SHARED dll_failed_hook(uint32_t dliNotify, PDelayLoadInfo pdli)
+	{
+		MFW_DEBUGBREAK();
+		return nullptr;
+	}
+	
+	static FARPROC MFW_CALL_SHARED dll_notify_hook(uint32_t dliNotify, PDelayLoadInfo pdli)
+	{
+		if(pdli->dwLastError == ERROR_SUCCESS) {
+			return nullptr;
+		}
+
+		MFW_DEBUGBREAK();
+		return nullptr;
+	}
+}
 extern "C" {
 	const PfnDliHook __pfnDliFailureHook2{::mfw::core::__application_internal::dll_failed_hook};
 	const PfnDliHook __pfnDliNotifyHook2{::mfw::core::__application_internal::dll_notify_hook};

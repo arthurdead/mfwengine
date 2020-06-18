@@ -69,7 +69,31 @@ namespace mfw::builder
 		help = u8R"(
 			$(optional,count=1,description="list symbols of file")
 			list_symbols
+		)"_sv;
+
+		valid = cmdline.validate(help);
+		if(!valid) {
+			return core::exit_status::fatal;
+		}
+		
+		const core::univalue *list_symbols{cmdline.value(u8"list_symbols"_s)};
+		if(list_symbols) {
+			const ucstring &path{list_symbols->get_string()};
 			
+			core::library::export_vec_t exports{};
+			if(!core::library::get_library_exports({path}, exports)) {
+				log_builder().error(u8"invalid file"_sv);
+				return core::exit_status::fatal;
+			}
+			
+			for(const core::library::export_t &sym : exports) {
+				log_builder().info(sym.name);
+			}
+			
+			return core::exit_status::success;
+		}
+
+		help = u8R"(
 			$(optional,min=1,description="list of sections to build")
 			sections
 			
@@ -101,23 +125,6 @@ namespace mfw::builder
 		valid = cmdline.validate(help);
 		if(!valid) {
 			return core::exit_status::fatal;
-		}
-		
-		const core::univalue *list_symbols{cmdline.value(u8"list_symbols"_s)};
-		if(list_symbols) {
-			const ucstring &path{list_symbols->get_string()};
-			
-			core::library::export_vec_t exports{};
-			if(!core::library::get_library_exports({path}, exports)) {
-				log_builder().error(u8"invalid file"_sv);
-				return core::exit_status::fatal;
-			}
-			
-			for(const core::library::export_t &sym : exports) {
-				log_builder().info(sym.name);
-			}
-			
-			return core::exit_status::success;
 		}
 
 		pstring root_dir{as_string<pstring>(*cmdline.value(u8"path"_s))};
@@ -1744,23 +1751,14 @@ namespace mfw::builder
 
 			for(const core::serializable &child : *files) {
 				const file_reference &file_main{reinterpret_cast<const file_reference &>(child)};
-
-				pstring filter{file_main.filter()};
-				add_variable(u8"file_filter"_s, as_string<ucstring>(filter));
-
-				pstring fullpath{file_main.path()};
-				replace_vars(fullpath);
-				const_cast<file_reference &>(file_main).set_name(as_string<ucstring>(fullpath));
-				
-				pstring filename{fullpath.filename()};
-				pstring basename{filename};
-				basename.replace_extension();
-
-				add_variable(u8"file_basename"_s, as_string<ucstring>(basename));
 				
 				if(!info.process_files_conditions && !file_main.passes_condition(this)) {
 					continue;
 				}
+				
+				pstring fullpath{file_main.path()};
+				replace_vars(fullpath);
+				const_cast<file_reference &>(file_main).set_name(as_string<ucstring>(fullpath));
 
 				bool dynamic{file_main.get_flag_bool(u8"dynamic"_sv)};
 
@@ -1781,6 +1779,15 @@ namespace mfw::builder
 						}
 					}
 				}
+				
+				pstring filter{file_main.filter()};
+				add_variable(u8"file_filter"_s, as_string<ucstring>(filter));
+				
+				pstring filename{fullpath.filename()};
+				pstring basename{filename};
+				basename.replace_extension();
+
+				add_variable(u8"file_basename"_s, as_string<ucstring>(basename));
 
 				core::serializable file_options{};
 				

@@ -23,13 +23,10 @@ namespace mfw::core
 		};
 	}
 
-	extern "C"
-	{
-		MFW_CORE_API void MFW_CORE_CALL append_expression(const ucstring &expr1, const ucstring &expr2, ucstring &result);
-		MFW_CORE_API void MFW_CORE_CALL invert_expression(const ucstring &expr1, ucstring &result);
+	MFW_CORE_API void MFW_CORE_CALL append_expression(const ucstring &expr1, const ucstring &expr2, ucstring &result);
+	MFW_CORE_API void MFW_CORE_CALL invert_expression(const ucstring &expr1, ucstring &result);
 
-		MFW_CORE_API bool MFW_CORE_CALL parse_expression(const ucstring_view &str, univalue &result, const interfaces::expression_parser_callbacks *callbacks = nullptr);
-	}
+	MFW_CORE_API bool MFW_CORE_CALL parse_expression(const ucstring_view &str, univalue &result, const interfaces::expression_parser_callbacks *callbacks = nullptr);
 }
 
 #endif

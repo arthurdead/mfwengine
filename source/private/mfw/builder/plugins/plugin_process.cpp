@@ -195,7 +195,7 @@ namespace mfw::builder
 					compiler_lib_dirs += move(str);
 					break;
 				} else {
-					compiler_lib_dirs += u8"-L \""_sv;
+					compiler_lib_dirs += u8"-L\""_sv;
 					compiler_lib_dirs += move(str);
 					compiler_lib_dirs += u8"\" "_sv;
 				}
@@ -557,6 +557,15 @@ namespace mfw::builder
 							sym_info.mangled = false;
 						}
 					}
+				} else if(name == u8"lazy_load"_sv) {
+					const core::univalue &value{other.get_value()};
+					tool_implib.lazy_load = value.get_bool();
+				} else if(name == u8"no_dlopen"_sv) {
+					const core::univalue &value{other.get_value()};
+					tool_implib.no_dlopen = value.get_bool();
+				} else if(name == u8"callback"_sv) {
+					const core::univalue &value{other.get_value()};
+					tool_implib.callback = value.get_string();
 				}
 			}
 		}
@@ -648,39 +657,6 @@ namespace mfw::builder
 		return true;
 	}
 
-	#define __MFW_QUOTE_STR_BEGIN(var, quote_var, check) \
-			bool quote_var{var.find(u8' ', 0) != ucstring::npos}; \
-			if(check) { \
-				str += u8'"'; \
-			}
-			
-	#define __MFW_QUOTE_STR_END(var, quote_var, check) \
-		if(check) { \
-			str += u8'"'; \
-		} \
-		
-	#define __MFW_QUOTE_STR_NAME(var, quote_var) \
-		__MFW_QUOTE_STR_BEGIN(var, quote_var, quote_var) \
-		str += var; \
-		__MFW_QUOTE_STR_END(var, quote_var, quote_var)
-		
-	#define __MFW_QUOTE_STR_VALUE(var, quote_var) \
-		__MFW_QUOTE_STR_BEGIN(var, quote_var, quote_var || is_file) \
-		if(is_file && !drive.empty()) { \
-			str += drive; \
-		} \
-		str += var; \
-		__MFW_QUOTE_STR_END(var, quote_var, quote_var || is_file)
-
-	#define __MFW_APPEND_VALUE(sep) \
-		if(!value.empty()) { \
-			if(sep != u8'\0') { \
-				str += sep; \
-			} \
-			const ucstring &val_str{value.get_string()}; \
-			__MFW_QUOTE_STR_VALUE(val_str, quote_value) \
-		}
-
 	void plugin_process::process_option(const core::serializable &option, ucstring &str, const tool_info_t &info)
 	{
 		const ucstring &drive{info.drive};
@@ -701,8 +677,11 @@ namespace mfw::builder
 				needs_values = true;
 			}
 			if(flags->get_child_bool(u8"folders"_sv) ||
-				flags->get_child_bool(u8"files"_sv) ||
-				flags->get_child_bool(u8"folder"_sv) ||
+				flags->get_child_bool(u8"files"_sv)) {
+				needs_values = true;
+				is_file = true;
+			}
+			if(flags->get_child_bool(u8"folder"_sv) ||
 				flags->get_child_bool(u8"file"_sv)) {
 				is_file = true;
 			}
@@ -711,11 +690,11 @@ namespace mfw::builder
 		const ucstring &arg_name{option.get_name()};
 		if(option.empty()) {
 			const core::univalue &value{option.get_value()};
-			if((is_file || needs_values) && value.empty()) {
+			if(needs_values && value.empty()) {
 				return;
 			}
 			__MFW_QUOTE_STR_NAME(arg_name, quote_arg)
-			char8_t sep{u8' '};
+			ucchar_t sep{u8' '};
 			if(no_space) {
 				sep = u8'\0';
 			} else if(needs_equal) {
@@ -727,7 +706,7 @@ namespace mfw::builder
 				const ucstring &name{child.get_name()};
 				const core::univalue &value{child.get_value()};
 				__MFW_QUOTE_STR_NAME(arg_name, quote_arg)
-				char8_t sep{u8' '};
+				ucchar_t sep{u8' '};
 				if(no_space) {
 					sep = u8'\0';
 				} else if(needs_equal) {
@@ -976,12 +955,13 @@ namespace mfw::builder
 
 	bool plugin_process::generate_implib(const solution_reference &solution, const project_reference &project, const pstring &path, const gen_lib_vars_t &vars, bool regen)
 	{
-		const pstring &folder{*vars.folder};
 		tool_info_t::implib_arch_t arch{vars.arch};
 		
-		if(arch == tool_info_t::implib_arch_t::unknown) {
+		if(arch == tool_info_t::implib_arch_t::unknown || !vars.folder) {
 			return false;
 		}
+		
+		const pstring &folder{*vars.folder};
 		
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 		
@@ -998,10 +978,32 @@ namespace mfw::builder
 			return true;
 		}
 		
-		vector<ucstring> symbols{};
+		struct sym_type_t
+		{
+			sym_type_t() = default;
+			sym_type_t(const sym_type_t &) = default;
+			sym_type_t(sym_type_t &&) = default;
+			
+			sym_type_t(const ucstring &str)
+				: name{str} {}
+				
+			bool operator==(const ucstring &str) const
+			{ return name == str; }
+			bool operator!=(const ucstring &str) const
+			{ return name != str; }
+			
+			operator const ucstring &() const { return name; }
+			
+			ucstring name{};
+			bool func{true};
+		};
+		
+		vector<sym_type_t> symbols{};
 		if(vars.symbols && !vars.has_glob) {
 			for(const tool_info_t::implib_t::symbol_name_t &rem : *vars.symbols) {
-				symbols.emplace_back(rem.name);
+				sym_type_t &sym{symbols.emplace_back()};
+				sym.name = rem.name;
+				sym.func = rem.function;
 			}
 		}
 		
@@ -1013,8 +1015,14 @@ namespace mfw::builder
 			}
 			for(const core::library::export_t &sym : exports) {
 				const ucstring &name{sym.name};
-				bool ignore{false};
+				if(sym.function) {
+					if(name.find(u8"_init"_sv) != ucstring::npos ||
+						name.find(u8"_fini"_sv) != ucstring::npos) {
+						continue;
+					}
+				}
 				if(vars.remove_symbols) {
+					bool ignore{false};
 					for(const tool_info_t::implib_t::symbol_name_t &rem : *vars.remove_symbols) {
 						if(rem.matches(name)) {
 							ignore = true;
@@ -1025,15 +1033,23 @@ namespace mfw::builder
 						continue;
 					}
 				}
+				bool valid{false};
 				if(vars.symbols) {
 					for(const tool_info_t::implib_t::symbol_name_t &rem : *vars.symbols) {
 						if(rem.matches(name)) {
-							symbols.emplace_back(name);
+							valid = true;
 							break;
 						}
 					}
 				} else {
-					symbols.emplace_back(name);
+					valid = true;
+				}
+				if(!valid) {
+					continue;
+				} else {
+					sym_type_t &sym_type{symbols.emplace_back()};
+					sym_type.name = name;
+					sym_type.func = sym.function;
 				}
 			}
 		}
@@ -1045,7 +1061,7 @@ namespace mfw::builder
 		pstring filename{path.filename()};
 		filename.replace_extension();
 		ucstring lib_suffix{as_string<ucstring>(filename)};
-		lib_suffix += u8"_implib"_sv;
+		lib_suffix.insert(0, 1, u8'_');
 		
 		ucstring asm_str{};
 		
@@ -1062,12 +1078,15 @@ namespace mfw::builder
 			replace_all(asm_str, u8"$$"_sv, u8"$"_sv);
 			
 			size_t i{0};
-			for(const ucstring &sym : symbols) {
+			for(const sym_type_t &sym : symbols) {
+				if(!sym.func) {
+					continue;
+				}
 				size_t offset{i * ptr_size};
 				ucstring sym_tmp{trampoline_fmt};
 				replace_all(sym_tmp, u8"$number"_sv, as_string<ucstring>(i));
 				replace_all(sym_tmp, u8"$offset"_sv, as_string<ucstring>(offset));
-				replace_all(sym_tmp, u8"$sym"_sv, sym);
+				replace_all(sym_tmp, u8"$sym"_sv, sym.name);
 				asm_str += move(sym_tmp);
 				i++;
 			}
@@ -1077,9 +1096,8 @@ namespace mfw::builder
 			
 			filesys.save_text_file({asm_path}, asm_str);
 			
-			const pstring &output1{*vars.output1};
-			if(!output1.empty()) {
-				if(!compile_cpp_file(solution, project, asm_path, output1)) {
+			if(vars.output1) {
+				if(!compile_cpp_file(solution, project, asm_path, *vars.output1)) {
 					return false;
 				}
 			}
@@ -1091,27 +1109,45 @@ namespace mfw::builder
 			};
 			
 			asm_str = load_fmt;
-			replace_all(asm_str, u8"$has_dlopen_callback"_sv, u8"0"_sv);
-			replace_all(asm_str, u8"$no_dlopen"_sv, u8"1"_sv);
-			replace_all(asm_str, u8"$lazy_load"_sv, u8"0"_sv);
-			replace_all(asm_str, u8"$dlopen_callback"_sv, u8"dlopen_callback"_sv);
+			replace_all(asm_str, u8"$has_dlopen_callback"_sv, vars.callback ? u8"1"_sv : u8"0"_sv);
+			replace_all(asm_str, u8"$dlopen_callback"_sv, vars.callback ? *vars.callback : u8""_s);
+			replace_all(asm_str, u8"$no_dlopen"_sv, vars.no_dlopen ? u8"1"_sv : u8"0"_sv);
+			replace_all(asm_str, u8"$lazy_load"_sv, vars.lazy_load ? u8"1"_sv : u8"0"_sv);
 			replace_all(asm_str, u8"$load_name"_sv, as_string<ucstring>(filename));
 			ucstring sym_names{};
-			for(const ucstring &sym : symbols) {
+			ucstring vtable_names{};
+			for(const sym_type_t &sym : symbols) {
+				if(!sym.func) {
+					MFW_MESSAGE("TODO!!!!")
+					/*
+					ucstring unmangled_name{};
+					core::undecorate(sym.name, unmangled_name);
+					
+					if(unmangled_name.find(u8"typeinfo name for "_sv) != ucstring::npos) {
+						
+					} else if(unmangled_name.find(u8"typeinfo for "_sv) != ucstring::npos) {
+						
+					} else {
+						MFW_DEBUGBREAK();
+					}
+					*/
+					
+					continue;
+				}
 				sym_names += u8'"';
-				sym_names += sym;
+				sym_names += sym.name;
 				sym_names += u8"\",\n  "_sv;
 			}
-			sym_names.erase(sym_names.end()-4, sym_names.end());
+			sym_names.erase(sym_names.end()-3, sym_names.end());
 			replace_all(asm_str, u8"$sym_names"_sv, sym_names);
+			replace_all(asm_str, u8"$vtable_names"_sv, vtable_names);
 			replace_all(asm_str, u8"${lib_suffix}"_sv, lib_suffix);
 			replace_all(asm_str, u8"$$"_sv, u8"$"_sv);
 			
 			filesys.save_text_file({load_path}, asm_str);
 			
-			const pstring &output2{*vars.output2};
-			if(!output2.empty()) {
-				if(!compile_cpp_file(solution, project, load_path, output2)) {
+			if(vars.output2) {
+				if(!compile_cpp_file(solution, project, load_path, *vars.output2)) {
 					return false;
 				}
 			}
@@ -1194,12 +1230,8 @@ namespace mfw::builder
 						gen_vars.output2 = &output2;
 						
 						if(generate_implib(solution, project, file_path, gen_vars, false)) {
-							if(!output1.empty()) {
-								add_file_to_str(output1, str, info);
-							}
-							if(!output2.empty()) {
-								add_file_to_str(output2, str, info);
-							}
+							add_file_to_str(output1, str, info);
+							add_file_to_str(output2, str, info);
 							continue;
 						} else {
 							return false;
@@ -1506,10 +1538,23 @@ namespace mfw::builder
 				gen_lib_vars_t gen_vars{};
 				gen_vars.arch = implib.arch;
 				gen_vars.folder = &implib.folder;
-				gen_vars.output1 = &implib.output1;
-				gen_vars.output2 = &implib.output2;
-				gen_vars.symbols = &implib.symbols;
-				gen_vars.remove_symbols = &implib.remove_symbols;
+				gen_vars.no_dlopen = implib.no_dlopen;
+				gen_vars.lazy_load = implib.lazy_load;
+				if(!implib.output1.empty()) {
+					gen_vars.output1 = &implib.output1;
+				}
+				if(!implib.output2.empty()) {
+					gen_vars.output2 = &implib.output2;
+				}
+				if(!implib.symbols.empty()) {
+					gen_vars.symbols = &implib.symbols;
+				}
+				if(!implib.remove_symbols.empty()) {
+					gen_vars.remove_symbols = &implib.remove_symbols;
+				}
+				if(!implib.callback.empty()) {
+					gen_vars.callback = &implib.callback;
+				}
 				gen_vars.has_glob = implib.has_glob;
 				
 				if(!generate_implib(*vars.solution, *vars.project, output_path, gen_vars, true)) {

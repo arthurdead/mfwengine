@@ -492,39 +492,36 @@ namespace mfw::core
 		tokens1.emplace_back(token::extended_type::parenthesis_right);
 	}
 
-	extern "C"
+	MFW_CORE_API bool MFW_CORE_CALL parse_expression(const ucstring_view &str, univalue &result, const interfaces::expression_parser_callbacks *callbacks)
 	{
-		MFW_CORE_API bool MFW_CORE_CALL parse_expression(const ucstring_view &str, univalue &result, const interfaces::expression_parser_callbacks *callbacks)
-		{
-			expression_parser subparser{};
-			return subparser.parse(str, result, callbacks);
+		expression_parser subparser{};
+		return subparser.parse(str, result, callbacks);
+	}
+
+	MFW_CORE_API void MFW_CORE_CALL invert_expression(const ucstring &expr1, ucstring &result)
+	{
+		if(expr1.empty()) {
+			return;
 		}
 
-		MFW_CORE_API void MFW_CORE_CALL invert_expression(const ucstring &expr1, ucstring &result)
-		{
-			if(expr1.empty()) {
-				return;
-			}
+		result = expr1;
+		result.insert(0, u8"!("_sv);
+		result += u8')';
+	}
 
+	MFW_CORE_API void MFW_CORE_CALL append_expression(const ucstring &expr1, const ucstring &expr2, ucstring &result)
+	{
+		if(!expr1.empty() && !expr2.empty()) {
 			result = expr1;
-			result.insert(0, u8"!("_sv);
+			result.insert(0, 1, u8'(');
 			result += u8')';
-		}
-
-		MFW_CORE_API void MFW_CORE_CALL append_expression(const ucstring &expr1, const ucstring &expr2, ucstring &result)
-		{
-			if(!expr1.empty() && !expr2.empty()) {
-				result = expr1;
-				result.insert(0, 1, u8'(');
-				result += u8')';
-				result += u8" && ("_sv;
-				result += expr2;
-				result += u8')';
-			} else if(!expr1.empty()) {
-				result = expr1;
-			} else if(!expr2.empty()) {
-				result = expr2;
-			}
+			result += u8" && ("_sv;
+			result += expr2;
+			result += u8')';
+		} else if(!expr1.empty()) {
+			result = expr1;
+		} else if(!expr2.empty()) {
+			result = expr2;
 		}
 	}
 }

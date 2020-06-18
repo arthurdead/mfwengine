@@ -34,9 +34,8 @@ base_solution
 	builder {
 		pre_generate {
 		$if plugin_name == "vscode"
-			#pragma message("investigate what broke this")
-			//$(message="Generating compile_commands.json")
-			//"\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --sections=\"compiler\" --only_compile_commands"
+			$(message="Generating compile_commands.json")
+			"\"${mfwbuilder}\" --plugins=\"process\" --solutions=\"${solution_name}\" --path=\"${path_folder}\" --sections=\"compiler\" --only_compile_commands"
 		$endif
 		}
 		macros {

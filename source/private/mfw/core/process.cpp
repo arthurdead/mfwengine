@@ -33,7 +33,7 @@ namespace mfw::core
 			}
 			return path;
 		#else
-			return pstring{u8"C:\\Windows\\cmd.exe"_sv};
+			return pstring{u8"C:\\Windows\\cmd.exe"_p};
 		#endif
 		}
 		
@@ -572,7 +572,8 @@ namespace mfw::core
 					continue;
 				}
 				
-				pstring exepath{MFW_PATH_FROM_CHARARRAY(exefile, len)};
+				pstring exepath{};
+				exepath.assign(exefile, exefile+len);
 				
 				tmp = u8"/proc/{}/status"_fmt(pid);
 				FILE *cmdline{fopen(c_str(tmp), "r")};
@@ -610,7 +611,7 @@ namespace mfw::core
 				tmp = u8"/proc/{}/cwd"_fmt(pid);
 				len = readlink(c_str(tmp), exefile, size(exefile));
 				
-				proc.workingdir_ = exefile;
+				proc.workingdir_.assign(exefile, exefile+len);
 			}
 			closedir(procdir);
 		}

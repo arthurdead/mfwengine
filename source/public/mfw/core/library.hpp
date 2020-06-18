@@ -76,6 +76,7 @@ namespace mfw::core
 			const void *ptr{nullptr};
 			ucstring name{};
 			size_t index{0};
+			bool function{true};
 		};
 		
 		using export_vec_t = vector<export_t>;

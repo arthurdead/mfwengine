@@ -26,6 +26,7 @@ base_tool
 			"In function "
 			"In member function "
 			"In instantiation of "
+			"Assembler messages:"
 		}
 		warning {
 			"warning:"
@@ -33,12 +34,13 @@ base_tool
 		error {
 			"error:"
 			"Stack dump:"
+			"Error: "
 		}
 	}
 
 	includes_paths {
 		"--include-directory"
-		"-i"
+		"-I"
 	}
 
 	preprocessor_definitions {
@@ -67,6 +69,7 @@ base_tool
 		includes_paths "-I"
 		$(needs_equal)
 		standard "-std" {
+			"gnu++20" "gnu++2a"
 			"c++latest" "c++2a"
 			"c++20" "c++2a"
 		}

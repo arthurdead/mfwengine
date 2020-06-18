@@ -102,7 +102,8 @@ namespace mfw::core
 			format(desc, u8"/proc/self/fd/{}"_sv, fileno(hndl));
 			char filename[PATH_MAX]{'\0'};
 			ssize_t len{readlink(c_str(desc), filename, stl::size(filename))};
-			pstring filepath{MFW_PATH_FROM_CHARARRAY(filename, len)};
+			pstring filepath{};
+			filepath.assign(filename, filename+len);
 			return filepath;
 		}
 	}

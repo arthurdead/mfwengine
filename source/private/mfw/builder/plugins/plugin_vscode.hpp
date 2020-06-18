@@ -13,6 +13,8 @@ namespace mfw::builder
 	class plugin_vscode final : public base_plugin
 	{
 	public:
+		using super = base_plugin;
+	
 		plugin_vscode();
 
 	private:
@@ -23,6 +25,8 @@ namespace mfw::builder
 		bool generate(const solution_reference &solution, const project_reference &project, const core::serializable &section) override;
 	
 		void cleanup(cleanup_type_t type) override;
+		
+		void initialize(interfaces::builder_funcs &funcs) override;
 	
 		struct json_workspace_t : json::file
 		{
@@ -114,8 +118,14 @@ namespace mfw::builder
 
 		void parse_ide(const core::serializable &section, json_workspace_t &json, bool replace);
 
+		static void process_option(const core::serializable &option, ucstring &str);
+
 		ptr_vector<json_project_t> json_projects{};
 		json_solution_t solution_json{};
+		
+		bool create_symlink(const core::searchpath &from, const core::searchpath &to, bool dir=false) const;
+		
+		//vector<pstring> symlinks{};
 	};
 }
 

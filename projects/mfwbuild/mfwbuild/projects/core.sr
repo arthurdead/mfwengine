@@ -2,7 +2,7 @@
 
 //#define __MFW_ENABLE_IBERTY
 //#define __MFW_ENABLE_ASMJIT
-//#define __MFW_USE_CORE_DELAY_LOADED
+#define __MFW_DELAY_LOADED
 
 core : base_project, standards.cpp20, output_shared
 {
@@ -15,18 +15,18 @@ core : base_project, standards.cpp20, output_shared
 				$endif
 				}
 				files {
-			#ifndef __MFW_USE_CORE_DELAY_LOADED
+			#ifndef __MFW_DELAY_LOADED
 				$if !is_self && os == "linux"
 					"${shared_out_dir}/${dependency_name}.so"
 				$endif
 			#endif
 				}
 			}
-		#ifdef __MFW_USE_CORE_DELAY_LOADED
+		#ifdef __MFW_DELAY_LOADED
 			compiler {
 				options::preprocessor_definitions {
 				$if !is_self
-					__MFW_CORE_IS_DELAY_LOADED
+					__MFW_CORE_USING_IMPLIB
 				$endif
 				}
 				files {
@@ -43,8 +43,9 @@ core : base_project, standards.cpp20, output_shared
 		}
 	}
 	linker {
-	#ifdef __MFW_USE_CORE_DELAY_LOADED
+	#ifdef __MFW_DELAY_LOADED
 		implib "${intermediary_folder}" {
+			callback "__load_core_lib"
 			symbols {
 				"*mfw*"
 			}

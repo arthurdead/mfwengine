@@ -213,6 +213,53 @@ namespace mfw::core
 			ucstring name{reinterpret_cast<const ucchar_t *>(name_ptr)};
 			return name;
 		}
+		
+		template <size_t value>
+		static void collect_symbols(const byte *data, const Elf_Shdr_t<value> *section_table, const Elf_Shdr_t<value> *section_dynsym, library::export_vec_t &exports)
+		{
+			__MFW_ELF_TYPE_LOCAL(Sym)
+			__MFW_ELF_TYPE_LOCAL(Shdr)
+			__MFW_ELF_TYPE_LOCAL(Xword)
+			
+			const Elf_Sym *symbol_table{reinterpret_cast<const Elf_Sym *>(data + section_dynsym->sh_offset)};
+			const Elf_Shdr &symbol_name_section{section_table[section_dynsym->sh_link]};
+			const byte *symbol_name_table{reinterpret_cast<const byte *>(data + symbol_name_section.sh_offset)};
+			
+			Elf_Xword symbol_count{section_dynsym->sh_size / section_dynsym->sh_entsize};
+			
+			for(Elf_Xword i{0}; i < symbol_count; i++) {
+				const Elf_Sym &symbol_header{symbol_table[i]};
+				
+				MFW_MESSAGE("remove 64 later")
+				int32_t type{ELF64_ST_TYPE(symbol_header.st_info)};
+				int32_t bind{ELF64_ST_BIND(symbol_header.st_info)};
+				int32_t visibility{ELF64_ST_VISIBILITY(symbol_header.st_other)};
+				bool function{type == STT_FUNC};
+				
+				if((!function && type != STT_OBJECT) ||
+					(bind != STB_GLOBAL && bind != STB_WEAK) ||
+					visibility != STV_DEFAULT) {
+					continue;
+				}
+				
+				if(symbol_header.st_shndx == SHN_UNDEF ||
+					symbol_header.st_shndx == SHN_ABS ||
+					symbol_header.st_shndx == SHN_COMMON ||
+					symbol_header.st_shndx == SHN_XINDEX) {
+					continue;
+				}
+
+				ucstring name{get_name_from_table<value>(symbol_name_table, symbol_header.st_name)};
+				if(name.empty()) {
+					continue;
+				}
+
+				library::export_t &exp{exports.emplace_back()};
+				exp.index = i;
+				exp.name = move(name);
+				exp.function = function;
+			}
+		}
 	#endif
 	
 	#if MFW_OS_IS(LINUX)
@@ -250,60 +297,32 @@ namespace mfw::core
 			const Elf_Shdr *section_table{reinterpret_cast<const Elf_Shdr *>(data + hdr.e_shoff)};
 			
 			const Elf_Shdr *section_dynsym{nullptr};
+			const Elf_Shdr *section_sym{nullptr};
 			
 			for(Elf_Half i{0}; i < hdr.e_shnum; i++) {
 				const Elf_Shdr &section_header{section_table[i]};
 				
 				if(section_header.sh_type == SHT_DYNSYM) {
 					section_dynsym = &section_header;
+				} else if(section_header.sh_type == SHT_SYMTAB) {
+					section_sym = &section_header;
 				}
 				
-				if(section_dynsym) {
+				if(section_dynsym && section_sym) {
 					break;
 				}
 			}
 			
-			if(!section_dynsym) {
+			if(!section_dynsym && !section_sym) {
 				return false;
 			}
 			
-			const Elf_Sym *symbol_table{reinterpret_cast<const Elf_Sym *>(data + section_dynsym->sh_offset)};
-			const Elf_Shdr &symbol_name_section{section_table[section_dynsym->sh_link]};
-			const byte *symbol_name_table{reinterpret_cast<const byte *>(data + symbol_name_section.sh_offset)};
+			if(section_dynsym) {
+				collect_symbols<value>(data, section_table, section_dynsym, exports);
+			}
 			
-			Elf_Xword symbol_count{section_dynsym->sh_size / section_dynsym->sh_entsize};
-			
-			for(Elf_Xword i{0}; i < symbol_count; i++) {
-				const Elf_Sym &symbol_header{symbol_table[i]};
-				
-				MFW_MESSAGE("remove 64 later")
-				int32_t type{ELF64_ST_TYPE(symbol_header.st_info)};
-				int32_t bind{ELF64_ST_BIND(symbol_header.st_info)};
-				int32_t visibility{ELF64_ST_VISIBILITY(symbol_header.st_other)};
-				
-				if((type != STT_FUNC && type != STT_OBJECT) ||
-					(bind != STB_GLOBAL && bind != STB_WEAK) ||
-					visibility != STV_DEFAULT) {
-					continue;
-				}
-				
-				if(symbol_header.st_shndx == SHN_UNDEF ||
-					symbol_header.st_shndx == SHN_ABS ||
-					symbol_header.st_shndx == SHN_COMMON ||
-					symbol_header.st_shndx == SHN_XINDEX) {
-					continue;
-				}
-
-				ucstring name{get_name_from_table<value>(symbol_name_table, symbol_header.st_name)};
-				if(name.empty() ||
-					name.find(u8"_init"_sv) != ucstring::npos ||
-					name.find(u8"_fini"_sv) != ucstring::npos) {
-					continue;
-				}
-
-				library::export_t &exp{exports.emplace_back()};
-				exp.index = i;
-				exp.name = move(name);
+			if(section_sym) {
+				//collect_symbols<value>(data, section_table, section_sym, exports);
 			}
 			
 			return true;
@@ -494,9 +513,9 @@ namespace mfw::core
 		filename.replace_extension(u8".so"_p);
 		ucstring path{as_string<ucstring>(filename)};
 		
-		static constexpr const uint32_t dlopen_flags{RTLD_NOW|RTLD_GLOBAL|RTLD_DEEPBIND};
+		static constexpr const uint32_t dlopen_flags{RTLD_LAZY|RTLD_GLOBAL};
 		
-		module_ = dlopen(c_str(path), dlopen_flags);
+		module_ = dlmopen(LM_ID_BASE, c_str(path), dlopen_flags);
 		if(!module_) {
 			ucstring err{__library_internal::dl_err_str()};
 			if(err.find(u8": cannot open shared object file: No such file or directory"_sv) != ucstring::npos) {
@@ -505,11 +524,11 @@ namespace mfw::core
 					pstring tmp{i};
 					tmp /= filename;
 					path = as_string<ucstring>(tmp);
-					module_ = dlopen(c_str(path), dlopen_flags);
+					module_ = dlmopen(LM_ID_BASE, c_str(path), dlopen_flags);
 					if(!module_) {
 						err = __library_internal::dl_err_str();
 						if(err.find(u8": cannot open shared object file: No such file or directory"_sv) == ucstring::npos) {
-							log_library().error(u8"failed to load {}: {}", path, err);
+							log_library().error(u8"{}", err);
 							break;
 						}
 					} else {
@@ -517,7 +536,7 @@ namespace mfw::core
 					}
 				}
 			} else {
-				log_library().error(u8"failed to load {}: {}", path, err);
+				log_library().error(u8"{}", err);
 			}
 		}
 		

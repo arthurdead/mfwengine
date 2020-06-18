@@ -21,8 +21,6 @@
 	#error
 #endif
 
-#define MFW_PATH_FROM_CHARARRAY(name, len) c_str(name), (c_str(name)+len)
-
 namespace mfw::stl
 {
 #if MFW_STD_FLAGGED(API_CONFORMING)

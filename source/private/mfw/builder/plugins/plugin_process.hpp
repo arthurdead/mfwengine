@@ -66,6 +66,7 @@ namespace mfw::builder
 				struct symbol_name_t
 				{
 					bool mangled{true};
+					bool function{true};
 					ucstring name{};
 					
 					bool matches(const ucstring &other) const;
@@ -74,6 +75,10 @@ namespace mfw::builder
 				vector<symbol_name_t> symbols{};
 				bool has_glob{false};
 				vector<symbol_name_t> remove_symbols{};
+				
+				bool lazy_load{true};
+				bool no_dlopen{false};
+				ucstring callback{};
 			};
 			implib_t implib{};
 			
@@ -163,8 +168,8 @@ namespace mfw::builder
 		void print_section(const ucstring &output, size_t start, size_t end, sec_flags &flags, const tool_info_t &info);
 		void print_sections(const ucstring &output, sec_flags &flags, const tool_info_t &info);
 		
-		void process_option(const core::serializable &option, ucstring &str, const tool_info_t &info);
-		void process_options(const core::serializable &options, ucstring &str, const tool_info_t &info);
+		static void process_option(const core::serializable &option, ucstring &str, const tool_info_t &info);
+		static void process_options(const core::serializable &options, ucstring &str, const tool_info_t &info);
 		
 		static void add_file_to_str(const pstring &path, ucstring &str, const tool_info_t &info);
 		
@@ -187,6 +192,9 @@ namespace mfw::builder
 			const vector<tool_info_t::implib_t::symbol_name_t> *symbols{nullptr};
 			const vector<tool_info_t::implib_t::symbol_name_t> *remove_symbols{nullptr};
 			bool has_glob{false};
+			bool lazy_load{true};
+			bool no_dlopen{false};
+			const ucstring *callback{nullptr};
 		};
 		bool generate_implib(const solution_reference &solution, const project_reference &project, const pstring &path, const gen_lib_vars_t &vars, bool regen);
 
