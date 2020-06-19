@@ -1,93 +1,26 @@
 test_proj {
 	compiler {
-		//output_tool linker
+		output_tool linker
 		files {
 			"/home/arthurdead/Desktop/temp/code/main.cpp"
 		}
 		options {
-			//"-c"
+			"-c"
 			$(file)
-			"-o" "/home/arthurdead/Desktop/temp/code/main.html"
+			"-o" "/home/arthurdead/Desktop/temp/code/main.o"
 			"-fPIC"
+			"-frtti"
+			"-O0"
 		}
 	}
 	linker {
-		//output_tool wasm_emscripten_finalize
-		options {
-			$(file)
-			"-o" "/home/arthurdead/Desktop/temp/code/wtf.wasm"
-			"-pie"
-			"--no-entry"
-			$(file,no_space)
-			"-L" "/usr/lib/emscripten/system/local/lib"
-			$(file,no_space)
-			"-L" "/usr/lib/emscripten/system/lib"
-			$(file,no_space)
-			"-L" "/usr/lib/emscripten/cache/wasm"
-			$(file)
-			"/usr/lib/emscripten/cache/wasm/libc.a"
-			$(file)
-			"/usr/lib/emscripten/cache/wasm/libcompiler_rt.a"
-			$(file)
-			"/usr/lib/emscripten/cache/wasm/libc-wasm.a"
-			$(file)
-			"/usr/lib/emscripten/cache/wasm/libc++-noexcept.a"
-			$(file)
-			"/usr/lib/emscripten/cache/wasm/libc++abi-noexcept.a"
-			$(file)
-			"/usr/lib/emscripten/cache/wasm/libdlmalloc.a"
-			$(file)
-			"/usr/lib/emscripten/cache/wasm/libpthread_stub.a"
-			$(file)
-			"/usr/lib/emscripten/cache/wasm/libc_rt_wasm.a"
-			$(file)
-			"/usr/lib/emscripten/cache/wasm/libsockets.a"
-			//"-mllvm"
-			//"-combiner-global-alias-analysis=false"
-			//"-enable-emscripten-sjlj"
-			//"-disable-lsr"
-			"--allow-undefined"
-			"--import-memory"
-			"--import-table"
-			"--strip-debug"
-			"--export" "main"
-			"--export" "malloc"
-			"--export" "free"
-			"--export" "__data_end"
-			"--export" "__wasm_call_ctors"
-			"--export" "fflush"
-			"--export" "__errno_location"
-			"-z" "stack-size=5242880"
-			"--initial-memory=16777216"
-			"--max-memory=16777216"
-			"--global-base=1024"
+		implib "${intermediary_folder}" {
+			arch "x86_64"
 		}
-	}
-	wasm_emscripten_finalize {
-		output_tool wasm_opt
 		options {
-			"--detect-features"
-			"--global-base=1024"
 			$(file)
-			"--check-stack-overflow" "/home/arthurdead/Desktop/temp/code/wtf.wasm"
-			$(file)
-			"-o" "/home/arthurdead/Desktop/temp/code/wtf.wasm"
-		}
-	}
-	wasm_opt {
-		options {
-			"--strip-dwarf"
-			"--post-emscripten"
-			"--inline-main"
-			"--no-exit-runtime"
-			"--low-memory-unused"
-			"--strip-debug"
-			"--strip-producers"
-			"--pass-arg=stack-pointer@5244592"
-			"--pass-arg=emscripten-sbrk-ptr@1552"
-			$(file)
-			"-o" "/home/arthurdead/Desktop/temp/code/wtf.wasm"
-			"--mvp-features"
+			"-o" "/home/arthurdead/Desktop/temp/code/main.so"
+			"-shared"
 		}
 	}
 }

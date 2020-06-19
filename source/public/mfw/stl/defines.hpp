@@ -35,8 +35,11 @@
 	#define MFW_VISIBILITY_POP() 
 	#define MFW_CALL_STDCALL __stdcall
 	#define MFW_CALL_CDECL __cdecl
-	#define MFW_OPTIMIZE(x) MFW_PRAGMA(optimize(x))
-	#define MFW_RESET_OPTIONS()
+	#define MFW_OPTIMIZE_PRAGMA(x) MFW_PRAGMA(optimize(x))
+	#define MFW_OPTIMIZE_ATTRIBUTE(x) 
+	#define MFW_RESET_OPTIONS() 
+	#define MFW_PUSH_OPTIONS() 
+	#define MFW_POP_OPTIONS() 
 	#define MFW_WARNING_DISABLE(...) MFW_PRAGMA(warning(disable: __VA_ARGS__))
 	#define MFW_WARNING_SUPPRESS(...) MFW_PRAGMA(warning(suppress: __VA_ARGS__))
 	#define __MFW_WARNING_PUSH_MSVC() MFW_PRAGMA(warning(push))
@@ -71,21 +74,34 @@
 	#else
 		#error
 	#endif
-	#define MFW_SHARED_LOCAL MFW_ATTRIBUTE(__visibility__("hidden"))
+	#define MFW_SHARED_LOCAL MFW_ATTRIBUTE(__visibility__("internal"))
 	#define MFW_CALL_STDCALL MFW_ATTRIBUTE(__stdcall__, __ms_abi__)
 	#if MFW_COMPILER_FLAGGED(CLANG)
 		#define MFW_CALL_CDECL __MFW_SYSTEM_ABI MFW_ATTRIBUTE(__cdecl__)
 		#define __MFW_PRAGMA_ID clang
+		#define MFW_OPTIMIZE_PRAGMA(x) 
+		#define MFW_OPTIMIZE_ATTRIBUTE(x) 
+		#define MFW_RESET_OPTIONS() 
+		#define MFW_PUSH_OPTIONS() 
+		#define MFW_POP_OPTIONS() 
 	#elif MFW_COMPILER_IS(GCC)
 		#define MFW_CALL_CDECL __MFW_SYSTEM_ABI
 		#define __MFW_PRAGMA_ID GCC
+		#if MFW_C_COMPARE(>=, 99)
+			#define MFW_OPTIMIZE_PRAGMA(...) MFW_PRAGMA(__MFW_PRAGMA_ID optimize(__VA_ARGS__))
+			#define MFW_OPTIMIZE_ATTRIBUTE(...) MFW_ATTRIBUTE(__optimize__(__VA_ARGS__))
+		#else
+			#define MFW_OPTIMIZE_PRAGMA(x) MFW_PRAGMA(__MFW_PRAGMA_ID optimize(x))
+			#define MFW_OPTIMIZE_ATTRIBUTE(x) MFW_ATTRIBUTE(__optimize__(x))
+		#endif
+		#define MFW_RESET_OPTIONS() MFW_PRAGMA(__MFW_PRAGMA_ID reset_options)
+		#define MFW_PUSH_OPTIONS() MFW_PRAGMA(__MFW_PRAGMA_ID push_options)
+		#define MFW_POP_OPTIONS() MFW_PRAGMA(__MFW_PRAGMA_ID pop_options)
 	#else
 		#error
 	#endif
 	#define MFW_VISIBILITY_PUSH(x) MFW_PRAGMA(__MFW_PRAGMA_ID visibility push(x))
 	#define MFW_VISIBILITY_POP() MFW_PRAGMA(__MFW_PRAGMA_ID visibility pop)
-	#define MFW_OPTIMIZE(x) MFW_PRAGMA(__MFW_PRAGMA_ID optimize(x))
-	#define MFW_RESET_OPTIONS() MFW_PRAGMA(__MFW_PRAGMA_ID reset_options)
 	#define MFW_WARNING_PUSH() MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic push)
 	#define MFW_WARNING_POP() MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic pop)
 	#define MFW_WARNING_DISABLE(x) MFW_PRAGMA(__MFW_PRAGMA_ID diagnostic ignored x)

@@ -5,17 +5,26 @@ renderer : base_project, standards.cpp20, output_shared
 	builder {
 		dependency::linker {
 			files {
-			$if !is_self && os == "linux"
+			$if os == "linux"
 				"${shared_out_dir}/${dependency_name}.so"
 			$endif
 			}
 		}
 		depends {
-			core,
+			core::shared,
 			stl
 		}
 	}
 	compiler::options::preprocessor_definitions {
 		MFW_APPLICATION_MAIN_DEFINED
+	}
+	linker::options::libraries {
+	$if os == "linux"
+		xcb
+		X11
+		vulkan
+		GL
+		shaderc_shared
+	$endif
 	}
 }

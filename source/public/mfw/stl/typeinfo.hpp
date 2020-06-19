@@ -17,8 +17,9 @@ namespace mfw::stl
 #if MFW_STD_FLAGGED(API_CONFORMING)
 	using ::MFW_STD_NAMESPACE::type_info;
 	
-	#if MFW_COMPILER_IS(GCC)
-		MFW_OPTIMIZE("rtti")
+	#if MFW_COMPILER_FLAGGED(UNIX)
+		MFW_PUSH_OPTIONS()
+		MFW_OPTIMIZE_PRAGMA("rtti")
 	#endif
 	
 	template <typename T>
@@ -33,8 +34,8 @@ namespace mfw::stl
 	constexpr inline D runtime_cast(S src) noexcept(false)
 		{ return dynamic_cast<D>(src); }
 	
-	#if MFW_COMPILER_IS(GCC)
-		MFW_RESET_OPTIONS()
+	#if MFW_COMPILER_FLAGGED(UNIX)
+		MFW_POP_OPTIONS()
 	#endif
 #else
 	#error

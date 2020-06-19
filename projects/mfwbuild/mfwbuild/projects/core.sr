@@ -7,19 +7,12 @@
 core : base_project, standards.cpp20, output_shared
 {
 	builder {
-		dependency {
+		dependency_self {
 			linker {
 				options::libraries {
 				$if os == "linux"
 					dl
 				$endif
-				}
-				files {
-			#ifndef __MFW_DELAY_LOADED
-				$if !is_self && os == "linux"
-					"${shared_out_dir}/${dependency_name}.so"
-				$endif
-			#endif
 				}
 			}
 		#ifdef __MFW_DELAY_LOADED
@@ -29,14 +22,28 @@ core : base_project, standards.cpp20, output_shared
 					__MFW_CORE_USING_IMPLIB
 				$endif
 				}
-				files {
-				$if !is_self && os == "linux"
-					"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/asm.S"
-					"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/load.c"
-				$endif
-				}
 			}
 		#endif
+		}
+		dependency : dependency_self
+		dependency_delay {
+		#ifdef __MFW_DELAY_LOADED
+			compiler::files {
+			$if os == "linux"
+				"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/asm.S"
+				"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/load.c"
+			$endif
+			}
+		#endif
+		}
+		dependency_shared::linker {
+			files {
+		#ifndef __MFW_DELAY_LOADED
+			$if os == "linux"
+				"${shared_out_dir}/${dependency_name}.so"
+			$endif
+		#endif
+			}
 		}
 		depends {
 			stl

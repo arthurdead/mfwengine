@@ -21,7 +21,7 @@
 #endif
 
 #ifdef __MFW_CORE_USING_IMPLIB
-extern "C" void __core_tramp_resolve_all();
+extern "C" __attribute__((__visibility__("internal"))) void __core_tramp_resolve_all();
 #endif
 
 #ifdef __MFW_APPLICATION_CORE_AVAILABLE
@@ -206,7 +206,7 @@ namespace mfw::core
 			void *core_dl{core_lib_dlopen()};
 			if(core_dl) {
 				#ifdef __MFW_CORE_USING_IMPLIB
-				__core_tramp_resolve_all();
+				//__core_tramp_resolve_all();
 				#else
 				constexpr const char *core_load_library_name{"_ZN3mfw4core7library12load_libraryERKNS0_10searchpathE"};
 				core_load_library_ptr = reinterpret_cast<core_load_library_t>(dlsym(core_dl, core_load_library_name));

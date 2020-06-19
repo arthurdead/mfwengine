@@ -138,12 +138,22 @@ base_project {
 		}
 		options {
 			nologo
-		$if os == "linux"
+		$if is_unix_linker
+			$if os == "linux"
 			"-dynamic-linker" "/lib64/ld-linux-x86-64.so.2"
+			$endif
 			"--hash-style=gnu"
 			"-m" "elf_x86_64"
 			"--build-id"
 			"--export-dynamic"
+			$if tool_name == "ld"
+			"--exclude-all-symbols"
+			$endif
+			"--error-unresolved-symbols"
+			"--as-needed"
+			"--no-export-dynamic"
+			"--no-allow-shlib-undefined"
+			//"--no-undefined"
 		$endif
 		}
 	}
@@ -180,10 +190,8 @@ output_static {
 	}
 	builder::dependency::linker {
 		files {
-		$if !is_self
-			$if os == "linux"
+		$if os == "linux"
 			"${base_dependency_folder}/${archiver}_${platform}_${os}_${configuration}/${dependency_name}.a"
-			$endif
 		$endif
 		}
 	}
@@ -192,10 +200,8 @@ output_static {
 output_shared {
 	builder::dependency::linker {
 		files {
-		$if !is_self
-			$if os == "linux"
+		$if os == "linux"
 			//"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/${dependency_name}.so"
-			$endif
 		$endif
 		}
 	}

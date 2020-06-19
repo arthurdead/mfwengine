@@ -9,7 +9,7 @@
 
 namespace mfw::core
 {
-	class commandline_internal : public commandline, interfaces::global_initializer
+	class commandline_internal final : public commandline, interfaces::global_initializer
 	{
 	public:
 		static commandline_internal &instance();

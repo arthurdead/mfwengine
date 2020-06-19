@@ -17,12 +17,12 @@ namespace mfw::engine
 
 	mfw::engine::engine::engine()
 	{
-		MFW_DEBUGBREAK();
+		//MFW_DEBUGBREAK();
 	}
 
 	core::exit_status mfw::engine::engine::initialize()
 	{
-		MFW_DEBUGBREAK();
+		//MFW_DEBUGBREAK();
 		
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 

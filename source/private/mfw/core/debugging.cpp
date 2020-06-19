@@ -44,7 +44,7 @@ namespace mfw::core
 
 	namespace __debugging_internal
 	{
-		class symbol_helper : interfaces::global_initializer
+		class symbol_helper final : interfaces::global_initializer
 		{
 		public:
 			static symbol_helper &instance();

@@ -31,87 +31,99 @@ extern "C" {
     } \
   } while(0)
 
-#define CALL_USER_CALLBACK $has_dlopen_callback
-#define NO_DLOPEN $no_dlopen
-#define LAZY_LOAD $lazy_load
+#define __STRINGIFY(x) #x
+#define STRINGIFY(x) __STRINGIFY(x)
 
-static void *lib_handle;
-#if !NO_DLOPEN
-#if CALL_USER_CALLBACK
-extern void *$dlopen_callback(const char *lib_name);
+#ifndef _${lib_suffix}_CALL_USER_CALLBACK
+#define _${lib_suffix}_CALL_USER_CALLBACK $has_dlopen_callback
+#endif
+#ifndef _${lib_suffix}_USER_CALLBACK
+#define _${lib_suffix}_USER_CALLBACK $dlopen_callback
+#endif
+#ifndef _${lib_suffix}_NO_DLOPEN
+#define _${lib_suffix}_NO_DLOPEN $no_dlopen
+#endif
+#ifndef _${lib_suffix}_LAZY_LOAD
+#define _${lib_suffix}_LAZY_LOAD $lazy_load
 #endif
 
-static int is_lib_loading;
+static __attribute__((__visibility__("internal"))) void *_${lib_suffix}_lib_handle;
+#if !_${lib_suffix}_NO_DLOPEN
+#if _${lib_suffix}_CALL_USER_CALLBACK
+extern void *_${lib_suffix}_USER_CALLBACK(const char *lib_name);
+#endif
 
-static void *load_library() {
-  if(lib_handle)
-    return lib_handle;
+static __attribute__((__visibility__("internal"))) int _${lib_suffix}_is_lib_loading;
 
-  is_lib_loading = 1;
+static __attribute__((__visibility__("internal"))) void *_${lib_suffix}_load_library() {
+  if(_${lib_suffix}_lib_handle)
+    return _${lib_suffix}_lib_handle;
+
+  _${lib_suffix}_is_lib_loading = 1;
 
   // TODO: dlopen and users callback must be protected w/ critical section (to avoid dlopening lib twice)
-#if CALL_USER_CALLBACK
-  lib_handle = $dlopen_callback("$load_name");
-  CHECK(lib_handle, "callback '$dlopen_callback' failed to load library");
+#if _${lib_suffix}_CALL_USER_CALLBACK
+  _${lib_suffix}_lib_handle = _${lib_suffix}_USER_CALLBACK("$load_name");
+  CHECK(_${lib_suffix}_lib_handle, "callback '" STRINGIFY(_${lib_suffix}_USER_CALLBACK) "' failed to load library");
 #else
-  lib_handle = dlopen("$load_name", RTLD_LAZY | RTLD_GLOBAL);
-  CHECK(lib_handle, "failed to load library: %s", dlerror());
+  _${lib_suffix}_lib_handle = dlopen("$load_name", RTLD_LAZY | RTLD_GLOBAL);
+  CHECK(_${lib_suffix}_lib_handle, "failed to load library: %s", dlerror());
 #endif
 
-  is_lib_loading = 0;
+  _${lib_suffix}_is_lib_loading = 0;
 
-  return lib_handle;
+  return _${lib_suffix}_lib_handle;
 }
 #endif
 
-#if !NO_DLOPEN && !LAZY_LOAD
-static void __attribute__((constructor)) load_lib() {
-  load_library();
+#if !_${lib_suffix}_NO_DLOPEN && !_${lib_suffix}_LAZY_LOAD
+static __attribute__((__visibility__("internal"), constructor)) void _${lib_suffix}_load() {
+  _${lib_suffix}_load_library();
 }
 #endif
 
-#if !NO_DLOPEN
-static void __attribute__((destructor)) unload_lib() {
-  if(lib_handle)
-    dlclose(lib_handle);
+#if !_${lib_suffix}_NO_DLOPEN
+static __attribute__((__visibility__("internal"), destructor)) void _${lib_suffix}_unload() {
+  if(_${lib_suffix}_lib_handle)
+    dlclose(_${lib_suffix}_lib_handle);
 }
 #endif
 
 // TODO: convert to single 0-separated string
-static const char *const sym_names[] = {
+static __attribute__((__visibility__("internal"))) const char *const _${lib_suffix}_sym_names[] = {
   $sym_names
   0
 };
 
-extern void *_${lib_suffix}_tramp_table[];
+extern __attribute__((__visibility__("internal"))) void *_${lib_suffix}_tramp_table[];
 
 // Can be sped up by manually parsing library symtab...
-void _${lib_suffix}_tramp_resolve(int i)
+__attribute__((__visibility__("internal"))) void _${lib_suffix}_tramp_resolve(int i)
 {
-  assert((unsigned)i + 1 < sizeof(sym_names) / sizeof(sym_names[0]));
+  assert((unsigned)i + 1 < sizeof(_${lib_suffix}_sym_names) / sizeof(_${lib_suffix}_sym_names[0]));
 
-#if !NO_DLOPEN
-  CHECK(!is_lib_loading, "library function '%s' called during library load", sym_names[i]);
+#if !_${lib_suffix}_NO_DLOPEN
+  CHECK(!_${lib_suffix}_is_lib_loading, "library function '%s' called during library load", _${lib_suffix}_sym_names[i]);
 #endif
 
   void *h = 0;
-#if !NO_DLOPEN && LAZY_LOAD
-  h = load_library();
+#if !_${lib_suffix}_NO_DLOPEN && _${lib_suffix}_LAZY_LOAD
+  h = _${lib_suffix}_load_library();
 #else
-  h = lib_handle;
-  CHECK(h, "failed to resolve symbol '%s', library failed to load", sym_names[i]);
+  h = _${lib_suffix}_lib_handle;
+  CHECK(h, "failed to resolve symbol '%s', library failed to load", _${lib_suffix}_sym_names[i]);
 #endif
 
   // Dlsym is thread-safe so don't need to protect it.
-  _${lib_suffix}_tramp_table[i] = dlsym(h, sym_names[i]);
-  CHECK(_${lib_suffix}_tramp_table[i], "failed to resolve symbol '%s'", sym_names[i]);
+  _${lib_suffix}_tramp_table[i] = dlsym(h, _${lib_suffix}_sym_names[i]);
+  CHECK(_${lib_suffix}_tramp_table[i], "failed to resolve symbol '%s'", _${lib_suffix}_sym_names[i]);
 }
 
 // Helper for user to resolve all symbols
-void _${lib_suffix}_tramp_resolve_all(void)
+__attribute__((__visibility__("internal"))) void _${lib_suffix}_tramp_resolve_all(void)
 {
   size_t i;
-  for(i = 0; i + 1 < sizeof(sym_names) / sizeof(sym_names[0]) - 1; ++i) {
+  for(i = 0; i + 1 < sizeof(_${lib_suffix}_sym_names) / sizeof(_${lib_suffix}_sym_names[0]) - 1; ++i) {
     _${lib_suffix}_tramp_resolve(i);
   }
 }

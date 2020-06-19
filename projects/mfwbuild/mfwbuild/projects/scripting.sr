@@ -3,7 +3,7 @@
 scripting : base_project, standards.cpp20, output_shared
 {
 	builder::depends {
-		core,
+		core::shared,
 		stl
 	}
 }

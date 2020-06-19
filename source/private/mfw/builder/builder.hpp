@@ -123,8 +123,8 @@ namespace mfw::builder
 
 		static void generate_pch(const pstring &file, const tool_reference &tool, const project_reference &project, const solution_reference &solution);
 
-		bool parse_dependency(project_reference &project, const project_reference &other);
-		bool parse_dependencies(project_reference &project, const project_reference &other);
+		bool parse_dependency(project_reference &project, const project_reference &other, const ucstring_view &name);
+		bool parse_dependencies(project_reference &project, const project_reference &other, const ucstring_view &name);
 		bool parse_builder_section(const builder_section_reference &sec, project_reference &project, solution_reference &solution);
 
 		bool parse_plugin(const ucstring &name);

@@ -2,16 +2,16 @@
 
 base_project {
 	builder {
-		dependency::compiler {
+		dependency_self::compiler {
 			options::preprocessor_definitions {
 				"MFW_DEPENDS_ON_${dependency_name_upper}"
 			}
-			files {
-			$if !is_self
+		}
+		dependency : dependency_self {
+			compiler::files {
 				"public/${dependency_name}" filter {
 					"${source_folder}/public/mfw/${dependency_name}/**/*.*"
 				}
-			$endif
 			}
 		}
 		macros {
@@ -68,16 +68,24 @@ base_project {
 	}
 }
 
-output_embedded::builder::dependency::compiler::options::preprocessor_definitions {
-	"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EMBEDDED"
+output_embedded::builder {
+	dependency|dependency_self {
+		compiler::options::preprocessor_definitions {
+			"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EMBEDDED"
+		}
+	}
 }
 
 output_shared {
 	compiler::options::preprocessor_definitions {
 		_SHARED,SHARED
 	}
-	builder::dependency::compiler::options::preprocessor_definitions {
-		"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_SHARED"
+	builder {
+		dependency|dependency_self {
+			compiler::options::preprocessor_definitions {
+				"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_SHARED"
+			}
+		}
 	}
 }
 
@@ -85,8 +93,12 @@ output_static {
 	compiler::options::preprocessor_definitions {
 		_LIB,LIB
 	}
-	builder::dependency::compiler::options::preprocessor_definitions {
-		"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_STATIC"
+	builder {
+		dependency|dependency_self {
+			compiler::options::preprocessor_definitions {
+				"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_STATIC"
+			}
+		}
 	}
 }
 
@@ -94,8 +106,12 @@ output_executable_console {
 	compiler::options::preprocessor_definitions {
 		_CONSOLE,CONSOLE
 	}
-	builder::dependency::compiler::options::preprocessor_definitions {
-		"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE"
+	builder {
+		dependency|dependency_self {
+			compiler::options::preprocessor_definitions {
+				"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE"
+			}
+		}
 	}
 }
 
@@ -103,8 +119,12 @@ output_executable_windows {
 	compiler::options::preprocessor_definitions {
 		_WINDOWS,WINDOWS
 	}
-	builder::dependency::compiler::options::preprocessor_definitions {
-		"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE_WINDOWS"
+	builder {
+		dependency|dependency_self {
+			compiler::options::preprocessor_definitions {
+				"MFW_${dependency_name_upper}_BUILD=MFW_BUILD_EXECUTABLE_WINDOWS"
+			}
+		}
 	}
 }
 

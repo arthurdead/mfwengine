@@ -214,58 +214,117 @@ namespace mfw::core
 			return name;
 		}
 		
-		template <size_t value>
-		static void collect_symbols(const byte *data, const Elf_Shdr_t<value> *section_table, const Elf_Shdr_t<value> *section_dynsym, library::export_vec_t &exports)
+		struct export_collector
 		{
-			__MFW_ELF_TYPE_LOCAL(Sym)
-			__MFW_ELF_TYPE_LOCAL(Shdr)
-			__MFW_ELF_TYPE_LOCAL(Xword)
-			
-			const Elf_Sym *symbol_table{reinterpret_cast<const Elf_Sym *>(data + section_dynsym->sh_offset)};
-			const Elf_Shdr &symbol_name_section{section_table[section_dynsym->sh_link]};
-			const byte *symbol_name_table{reinterpret_cast<const byte *>(data + symbol_name_section.sh_offset)};
-			
-			Elf_Xword symbol_count{section_dynsym->sh_size / section_dynsym->sh_entsize};
-			
-			for(Elf_Xword i{0}; i < symbol_count; i++) {
-				const Elf_Sym &symbol_header{symbol_table[i]};
+			template <size_t value>
+			static void collect_symbols(const byte *data, const Elf_Shdr_t<value> *section_table, const Elf_Shdr_t<value> *section_dynsym, library::exports_flags_t flags, library::export_vec_t &exports)
+			{
+				__MFW_ELF_TYPE_LOCAL(Sym)
+				__MFW_ELF_TYPE_LOCAL(Shdr)
+				__MFW_ELF_TYPE_LOCAL(Xword)
 				
-				MFW_MESSAGE("remove 64 later")
-				int32_t type{ELF64_ST_TYPE(symbol_header.st_info)};
-				int32_t bind{ELF64_ST_BIND(symbol_header.st_info)};
-				int32_t visibility{ELF64_ST_VISIBILITY(symbol_header.st_other)};
-				bool function{type == STT_FUNC};
+				const Elf_Sym *symbol_table{reinterpret_cast<const Elf_Sym *>(data + section_dynsym->sh_offset)};
+				const Elf_Shdr &symbol_name_section{section_table[section_dynsym->sh_link]};
+				const byte *symbol_name_table{reinterpret_cast<const byte *>(data + symbol_name_section.sh_offset)};
 				
-				if((!function && type != STT_OBJECT) ||
-					(bind != STB_GLOBAL && bind != STB_WEAK) ||
-					visibility != STV_DEFAULT) {
-					continue;
-				}
+				Elf_Xword symbol_count{section_dynsym->sh_size / section_dynsym->sh_entsize};
 				
-				if(symbol_header.st_shndx == SHN_UNDEF ||
-					symbol_header.st_shndx == SHN_ABS ||
-					symbol_header.st_shndx == SHN_COMMON ||
-					symbol_header.st_shndx == SHN_XINDEX) {
-					continue;
-				}
+				for(Elf_Xword i{0}; i < symbol_count; i++) {
+					const Elf_Sym &symbol_header{symbol_table[i]};
+					
+					MFW_MESSAGE("remove ELF64_ later")
 
-				ucstring name{get_name_from_table<value>(symbol_name_table, symbol_header.st_name)};
-				if(name.empty()) {
-					continue;
-				}
+					bool valid{false};
 
-				library::export_t &exp{exports.emplace_back()};
-				exp.index = i;
-				exp.name = move(name);
-				exp.function = function;
+					library::exports_flags_t sym_flags{library::exports_flags_t::none};
+
+					int32_t visibility{ELF64_ST_VISIBILITY(symbol_header.st_other)};
+					if(bool_cast(flags & library::exports_flags_t::hidden)) {
+						if(visibility == STV_HIDDEN) {
+							sym_flags |= library::exports_flags_t::hidden;
+							valid = true;
+						}
+					}
+					if(bool_cast(flags & library::exports_flags_t::public_)) {
+						if(visibility == STV_DEFAULT) {
+							sym_flags |= library::exports_flags_t::public_;
+							valid = true;
+						}
+					}
+					if(!valid) {
+						continue;
+					}
+					
+					valid = false;
+
+					int32_t type{ELF64_ST_TYPE(symbol_header.st_info)};
+					if(bool_cast(flags & library::exports_flags_t::functions)) {
+						if(type == STT_FUNC) {
+							sym_flags |= library::exports_flags_t::functions;
+							valid = true;
+						}
+					}
+					if(bool_cast(flags & library::exports_flags_t::objects)) {
+						if(type == STT_OBJECT) {
+							sym_flags |= library::exports_flags_t::objects;
+							valid = true;
+						}
+					}
+					if(!valid) {
+						continue;
+					}
+
+					valid = false;
+
+					int32_t bind{ELF64_ST_BIND(symbol_header.st_info)};
+					if(bool_cast(flags & library::exports_flags_t::global)) {
+						if(bind == STB_GLOBAL) {
+							sym_flags |= library::exports_flags_t::global;
+							valid = true;
+						}
+					}
+					if(bool_cast(flags & library::exports_flags_t::weak)) {
+						if(bind == STB_WEAK) {
+							sym_flags |= library::exports_flags_t::weak;
+							valid = true;
+						}
+					}
+					if(bool_cast(flags & library::exports_flags_t::local)) {
+						if(bind == STB_LOCAL) {
+							sym_flags |= library::exports_flags_t::local;
+							valid = true;
+						}
+					}
+					if(!valid) {
+						continue;
+					}
+					
+					if(symbol_header.st_shndx == SHN_UNDEF ||
+						symbol_header.st_shndx == SHN_ABS ||
+						symbol_header.st_shndx == SHN_COMMON ||
+						symbol_header.st_shndx == SHN_XINDEX) {
+						continue;
+					}
+
+					ucstring name{get_name_from_table<value>(symbol_name_table, symbol_header.st_name)};
+					if(name.empty()) {
+						continue;
+					}
+
+					library::export_t &exp{exports.emplace_back()};
+					exp.index_ = i;
+					exp.name_ = move(name);
+					exp.flags = sym_flags;
+					exp.value_ = symbol_header.st_value;
+				}
 			}
-		}
+		};
 	#endif
 	
 	#if MFW_OS_IS(LINUX)
 		template <size_t value>
 	#endif
-		static bool get_library_exports(const byte *data, library::export_vec_t &exports, bool file)
+		static bool get_library_exports(const byte *data, library::export_vec_t &exports, library::exports_flags_t flags)
 		{
 			if(!data) {
 				return false;
@@ -290,39 +349,40 @@ namespace mfw::core
 			const Elf_Ehdr &hdr{*reinterpret_cast<const Elf_Ehdr *>(data)};
 			
 			if(hdr.e_type != ET_EXEC &&
-				hdr.e_type != ET_DYN) {
+				hdr.e_type != ET_DYN &&
+				hdr.e_type != ET_REL) {
 				return false;
 			}
 			
 			const Elf_Shdr *section_table{reinterpret_cast<const Elf_Shdr *>(data + hdr.e_shoff)};
 			
-			const Elf_Shdr *section_dynsym{nullptr};
+			//const Elf_Shdr *section_dynsym{nullptr};
 			const Elf_Shdr *section_sym{nullptr};
 			
 			for(Elf_Half i{0}; i < hdr.e_shnum; i++) {
 				const Elf_Shdr &section_header{section_table[i]};
 				
-				if(section_header.sh_type == SHT_DYNSYM) {
+				/*if(section_header.sh_type == SHT_DYNSYM) {
 					section_dynsym = &section_header;
-				} else if(section_header.sh_type == SHT_SYMTAB) {
+				} else */if(section_header.sh_type == SHT_SYMTAB) {
 					section_sym = &section_header;
 				}
 				
-				if(section_dynsym && section_sym) {
+				if(/*section_dynsym && */section_sym) {
 					break;
 				}
 			}
 			
-			if(!section_dynsym && !section_sym) {
+			if(/*!section_dynsym &&*/ !section_sym) {
 				return false;
 			}
 			
-			if(section_dynsym) {
-				collect_symbols<value>(data, section_table, section_dynsym, exports);
-			}
+			/*if(section_dynsym) {
+				export_collector::collect_symbols<value>(data, section_table, section_dynsym, flags, exports);
+			}*/
 			
 			if(section_sym) {
-				//collect_symbols<value>(data, section_table, section_sym, exports);
+				export_collector::collect_symbols<value>(data, section_table, section_sym, flags, exports);
 			}
 			
 			return true;
@@ -368,7 +428,11 @@ namespace mfw::core
 		}
 	}
 	
-	MFW_CORE_API bool MFW_CORE_CALL library::get_library_exports(const searchpath &search, export_vec_t &exports)
+	MFW_CORE_API bool MFW_CORE_CALL library::get_library_exports(const searchpath &search, export_vec_t &exports
+#if MFW_OS_IS(LINUX)
+		,exports_flags_t flags
+#endif
+	)
 	{
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 		
@@ -391,18 +455,18 @@ namespace mfw::core
 		}
 		
 		if(code[EI_CLASS] == ELFCLASS32) {
-			if(!__library_internal::get_library_exports<ELFCLASS32>(data, exports, true)) {
+			if(!__library_internal::get_library_exports<ELFCLASS32>(data, exports, flags)) {
 				return false;
 			}
 		} else if(code[EI_CLASS] == ELFCLASS64) {
-			if(!__library_internal::get_library_exports<ELFCLASS64>(data, exports, true)) {
+			if(!__library_internal::get_library_exports<ELFCLASS64>(data, exports, flags)) {
 				return false;
 			}
 		} else {
 			return false;
 		}
 	#elif MFW_OS_IS(WINDOWS)
-		if(!__library_internal::get_library_exports(data, exports, true)) {
+		if(!__library_internal::get_library_exports(data, exports)) {
 			return false;
 		}
 	#else
@@ -419,7 +483,7 @@ namespace mfw::core
 		}
 
 		const export_t &info{exports[index]};
-		return info.name;
+		return info.name();
 	}
 
 	MFW_CORE_API const void * MFW_CORE_CALL library::symbol(const ucstring_view &name) const
@@ -429,8 +493,9 @@ namespace mfw::core
 		}
 
 		for(const export_vec_t::value_type &it : exports) {
-			if(it.name == name) {
-				return it.ptr;
+			if(it.name() == name) {
+				//return it.ptr;
+				return nullptr;
 			}
 		}
 
@@ -444,7 +509,8 @@ namespace mfw::core
 		}
 
 		const export_t &info{exports[index]};
-		return info.ptr;
+		//return info.ptr;
+		return nullptr;
 	}
 
 	MFW_CORE_API size_t MFW_CORE_CALL library::symbol_count() const
@@ -547,7 +613,7 @@ namespace mfw::core
 		#error
 	#endif
 
-		if(!__library_internal::get_library_exports
+		/*if(!__library_internal::get_library_exports
 	#if MFW_OS_IS(LINUX)
 		#if MFW_PROCESSOR_FLAGGED(64BITS)
 		<ELFCLASS64>
@@ -559,7 +625,7 @@ namespace mfw::core
 	#endif
 		(reinterpret_cast<const byte *>(handle()), exports, false)) {
 			return false;
-		}
+		}*/
 
 		return true;
 	}

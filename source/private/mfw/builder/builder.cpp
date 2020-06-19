@@ -81,13 +81,44 @@ namespace mfw::builder
 			const ucstring &path{list_symbols->get_string()};
 			
 			core::library::export_vec_t exports{};
-			if(!core::library::get_library_exports({path}, exports)) {
+
+			core::library::exports_flags_t flags{core::library::exports_flags_t::all};
+
+			if(!core::library::get_library_exports({path}, exports, flags)) {
 				log_builder().error(u8"invalid file"_sv);
 				return core::exit_status::fatal;
 			}
 			
 			for(const core::library::export_t &sym : exports) {
-				log_builder().info(sym.name);
+				ucstring flags_str{};
+				if(sym.function()) {
+					flags_str += u8"function, "_sv;
+				} else if(sym.object()) {
+					flags_str += u8"object, "_sv;
+				}
+
+				if(sym.public_()) {
+					flags_str += u8"public, "_sv;
+				} else if(sym.hidden()) {
+					flags_str += u8"hidden, "_sv;
+				}
+
+				if(sym.weak()) {
+					flags_str += u8"weak, "_sv;
+				} else if(sym.local()) {
+					flags_str += u8"local, "_sv;
+				} else if(sym.global()) {
+					flags_str += u8"global, "_sv;
+				}
+
+				flags_str.erase(flags_str.cend()-2, flags_str.cend());
+
+				const ucstring &name{sym.name()};
+
+				ucstring unmangled_name{};
+				core::undecorate(name, unmangled_name);
+
+				log_builder().info(u8"{} [{}]\n\t{}"_sv, name, flags_str, unmangled_name);
 			}
 			
 			return core::exit_status::success;
@@ -587,28 +618,7 @@ namespace mfw::builder
 	bool builder::process_dependency(const core::serializable &src, core::serializable &dst, bool self)
 	{
 		for(const core::serializable &it : src) {
-			ucstring condition{it.get_condition()};
-			
-			if(!condition.empty()) {
-				MFW_MESSAGE("this is really sad i need to make a expression optmizer")
-				if(self) {
-					replace_all(condition, u8"is_self"_sv, u8"true"_sv);
-				} else {
-					replace_all(condition, u8"is_self"_sv, u8"false"_sv);
-				}
-				if(condition == u8"false"_sv ||
-					condition.find(u8"!true"_sv) != ucstring::npos) {
-					continue;
-				} else if(condition == u8"true"_sv ||
-							condition == u8"!false"_sv) {
-					condition.clear();
-				} else {
-					replace_all(condition, u8"!false && "_sv, {});
-					if(replace_all(condition, u8"(!false) && ("_sv, {})) {
-						condition.pop_back();
-					}
-				}
-			}
+			const ucstring &condition{it.get_condition()};
 			
 			ucstring name{it.get_name()};
 			replace_vars(name);
@@ -627,14 +637,14 @@ namespace mfw::builder
 		return true;
 	}
 
-	bool builder::parse_dependency(project_reference &project, const project_reference &other)
+	bool builder::parse_dependency(project_reference &project, const project_reference &other, const ucstring_view &name)
 	{
 		bool self{&project == &other};
 		
 		const builder_section_reference *sec{other.builder_section()};
 		if(sec) {
 			MFW_MESSAGE("remove dependency later")
-			const core::serializable *dependency{sec->get_child(u8"dependency"_sv)};
+			const core::serializable *dependency{sec->get_child(name)};
 			if(dependency) {
 				ucstring other_name{other.get_name()};
 				add_variable(u8"dependency_name"_s, other_name);
@@ -653,9 +663,9 @@ namespace mfw::builder
 		return true;
 	}
 
-	bool builder::parse_dependencies(project_reference &project, const project_reference &other)
+	bool builder::parse_dependencies(project_reference &project, const project_reference &other, const ucstring_view &name)
 	{
-		if(!parse_dependency(project, other)) {
+		if(!parse_dependency(project, other, name)) {
 			return false;
 		}
 		
@@ -666,7 +676,7 @@ namespace mfw::builder
 			if(name == proj_name) {
 				continue;
 			}
-			if(!parse_dependencies(project, *it)) {
+			if(!parse_dependencies(project, *it, name)) {
 				return false;
 			}
 		}
@@ -689,7 +699,7 @@ namespace mfw::builder
 	bool builder::parse_builder_section(const builder_section_reference &sec, project_reference &project, solution_reference &solution)
 	{
 		if(!project.loaded_from_cache_) {
-			if(!parse_dependency(project, project)) {
+			if(!parse_dependency(project, project, u8"dependency_self"_sv)) {
 				return false;
 			}
 		}
@@ -713,8 +723,15 @@ namespace mfw::builder
 				} else {
 					project.depends.emplace_back(other);
 					if(!project.loaded_from_cache_) {
-						if(!parse_dependencies(project, *other)) {
+						if(!parse_dependencies(project, *other, u8"dependency"_sv)) {
 							return false;
+						}
+						for(const core::serializable &child : it) {
+							ucstring tmp{u8"dependency_"_s};
+							tmp += child.get_name();
+							if(!parse_dependencies(project, *other, tmp)) {
+								return false;
+							}
 						}
 					}
 				}

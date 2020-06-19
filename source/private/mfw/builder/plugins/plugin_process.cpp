@@ -100,70 +100,16 @@ namespace mfw::builder
 			include_what_you_use,
 		};
 		
-		static bool get_lib_dirs(const pstring &tool_path, ucstring &compiler_lib_dirs, bool only_first, compiler_output_e output_type)
+		static bool __get_lib_dirs_impl(const pstring &tool_path, ucstring &compiler_lib_dirs, bool only_first)
 		{
-			bool emscripten{output_type == compiler_output_e::emscripten};
-			bool include_what_you_use{output_type == compiler_output_e::include_what_you_use};
-			bool clang{
-				output_type == compiler_output_e::clang ||
-				emscripten ||
-				include_what_you_use
-			};
-			
-			core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
-			
-			pstring temp_file_path{};
-			
-			if(emscripten) {
-				temp_file_path = filesys.resolve({u8"__lib_search_dir.cpp"_p, u8"process"_sv}, false);
-				
-				core::interfaces::file *file_handle{filesys.open_file({temp_file_path}, core::open_flags::all)};
-				if(!file_handle) {
-					return false;
-				}
-				
-				file_handle->write(u8"int main(int argc, char **argv) { return 0; }"_sv);
-				
-				delete file_handle;
-			}
-			
 			core::process proc{};
 			proc.set_path(tool_path);
-			ucstring args{};
-			if(clang && only_first) {
-				if(emscripten) {
-					args += u8'"';
-					args += as_string<ucstring>(temp_file_path);
-					args += u8"\" "_sv;
-				}
-				args += u8"-print-resource-dir"_sv;
-			} else {
-				args = u8"-print-search-dirs"_sv;
-			}
-			proc.set_args(args);
+			proc.set_args(u8"-print-search-dirs"_s);
 			proc.start(true);
-			
-			if(emscripten) {
-				filesys.remove({temp_file_path});
-			}
 			
 			const ucstring &output{proc.output()};
 			if(output.empty() || proc.exit_code() != 0) {
 				return false;
-			}
-			
-			if(clang && only_first) {
-				if(output_type == compiler_output_e::clang) {
-					compiler_lib_dirs = output;
-				} else if(emscripten && output.find(u8"warning"_sv) != ucstring::npos) {
-					size_t start{output.find(u8'\n')};
-					size_t end{output.find(u8'\n', start)};
-					compiler_lib_dirs = output.substr(start, (end-start));
-				} else if(include_what_you_use || emscripten) {
-					size_t end{output.find(u8'\n')};
-					compiler_lib_dirs = output.substr(0, end);
-				}
-				return true;
 			}
 			
 			constexpr ucstring_view find_str{u8"libraries: ="_sv};
@@ -210,11 +156,84 @@ namespace mfw::builder
 			
 			return true;
 		}
+
+		static bool get_lib_dirs(const pstring &tool_path, ucstring &compiler_lib_dirs)
+		{
+			return __get_lib_dirs_impl(tool_path, compiler_lib_dirs, false);
+		}
+		
+		static bool get_lib_dir(const pstring &tool_path, ucstring &compiler_lib_dirs, compiler_output_e output_type)
+		{
+			bool emscripten{output_type == compiler_output_e::emscripten};
+			bool include_what_you_use{output_type == compiler_output_e::include_what_you_use};
+			bool clang{
+				output_type == compiler_output_e::clang ||
+				emscripten ||
+				include_what_you_use
+			};
+			
+			if(clang) {
+				core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+				
+				pstring temp_file_path{};
+				
+				if(emscripten) {
+					temp_file_path = filesys.resolve({u8"__lib_search_dir.cpp"_p, u8"process"_sv}, false);
+					
+					core::interfaces::file *file_handle{filesys.open_file({temp_file_path}, core::open_flags::all)};
+					if(!file_handle) {
+						return false;
+					}
+					
+					file_handle->write(u8"int main(int argc, char **argv) { return 0; }"_sv);
+					
+					delete file_handle;
+				}
+				
+				core::process proc{};
+				proc.set_path(tool_path);
+				ucstring args{};
+				if(emscripten) {
+					args += u8'"';
+					args += as_string<ucstring>(temp_file_path);
+					args += u8"\" "_sv;
+				}
+				args += u8"-print-resource-dir"_sv;
+				proc.set_args(args);
+				proc.start(true);
+				
+				if(emscripten) {
+					filesys.remove({temp_file_path});
+				}
+				
+				const ucstring &output{proc.output()};
+				if(output.empty() || proc.exit_code() != 0) {
+					return false;
+				}
+				
+				if(output_type == compiler_output_e::clang) {
+					compiler_lib_dirs = output;
+				} else if(emscripten && output.find(u8"warning"_sv) != ucstring::npos) {
+					size_t start{output.find(u8'\n')};
+					size_t end{output.find(u8'\n', start)};
+					compiler_lib_dirs = output.substr(start, (end-start));
+				} else if(include_what_you_use || emscripten) {
+					size_t end{output.find(u8'\n')};
+					compiler_lib_dirs = output.substr(0, end);
+				}
+			} else {
+				if(!__get_lib_dirs_impl(tool_path, compiler_lib_dirs, true)) {
+					return false;
+				}
+			}
+			
+			return true;
+		}
 		
 		static bool get_lib_dir(const ucstring &name, ucstring &compiler_lib_dir, compiler_output_e output_type)
 		{
 			pstring tool_path{core::process::get_path(name)};
-			return get_lib_dirs(tool_path, compiler_lib_dir, true, output_type);
+			return get_lib_dir(tool_path, compiler_lib_dir, output_type);
 		}
 		
 		static void collect_dirs(size_t start, size_t end, const ucstring &output, ucstring &compiler_inc_dirs)
@@ -348,17 +367,7 @@ namespace mfw::builder
 		}
 		
 		if(info & compiler_info_t::flags_t::unix_) {
-			__plugin_process_internal::compiler_output_e output_type{__plugin_process_internal::compiler_output_e::default_};
-			MFW_MESSAGE("remove this later")
-			if(tool_path.native().find("em++"s) != npstring::npos ||
-				tool_path.native().find("emcc"s) != npstring::npos) {
-				output_type = __plugin_process_internal::compiler_output_e::emscripten;
-			} else if(tool_path.native().find("include-what-you-use"s) != npstring::npos) {
-				output_type = __plugin_process_internal::compiler_output_e::include_what_you_use;
-			} else if(tool_path.native().find("clang"s) != npstring::npos) {
-				output_type = __plugin_process_internal::compiler_output_e::clang;
-			}
-			if(!__plugin_process_internal::get_lib_dirs(tool_path, compiler_lib_dirs, false, output_type)) {
+			if(!__plugin_process_internal::get_lib_dirs(tool_path, compiler_lib_dirs)) {
 				return false;
 			}
 			/*if(!__plugin_process_internal::get_inc_dirs(tool_path, compiler_inc_dirs, true)) {
@@ -978,46 +987,41 @@ namespace mfw::builder
 			return true;
 		}
 		
-		struct sym_type_t
-		{
-			sym_type_t() = default;
-			sym_type_t(const sym_type_t &) = default;
-			sym_type_t(sym_type_t &&) = default;
-			
-			sym_type_t(const ucstring &str)
-				: name{str} {}
-				
-			bool operator==(const ucstring &str) const
-			{ return name == str; }
-			bool operator!=(const ucstring &str) const
-			{ return name != str; }
-			
-			operator const ucstring &() const { return name; }
-			
-			ucstring name{};
-			bool func{true};
-		};
-		
-		vector<sym_type_t> symbols{};
+		using sym_list_t = unordered_map<ucstring, bool>;
+		sym_list_t symbols{};
 		if(vars.symbols && !vars.has_glob) {
 			for(const tool_info_t::implib_t::symbol_name_t &rem : *vars.symbols) {
-				sym_type_t &sym{symbols.emplace_back()};
-				sym.name = rem.name;
-				sym.func = rem.function;
+				symbols.insert_or_assign(rem.name, rem.function);
 			}
 		}
 		
 		if((do_load || do_asm) && symbols.empty()) {
 			core::library::export_vec_t exports{};
-			if(!core::library::get_library_exports({path}, exports) || exports.empty()) {
+		#if MFW_OS_IS(LINUX)
+			core::library::exports_flags_t flags{
+				core::library::exports_flags_t::functions|
+				core::library::exports_flags_t::objects|
+				core::library::exports_flags_t::public_|
+				core::library::exports_flags_t::hidden|
+				core::library::exports_flags_t::local|
+				core::library::exports_flags_t::weak|
+				core::library::exports_flags_t::global
+			};
+			if(!core::library::get_library_exports({path}, exports, flags) || exports.empty()) {
 				log().error(u8"implib invalid file"_sv);
 				return false;
 			}
+		#else
+			#error
+		#endif
 			for(const core::library::export_t &sym : exports) {
-				const ucstring &name{sym.name};
-				if(sym.function) {
-					if(name.find(u8"_init"_sv) != ucstring::npos ||
-						name.find(u8"_fini"_sv) != ucstring::npos) {
+				const ucstring &name{sym.name()};
+				if(sym.function()) {
+					if(!sym.public_() || !(sym.local() || sym.global())) {
+						continue;
+					}
+				} else if(sym.object()) {
+					if(!(sym.public_() || sym.hidden()) || !(sym.local() || sym.weak())) {
 						continue;
 					}
 				}
@@ -1047,9 +1051,7 @@ namespace mfw::builder
 				if(!valid) {
 					continue;
 				} else {
-					sym_type_t &sym_type{symbols.emplace_back()};
-					sym_type.name = name;
-					sym_type.func = sym.function;
+					symbols.insert_or_assign(name, sym.function());
 				}
 			}
 		}
@@ -1078,15 +1080,15 @@ namespace mfw::builder
 			replace_all(asm_str, u8"$$"_sv, u8"$"_sv);
 			
 			size_t i{0};
-			for(const sym_type_t &sym : symbols) {
-				if(!sym.func) {
+			for(const sym_list_t::value_type &sym : symbols) {
+				if(!sym.second) {
 					continue;
 				}
 				size_t offset{i * ptr_size};
 				ucstring sym_tmp{trampoline_fmt};
 				replace_all(sym_tmp, u8"$number"_sv, as_string<ucstring>(i));
 				replace_all(sym_tmp, u8"$offset"_sv, as_string<ucstring>(offset));
-				replace_all(sym_tmp, u8"$sym"_sv, sym.name);
+				replace_all(sym_tmp, u8"$sym"_sv, sym.first);
 				asm_str += move(sym_tmp);
 				i++;
 			}
@@ -1115,31 +1117,144 @@ namespace mfw::builder
 			replace_all(asm_str, u8"$lazy_load"_sv, vars.lazy_load ? u8"1"_sv : u8"0"_sv);
 			replace_all(asm_str, u8"$load_name"_sv, as_string<ucstring>(filename));
 			ucstring sym_names{};
-			ucstring vtable_names{};
-			for(const sym_type_t &sym : symbols) {
-				if(!sym.func) {
-					MFW_MESSAGE("TODO!!!!")
-					/*
+			struct vtable_info_t {
+				ucstring typeinfo_name_sym{};
+				ucstring typeinfo_sym{};
+				ucstring vtable_sym{};
+			};
+			using vtables_t = unordered_map<ucstring, vtable_info_t>;
+			vtables_t vtables{};
+			for(const sym_list_t::value_type &sym : symbols) {
+				const ucstring &name{sym.first};
+				if(!sym.second) {
 					ucstring unmangled_name{};
-					core::undecorate(sym.name, unmangled_name);
-					
-					if(unmangled_name.find(u8"typeinfo name for "_sv) != ucstring::npos) {
-						
-					} else if(unmangled_name.find(u8"typeinfo for "_sv) != ucstring::npos) {
-						
-					} else {
-						MFW_DEBUGBREAK();
+					core::undecorate(name, unmangled_name);
+					if(unmangled_name.empty()) {
+						continue;
 					}
-					*/
+					
+					bool valid{false};
+					bool typeinfo{false};
+					bool vtable{false};
+					bool typeinfo_name{false};
+					
+					ucstring_view find{u8"typeinfo name for "_sv};
+					size_t index{unmangled_name.find(find)};
+					if(index != ucstring::npos) {
+						valid = true;
+						typeinfo_name = true;
+					}
+
+					if(!valid) {
+						find = u8"typeinfo for "_sv;
+						index = unmangled_name.find(find);
+						if(index != ucstring::npos) {
+							valid = true;
+							typeinfo = true;
+						}
+					}
+					
+					if(!valid) {
+						find = u8"vtable for "_sv;
+						index = unmangled_name.find(find);
+						if(index != ucstring::npos) {
+							valid = true;
+							vtable = true;
+						}
+					}
+
+					if(!valid) {
+						continue;
+					}
+
+					index += find.length();
+					ucstring class_name{unmangled_name.substr(index, ucstring::npos)};
+					vtables_t::iterator it{vtables.find(class_name)};
+					if(it == vtables.end()) {
+						it = vtables.emplace(vtables_t::value_type{class_name, {}}).first;
+					}
+
+					if(typeinfo) {
+						it->second.typeinfo_sym = name;
+					} else if(typeinfo_name) {
+						it->second.typeinfo_name_sym = name;
+					} else if(vtable) {
+						it->second.vtable_sym = name;
+					}
 					
 					continue;
 				}
 				sym_names += u8'"';
-				sym_names += sym.name;
+				sym_names += name;
 				sym_names += u8"\",\n  "_sv;
 			}
 			sym_names.erase(sym_names.end()-3, sym_names.end());
 			replace_all(asm_str, u8"$sym_names"_sv, sym_names);
+			ucstring vtable_names{};
+			for(const vtables_t::value_type &it : vtables) {
+				const vtable_info_t &info{it.second};
+				if(!info.vtable_sym.empty()) {
+					vtable_names += u8"extern __attribute__((__visibility__(\"internal\"))) const char "_sv;
+					vtable_names += info.vtable_sym;
+					vtable_names += u8"[];\n"_sv;
+				}
+				if(!info.typeinfo_sym.empty()) {
+					vtable_names += u8"typedef const unsigned char "_sv;
+					vtable_names += info.typeinfo_name_sym;
+					vtable_names += u8"_type[];\n"_sv;
+
+				#define __MFW_VTABLE_NOT_IMPLEMENTED
+				#define __MFW_DISABLE_TYPEINFO
+
+				#ifdef __MFW_VTABLE_NOT_IMPLEMENTED
+					vtable_names += u8"extern "_sv;
+				#endif
+					vtable_names += u8"__attribute__((__visibility__(\"internal\"))) const "_sv;
+					vtable_names += info.typeinfo_name_sym;
+					vtable_names += u8"_type "_sv;
+					vtable_names += info.typeinfo_name_sym;
+				#ifndef __MFW_VTABLE_NOT_IMPLEMENTED
+					vtable_names += u8" = { "_sv;
+					vtable_names += u8" };"_sv;
+				#else
+					vtable_names += u8";\n"_sv;
+				#endif
+
+				#ifndef __MFW_DISABLE_TYPEINFO
+					vtable_names += u8"typedef const struct "_sv;
+					#ifndef __MFW_VTABLE_NOT_IMPLEMENTED
+					vtable_names += u8"{ "_sv;
+					vtable_names += u8" } "_sv;
+					#else
+					vtable_names += u8"{ "_sv;
+					vtable_names += u8" } "_sv;
+					#endif
+					vtable_names += info.typeinfo_sym;
+					vtable_names += u8"_type;\n"_sv;
+
+					#ifdef __MFW_VTABLE_NOT_IMPLEMENTED
+					vtable_names += u8"extern "_sv;
+					#endif
+					vtable_names += u8"__attribute__((__visibility__(\"internal\"))) const "_sv;
+					vtable_names += info.typeinfo_sym;
+					vtable_names += u8"_type "_sv;
+					vtable_names += info.typeinfo_sym;
+					#ifndef __MFW_VTABLE_NOT_IMPLEMENTED
+					vtable_names += u8" = { "_sv;
+					vtable_names += u8"(const char *)&"_sv;
+					vtable_names += info.typeinfo_name_sym;
+					vtable_names += u8" + 0,"_sv;
+					vtable_names += u8" };\n"_sv;
+					#else
+					vtable_names += u8";\n"_sv;
+					#endif
+				#endif
+				}
+				vtable_names += u8'\n';
+			}
+			if(!vtable_names.empty()) {
+				vtable_names.erase(vtable_names.cend()-2, vtable_names.end());
+			}
 			replace_all(asm_str, u8"$vtable_names"_sv, vtable_names);
 			replace_all(asm_str, u8"${lib_suffix}"_sv, lib_suffix);
 			replace_all(asm_str, u8"$$"_sv, u8"$"_sv);

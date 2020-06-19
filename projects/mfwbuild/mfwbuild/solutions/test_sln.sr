@@ -22,8 +22,8 @@ test_sln
 	}
 
 	tools {
-		compiler "em++"
-		linker wasm_ld
-		archiver emar
+		compiler "g++"
+		linker ld_gold
+		archiver gcc_ar
 	}
 }
