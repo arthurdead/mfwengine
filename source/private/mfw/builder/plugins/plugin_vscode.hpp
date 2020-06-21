@@ -111,6 +111,12 @@ namespace mfw::builder
 			json::file cpp_properties{};
 			json::file launch{};
 			json::file tasks{};
+			//json::file parrarelfiles{};
+
+			//void write_files(const pstring &dir, const vector<pstring> &files);
+
+			//using files_t = unordered_map<pstring, vector<pstring>>;
+			//files_t files_map{};
 			
 			void save() override;
 			void write_all() override;
@@ -123,7 +129,7 @@ namespace mfw::builder
 		ptr_vector<json_project_t> json_projects{};
 		json_solution_t solution_json{};
 		
-		bool create_symlink(const core::searchpath &from, const core::searchpath &to, bool dir=false) const;
+		bool create_link(const core::searchpath &from, const core::searchpath &to, bool dir=false, bool hard=false) const;
 		
 		//vector<pstring> symlinks{};
 	};

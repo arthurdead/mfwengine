@@ -3,6 +3,7 @@
 //#define __MFW_ENABLE_IBERTY
 //#define __MFW_ENABLE_ASMJIT
 #define __MFW_DELAY_LOADED
+#define __MFW_ENABLE_IMPLIB
 
 core : base_project, standards.cpp20, output_shared
 {
@@ -15,19 +16,20 @@ core : base_project, standards.cpp20, output_shared
 				$endif
 				}
 			}
-		#ifdef __MFW_DELAY_LOADED
 			compiler {
 				options::preprocessor_definitions {
-				$if !is_self
+				#ifdef __MFW_ENABLE_IMPLIB
 					__MFW_CORE_USING_IMPLIB
-				$endif
+				#endif
+				#ifdef __MFW_DELAY_LOADED
+					__MFW_CORE_IS_DELAY_LOADED
+				#endif
 				}
 			}
-		#endif
 		}
 		dependency : dependency_self
 		dependency_delay {
-		#ifdef __MFW_DELAY_LOADED
+		#ifdef __MFW_ENABLE_IMPLIB
 			compiler::files {
 			$if os == "linux"
 				"${base_dependency_folder}/${linker}_${platform}_${os}_${configuration}/asm.S"
@@ -38,11 +40,9 @@ core : base_project, standards.cpp20, output_shared
 		}
 		dependency_shared::linker {
 			files {
-		#ifndef __MFW_DELAY_LOADED
 			$if os == "linux"
 				"${shared_out_dir}/${dependency_name}.so"
 			$endif
-		#endif
 			}
 		}
 		depends {
@@ -50,7 +50,7 @@ core : base_project, standards.cpp20, output_shared
 		}
 	}
 	linker {
-	#ifdef __MFW_DELAY_LOADED
+	#ifdef __MFW_ENABLE_IMPLIB
 		implib "${intermediary_folder}" {
 			callback "__load_core_lib"
 			symbols {

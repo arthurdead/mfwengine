@@ -1,51 +1,84 @@
 #include <private/mfw/renderer/renderer.hpp>
 #include <private/mfw/renderer/window.hpp>
+#include <public/mfw/core/logging_interface.hpp>
+#include <private/mfw/renderer/display_api.hpp>
+#include <private/mfw/renderer/render_api.hpp>
+#include <private/mfw/renderer/graphics_card.hpp>
+#include <private/mfw/renderer/monitor.hpp>
 
 namespace mfw::renderer
 {
+	MFW_DECLARE_LOG_CONTEXT(log_renderer, u8"renderer"_p)
+	MFW_DECLARE_GLOBAL_ALLOCATOR(renderer, ::mfw::renderer::renderer)
+
+	mfw::renderer::renderer &mfw::renderer::renderer::instance() {
+		return __renderer_global_allocator.instance();
+	}
+
 	MFW_RENDERER_API interfaces::renderer & MFW_RENDERER_CALL interfaces::renderer::instance()
-		{ return agnostic::renderer::instance(); }
+		{ return mfw::renderer::renderer::instance(); }
 
-	namespace agnostic
+	core::exit_status mfw::renderer::renderer::initialize()
 	{
-		core::exit_status renderer::initialize()
-		{
-			gpu::initialize();
-			window::initialize();
-
-			return {};
+		if(!detect_display_api()) {
+			return core::exit_status::fatal;
 		}
 
-		core::exit_status renderer::shutdown()
-		{
-			gpu::shutdown();
-			window::shutdown();
-
-			return {};
+		if(!detect_render_api()) {
+			return core::exit_status::fatal;
 		}
 
-		core::exit_status renderer::update()
-		{
-			window::update();
-
-			return {};
+		if(!graphics_card::initialize()) {
+			return core::exit_status::fatal;
 		}
 
-		gpu *renderer::create_gpu() const
-		{
-			return new gpu{};
+		if(!monitor::initialize()) {
+			return core::exit_status::fatal;
 		}
 
-		renderwindow *renderer::create_window() const
-		{
-			const gpu &gpu_{gpu::maingpu()};
-			return new renderwindow{&gpu_.main_monitor()};
+		if(!window::initialize()) {
+			return core::exit_status::fatal;
 		}
-		
-		void renderer::do_stuff()
-		{
-			renderwindow *win = create_window();
-			win->enable(true);
-		}
+
+		return {};
+	}
+
+	core::exit_status mfw::renderer::renderer::shutdown()
+	{
+		graphics_card::shutdown();
+		window::shutdown();
+
+		return {};
+	}
+
+	core::exit_status mfw::renderer::renderer::update()
+	{
+		window::update();
+
+		return {};
+	}
+
+	/*gpu *mfw::renderer::renderer::create_gpu() const
+	{
+		return new gpu{};
+	}*/
+
+	/*
+	renderwindow *mfw::renderer::renderer::create_window() const
+	{
+		const gpu &gpu_{gpu::maingpu()};
+		return new renderwindow{&gpu_.main_monitor()};
+	}
+	*/
+	
+	void mfw::renderer::renderer::do_stuff()
+	{
+		/*
+		renderwindow *win = create_window();
+		win->enable(true);
+		*/
+		monitor &mon{monitor::main_monitor()};
+		window *test{new window{mon, 100, 100, 0, 0}};
+		test->show(true);
 	}
 }

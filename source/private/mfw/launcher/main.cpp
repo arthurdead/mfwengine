@@ -7,7 +7,19 @@ bool application_load_libraries()
 		u8"engine"_sv,
 		//u"scripting"_sv,
 	}) {
-		if(!::mfw::core::core_load_library(it)) {
+	#ifdef __MFW_CORE_IS_DELAY_LOADED
+		::mfw::stl::pstring file{u8"core/bin"_p / __MFW_TARGET_TRIPLE / it};
+	#else
+		::mfw::stl::pstring file{it};
+	#endif
+	#if MFW_OS_IS(WINDOWS)
+		file.replace_extension(L".dll"_p);
+	#elif MFW_OS_IS(LINUX)
+		file.replace_extension(u8".so"_p);
+	#else
+		#error
+	#endif
+		if(!::mfw::core::core_load_library({file})) {
 			return false;
 		}
 	}

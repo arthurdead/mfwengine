@@ -34,6 +34,7 @@ namespace mfw::core
 		using stl::filesystem::is_directory;
 		using stl::filesystem::create_symlink;
 		using stl::filesystem::create_directory_symlink;
+		using stl::filesystem::create_hard_link;
 		using stl::filesystem::remove_all;
 		using stl::filesystem::weakly_canonical;
 		using stl::filesystem::is_symlink;
@@ -550,7 +551,7 @@ namespace mfw::core
 		return true;
 	}
 
-	bool core::filesystem::create_symlink(const searchpath &from, const searchpath &to, bool dir) const
+	bool core::filesystem::create_link(const searchpath &from, const searchpath &to, bool dir, bool hard) const
 	{
 		pstring to_resolved{resolve(to, false)};
 		if(to_resolved.empty()) {
@@ -577,7 +578,9 @@ namespace mfw::core
 		}
 
 		error_code errc{};
-		if(dir) {
+		if(hard) {
+			__filesystem_internal::create_hard_link(from_resolved, to_resolved, errc);
+		} else if(dir) {
 			__filesystem_internal::create_directory_symlink(from_resolved, to_resolved, errc);
 		} else {
 			__filesystem_internal::create_symlink(from_resolved, to_resolved, errc);
@@ -739,47 +742,6 @@ namespace mfw::core
 		file_->write(str.c_str(), str.length()-1);
 
 		delete file_;
-
-		return true;
-	}
-
-	bool core::filesystem::initialize(const pstring &exepath)
-	{
-	#if MFW_OS == MFW_OS_LINUX
-		#define __MFW_OS_TARGET "linux"
-	#elif MFW_OS == MFW_OS_WINDOWS
-		#define __MFW_OS_TARGET "windows"
-	#else
-		#error
-	#endif
-		
-	#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
-		#define __MFW_CONFIGURATION_TARGET "debug"
-	#else
-		#define __MFW_CONFIGURATION_TARGET "release"
-	#endif
-
-	#if MFW_PROCESSOR == MFW_PROCESSOR_X86_64
-		#define __MFW_PROCESSOR_TARGET "x86_64"
-	#elif MFW_PROCESSOR == MFW_PROCESSOR_X86
-		#define __MFW_PROCESSOR_TARGET "x86"
-	#else
-		#error
-	#endif
-
-		MFW_MESSAGE("get rid of the above")
-
-		//set_working_dir(exepath);
-
-		add_searchpath({exepath, u8"executable"_sv});
-
-		add_searchpath({u8"core"_p, u8"root"_sv}, {{}, u8"executable"_sv});
-		add_searchpath({u8"bin"_p / __MFW_OS_TARGET "_" __MFW_PROCESSOR_TARGET "_" __MFW_CONFIGURATION_TARGET, u8"bin"_sv}, {{}, u8"root"_sv});
-		library::add_directory({{}, u8"bin"_sv});
-
-		//add_searchpath({u8"thirdparty"_p, u8"root"_sv}, {{}, u8"executable"_sv});
-		//add_searchpath({u8"bin"_p / __MFW_PROCESSOR_TARGET / __MFW_CONFIGURATION_TARGET, u8"bin"_sv}, {{}, u8"root"_sv});
-		//library::add_directory({{}, u8"bin"_sv});
 
 		return true;
 	}

@@ -73,6 +73,13 @@ namespace mfw::core
 		#endif
 		}
 	#endif
+
+		static bool should_terminate{false};
+	}
+
+	MFW_CORE_API void MFW_CORE_CALL terminate()
+	{
+		__core_internal::should_terminate = true;
 	}
 
 	MFW_CORE_API exit_status MFW_CORE_CALL initialize()
@@ -86,13 +93,22 @@ namespace mfw::core
 	#endif
 
 		allocate_all_globals();
+
+		sort_initializers();
+
 		exit_status status{initialize_all_globals()};
+		if(__core_internal::should_terminate) {
+			status = exit_status::fatal;
+		}
 		return status;
 	}
 
 	MFW_CORE_API exit_status MFW_CORE_CALL update()
 	{
 		exit_status status{update_all_globals()};
+		if(__core_internal::should_terminate) {
+			status = exit_status::fatal;
+		}
 		return status;
 	}
 
@@ -102,6 +118,9 @@ namespace mfw::core
 		deallocate_all_globals();
 		library::unload_all_libraries();
 		library::remove_all_directories();
+		if(__core_internal::should_terminate) {
+			status = exit_status::fatal;
+		}
 		return status;
 	}
 

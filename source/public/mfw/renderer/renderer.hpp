@@ -23,6 +23,20 @@ namespace mfw
 		using namespace interfaces;
 		namespace literals {}
 		using namespace literals;
+
+	#if MFW_RENDERER_BUILD & MFW_BUILD_STATIC && MFW_OS_IS(WINDOWS)
+		extern core::exit_status renderer_main(
+		#if MFW_OS_IS(WINDOWS)
+			bool thread
+		#endif
+		);
+
+		extern core::exit_status renderer_exit(
+		#if MFW_OS_IS(WINDOWS)
+			bool thread
+		#endif
+		);
+	#endif
 	}
 
 	namespace literals

@@ -7,6 +7,7 @@
 
 namespace mfw::core
 {
+	extern void sort_initializers();
 	extern exit_status initialize_all_globals();
 	extern exit_status update_all_globals();
 	extern exit_status shutdown_all_globals();

@@ -38,7 +38,7 @@ namespace mfw::core
 		bool glob(const searchpath &search, vector<pstring> &files) const override;
 		bool matches_glob(const searchpath &search, const pstring &pattern) const override;
 
-		bool create_symlink(const searchpath &from, const searchpath &to, bool dir=false) const override;
+		bool create_link(const searchpath &from, const searchpath &to, bool dir=false, bool hard=false) const override;
 		bool remove(const searchpath &search) const override;
 		bool exists(const searchpath &search) const override;
 		bool is_directory(const searchpath &search) const override;
@@ -48,8 +48,6 @@ namespace mfw::core
 		bool save_text_file(const searchpath &search, const ucstring &str) const override;
 
 		void print_searchmap() const override;
-
-		bool initialize(const pstring &exe) override;
 
 	private:
 		using search_map_t = unordered_map<ucstring, vector<pstring>>;

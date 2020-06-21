@@ -303,7 +303,7 @@ namespace mfw::builder
 		return true;
 	}
 	
-	bool plugin_vscode::create_symlink(const core::searchpath &from, const core::searchpath &to, bool dir) const
+	bool plugin_vscode::create_link(const core::searchpath &from, const core::searchpath &to, bool dir, bool hard) const
 	{
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 		
@@ -312,7 +312,7 @@ namespace mfw::builder
 			return false;
 		}
 		
-		if(!filesys.create_symlink(from, resolved, dir)) {
+		if(!filesys.create_link(from, resolved, dir, hard)) {
 			return false;
 		}
 		
@@ -329,15 +329,26 @@ namespace mfw::builder
 
 		json_project_t &json{json_projects.back()};
 
+		pstring filter{file.filter()};
+
 		pstring link{};
 		link /= as_string<pstring>(solution.get_name());
 		link /= as_string<pstring>(project.get_name());
-		link /= file.filter();
+		link /= filter;
 
 		pstring filepath{file.path()};
 		link /= filepath.filename();
 
-		create_symlink({filepath}, {link, name()});
+		/*
+		json_project_t::files_t &files_map{json.files_map};
+		json_project_t::files_t::iterator it{files_map.find(filter)};
+		if(it == files_map.end()) {
+			it = files_map.emplace(json_project_t::files_t::value_type{filter, {}}).first;
+		}
+		it->second.emplace_back(filepath);
+		*/
+
+		create_link({filepath}, {link, name()}, false, false);
 
 		return true;
 	}
@@ -634,9 +645,33 @@ namespace mfw::builder
 		Key(u8"settings"_sv);
 		StartObject();
 		if(solution) {
+			/*
 			Key(u8"projectManager.projectsLocation"_sv);
 			String(path/u8"projects.json"_p);
+			Key(u8"projects.configPath"_sv);
+			String(path/u8"vscode_projects.json"_p);
+			*/
 		} else {
+			/*
+			json_project_t &proj{*reinterpret_cast<json_project_t *>(this)};
+
+			Key(u8"virtual-folders.folders"_sv);
+			StartArray();
+			for(const json_project_t::files_t::value_type &it : proj.files_map) {
+				StartObject();
+				Key(u8"name"_sv);
+				String(it.first);
+				Key(u8"files"_sv);
+				StartArray();
+				for(const pstring &file : it.second) {
+					String(file);
+				}
+				EndArray();
+				EndObject();
+			}
+			EndArray();
+			*/
+
 			if(compiler_type & compiler_info_t::flags_t::unix_) {
 				Key(u8"clangd.arguments"_sv);
 				StartArray();
@@ -679,6 +714,48 @@ namespace mfw::builder
 		}
 	}
 
+	/*void plugin_vscode::json_project_t::write_files(const pstring &dir, const vector<pstring> &files)
+	{
+		size_t num{0};
+
+		pstring::const_iterator it{dir.begin()};
+		while(it != dir.end()) {
+			pstring comp{*it};
+
+			if(comp.empty()) {
+				break;
+			}
+
+			parrarelfiles.StartObject();
+			parrarelfiles.Key(u8"name"_sv);
+			parrarelfiles.String(comp);
+			parrarelfiles.Key(u8"children"_sv);
+			parrarelfiles.StartArray();
+
+			it++;
+
+			if(it++ == dir.end()) {
+				break;
+			} else {
+				it--;
+			}
+
+			num++;
+		}
+
+		for(const pstring &file : files) {
+			parrarelfiles.StartObject();
+			parrarelfiles.Key(u8"path"_sv);
+			parrarelfiles.String(file);
+			parrarelfiles.EndObject();
+		}
+
+		for(size_t i{0}; i < num; i++) {
+			parrarelfiles.EndArray();
+			parrarelfiles.EndObject();
+		}
+	}*/
+
 	void plugin_vscode::json_project_t::write_all()
 	{
 		super::write_all();
@@ -686,15 +763,19 @@ namespace mfw::builder
 		write_cpp_properties(cpp_properties);
 		write_launch(launch);
 		write_tasks(tasks);
+
+		/*
+		parrarelfiles.StartArray();
+		for(const files_t::value_type &it : files_map) {
+			write_files(it.first, it.second);
+		}
+		parrarelfiles.EndArray();
+		*/
 	}
 
 	void plugin_vscode::json_project_t::save()
 	{
 		super::save();
-
-		pstring cpp_path{path/u8".vscode/c_cpp_properties.json"_p};
-		pstring launch_path{path/u8".vscode/launch.json"_p};
-		pstring tasks_path{path/u8".vscode/tasks.json"_p};
 
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 
@@ -702,15 +783,16 @@ namespace mfw::builder
 			pstring link{path / compile_commands.filename()};
 			MFW_MESSAGE("TODO generate symlink list")
 		#if 0
-			create_symlink({compile_commands}, {link});
+			create_link({compile_commands}, {link}, false, false);
 		#else
-			filesys.create_symlink({compile_commands}, {link});
+			filesys.create_link({compile_commands}, {link}, false, false);
 		#endif
 		}
 
-		cpp_properties.save({cpp_path});
-		//launch.save({launch_path});
-		//tasks.save({tasks_path});
+		cpp_properties.save({path/u8".vscode/c_cpp_properties.json"_p});
+		//launch.save({path/u8".vscode/launch.json"_p});
+		//tasks.save({path/u8".vscode/tasks.json"_p});
+		//parrarelfiles.save({path/u8".vscode/parallelFolders.json"_p});
 	}
 
 	void plugin_vscode::json_workspace_t::save()
@@ -725,6 +807,7 @@ namespace mfw::builder
 		exclude_files.emplace_back(u8"**/*.code-workspace"_p);
 		if(solution) {
 			exclude_files.emplace_back(u8"**/projects.json"_p);
+			exclude_files.emplace_back(u8"**/vscode_projects.json"_p);
 		}
 		exclude_files.emplace_back(u8"**/compile_commands.json"_p);
 
@@ -799,9 +882,14 @@ namespace mfw::builder
 		solution_json.name = sln_name;
 		solution_json.path = filesys.resolve({sln_name, name()}, false);
 
+		/*
 		json::file projects_json{};
+		json::file vscode_projects_json{};
 
 		projects_json.StartArray();
+		vscode_projects_json.StartObject();
+		vscode_projects_json.Key(u8"projects"_sv);
+		vscode_projects_json.StartArray();
 		for(json_project_t &proj : json_projects) {
 
 			json_workspace_t::folder_t &folder{solution_json.folders.emplace_back()};
@@ -823,10 +911,23 @@ namespace mfw::builder
 			projects_json.Key(u8"enabled"_sv);
 			projects_json.Bool(true);
 			projects_json.EndObject();
+
+			vscode_projects_json.StartObject();
+			vscode_projects_json.Key(u8"name"_sv);
+			vscode_projects_json.String(proj.name);
+			vscode_projects_json.Key(u8"description"_sv);
+			vscode_projects_json.String(proj.name);
+			vscode_projects_json.Key(u8"path"_sv);
+			vscode_projects_json.String(proj.path);
+			vscode_projects_json.EndObject();
 		}
 		projects_json.EndArray();
+		vscode_projects_json.EndArray();
+		vscode_projects_json.EndObject();
 
 		projects_json.save({solution_json.path/u8"projects.json"_p});
+		vscode_projects_json.save({solution_json.path/u8"vscode_projects.json"_p});
+		*/
 
 		solution_json.save();
 

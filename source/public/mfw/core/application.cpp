@@ -16,11 +16,11 @@
 	#include <dlfcn.h>
 #endif
 
-#if MFW_CORE_BUILD & MFW_BUILD_STATIC_FLAG || defined __MFW_CORE_USING_IMPLIB
+#if MFW_CORE_BUILD & MFW_BUILD_STATIC_FLAG || defined __MFW_CORE_USING_IMPLIB || !defined __MFW_CORE_IS_DELAY_LOADED
 	#define __MFW_APPLICATION_CORE_AVAILABLE
 #endif
 
-#ifdef __MFW_CORE_USING_IMPLIB
+#if defined __MFW_CORE_IS_DELAY_LOADED && defined __MFW_CORE_USING_IMPLIB
 extern "C" __attribute__((__visibility__("internal"))) void __core_tramp_resolve_all();
 #endif
 
@@ -133,7 +133,7 @@ namespace mfw::core
 		return exepath;
 	}
 	
-	bool core_load_library(ucstring_view name)
+	bool core_load_library(const searchpath &name)
 	{
 		::mfw::core::library *lib{
 	#ifdef __MFW_APPLICATION_CORE_AVAILABLE
@@ -158,35 +158,11 @@ namespace mfw::core
 	namespace __application_internal
 	{
 	#if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
-		#if MFW_CORE_BUILD == MFW_BUILD_SHARED
-			#if MFW_OS == MFW_OS_LINUX
-				#define __MFW_OS_TARGET "linux"
-			#elif MFW_OS == MFW_OS_WINDOWS
-				#define __MFW_OS_TARGET "windows"
-			#else
-				#error
-			#endif
-				
-			#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
-				#define __MFW_CONFIGURATION_TARGET "debug"
-			#else
-				#define __MFW_CONFIGURATION_TARGET "release"
-			#endif
-
-			#if MFW_PROCESSOR == MFW_PROCESSOR_X86_64
-				#define __MFW_PROCESSOR_TARGET "x86_64"
-			#elif MFW_PROCESSOR == MFW_PROCESSOR_X86
-				#define __MFW_PROCESSOR_TARGET "x86"
-			#else
-				#error
-			#endif
-
-			MFW_MESSAGE("get rid of the above")
-		
+		#if MFW_CORE_BUILD == MFW_BUILD_SHARED && defined __MFW_CORE_IS_DELAY_LOADED
 			#if MFW_OS_IS(LINUX)
 		static void *core_lib_dlopen()
 		{
-			void *core_dl{dlmopen(LM_ID_BASE, "core/bin/" __MFW_OS_TARGET "_" __MFW_PROCESSOR_TARGET "_" __MFW_CONFIGURATION_TARGET "/core.so", RTLD_LAZY|RTLD_GLOBAL)};
+			void *core_dl{dlmopen(LM_ID_BASE, "core/bin/" __MFW_TARGET_TRIPLE "/core.so", RTLD_LAZY|RTLD_GLOBAL)};
 			if(!core_dl) {
 				ucstring reason{uc_str(dlerror())};
 				__application_internal::print(u8"could not load core library: {}"_sv, reason);
@@ -198,7 +174,7 @@ namespace mfw::core
 		static bool load_core_lib()
 		{
 			#if MFW_OS == MFW_OS_WINDOWS
-			if(!LoadLibraryExW(L"core/bin/" __MFW_OS_TARGET L"_" __MFW_PROCESSOR_TARGET L"_" __MFW_CONFIGURATION_TARGET L"/core.dll", nullptr, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS)) {
+			if(!LoadLibraryExW(L"core/bin/" __MFW_TARGET_TRIPLE L"/core.dll", nullptr, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS)) {
 				__application_internal::print(u8"could not load core library"_sv);
 				return false;
 			}
@@ -253,16 +229,12 @@ namespace mfw::core
 
 		static bool load_libraries()
 		{
-		#if MFW_CORE_BUILD == MFW_BUILD_SHARED
+		#if MFW_CORE_BUILD == MFW_BUILD_SHARED && defined __MFW_CORE_IS_DELAY_LOADED
 			if(!load_core_lib()) {
 				return false;
 			}
 		#endif
 			
-			pstring exepath{executable_path()};
-			exepath.remove_filename();
-			core_filesystem_instance().initialize(exepath);
-
 			if(!application_load_libraries()) {
 				return false;
 			}
@@ -461,7 +433,7 @@ extern "C" {
 	MFW_SHARED_EXPORT ::mfw::uint32_t NvOptimusEnablement{0x00000001};
 	MFW_SHARED_EXPORT ::mfw::int32_t AmdPowerXpressRequestHighPerformance{1};
 }
-	#if MFW_OS_IS(LINUX) && defined __MFW_CORE_USING_IMPLIB
+	#if MFW_OS_IS(LINUX) && defined __MFW_CORE_IS_DELAY_LOADED && defined __MFW_CORE_USING_IMPLIB
 extern "C" void *__load_core_lib(const char *)
 {
 	return ::mfw::core::__application_internal::core_lib_dlopen();

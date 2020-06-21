@@ -95,7 +95,7 @@ namespace mfw::core
 				it--;
 			}
 		}
-		
+
 		if(!subs.empty()) {
 			reverse(subs.begin(), subs.end());
 			return true;
@@ -103,18 +103,18 @@ namespace mfw::core
 			return false;
 		}
 	}
-	
+
 	bool logger_manager::get_variable(const ucstring_view &name, type_holder &var) const
 	{
 		if(name == u8"ident"_sv) {
 			var.deduce(current_ctx->get_ident());
 			return true;
 		}
-		
+
 		MFW_DEBUGBREAK();
 		return false;
 	}
-	
+
 	void logger_manager::print_sub(subs_t &sub, log_context &ctx, print_vars_t &vars, log_context::severity severity_)
 	{
 		const ucstring &var{sub.first};
@@ -162,33 +162,33 @@ namespace mfw::core
 		}
 		print_internal(sub.second, ctx, vars, severity_);
 	}
-	
+
 	namespace __logging_internal
 	{
 		static uint8_t errors{0};
 		static uint8_t warnings{0};
 	}
-	
+
 	MFW_CORE_API uint8_t MFW_CORE_CALL error_count()
 	{
 		return __logging_internal::errors;
 	}
-	
+
 	MFW_CORE_API uint8_t MFW_CORE_CALL warning_count()
 	{
 		return __logging_internal::warnings;
 	}
-	
+
 	void logger_manager::print(const ucstring_view &str, log_context &ctx)
 	{
 		current_ctx = &ctx;
-		
+
 		if(str.empty()) {
 			return;
 		}
-		
+
 		log_context::severity severity_{ctx.get_severity()};
-		
+
 		static log_context::severity last_severity{log_context::severity::unknown};
 		if(last_severity != severity_) {
 			if(severity_ == log_context::severity::warning) {
@@ -198,11 +198,11 @@ namespace mfw::core
 			}
 		}
 		last_severity = severity_;
-		
+
 		ucstring fixedstr{str};
-		
+
 		print_vars_t vars{};
-		
+
 		subs_vec_t subs{};
 		if(handle_vars(fixedstr, subs)) {
 			vars.last = false;
@@ -287,79 +287,79 @@ namespace mfw::core
 
 		return false;
 	}
-	
+
 	void logger_manager::attr_to_str(attributes attr, ucstring &str)
 	{
 		vector<uint16_t> ids{};
-		
+
 		bool bold{bool_cast(attr & attributes::bold)};
 		if(bold) {
 			ids.emplace_back(1);
 		} else {
 			ids.emplace_back(21);
 		}
-		
+
 		bool dim{bool_cast(attr & attributes::dim)};
 		if(dim) {
 			ids.emplace_back(2);
 		}
-		
+
 		bool fraktur{bool_cast(attr & attributes::fraktur)};
 		if(fraktur) {
 			ids.emplace_back(20);
 		}
-		
+
 		bool italic{bool_cast(attr & attributes::italic)};
 		if(italic) {
 			ids.emplace_back(3);
 		}
-		
+
 		if(bool_cast(attr & attributes::underline)) {
 			ids.emplace_back(4);
 		} else {
 			ids.emplace_back(24);
 		}
-		
+
 		bool slow_blink{bool_cast(attr & attributes::slow_blink)};
 		if(slow_blink) {
 			ids.emplace_back(5);
 		}
-		
+
 		bool rapid_blink{bool_cast(attr & attributes::rapid_blink)};
 		if(rapid_blink) {
 			ids.emplace_back(6);
 		}
-		
+
 		if(bool_cast(attr & attributes::invert)) {
 			ids.emplace_back(7);
 		} else {
 			ids.emplace_back(27);
 		}
-		
+
 		if(bool_cast(attr & attributes::hide)) {
 			ids.emplace_back(8);
 		} else {
 			ids.emplace_back(28);
 		}
-		
+
 		if(bool_cast(attr & attributes::crossed)) {
 			ids.emplace_back(9);
 		} else {
 			ids.emplace_back(29);
 		}
-		
+
 		if(!slow_blink && !rapid_blink) {
 			ids.emplace_back(25);
 		}
-		
+
 		if(!italic && !fraktur) {
 			ids.emplace_back(23);
 		}
-		
+
 		if(!bold && !dim) {
 			ids.emplace_back(22);
 		}
-		
+
 		if(!ids.empty()) {
 			str += u8"\x1b["_sv;
 			ucstring tmp{};
@@ -376,7 +376,7 @@ namespace mfw::core
 	void logger_manager::print_internal(ucstring &fixedstr, log_context &ctx, print_vars_t &vars, log_context::severity severity_)
 	{
 		current_vars = &vars;
-		
+
 		if(fixedstr.empty()) {
 			return;
 		}
@@ -398,7 +398,7 @@ namespace mfw::core
 		if(ident_change) {
 			print_console(u8"\n\r"_sv, true);
 		}
-		
+
 		if(did_pre_insert) {
 			get_pre_insert_emoji(tmp, severity_);
 			print_console(tmp, severity_, false);
@@ -425,16 +425,16 @@ namespace mfw::core
 					ignore_insert = true;
 				}
 			}
-			
+
 			ucstring sub{fixedstr.substr(0, pos)};
 			fixedstr.erase(0, pos+1);
-			
+
 			bool was_sub{vars.sub};
 			vars.sub = true;
 			print_internal(sub, ctx, vars, severity_);
 			vars.sub = was_sub;
 			newline = true;
-			
+
 			if(fixedstr.empty()) {
 				return;
 			} else if(fixedstr.size() == 1 && fixedstr[0] == u8'\n') {
@@ -467,31 +467,31 @@ namespace mfw::core
 		} else if(severity_ == log_context::severity::info) {
 			attr |= attributes::italic;
 		}
-	
+
 		pre_insert.clear();
 
 		attr_to_str(attr, pre_insert);
 
 		print_console(pre_insert);
 	#endif
-	
+
 		if(vars.last) {
 			fixedstr.insert(fixedstr.cend(), 1, u8'\n');
 		}
-		
+
 		if(vars.txt_color != console_color::invalid) {
 			set_txt_color(vars.txt_color);
 		}
 
 		print_console(fixedstr, true);
 	}
-	
+
 	void logger_manager::print_console(ucstring_view str, log_context::severity severity_, bool file)
 	{
 		if(str.empty()) {
 			return;
 		}
-		
+
 		console_color txt_color{console_color::purple};
 		switch(severity_) {
 			case log_context::severity::warning: { txt_color = console_color::yellow; break; }
@@ -501,13 +501,13 @@ namespace mfw::core
 			case log_context::severity::unknown: { txt_color = console_color::purple; break; }
 		}
 		set_txt_color(txt_color);
-		
+
 	#if MFW_OS == MFW_OS_LINUX
 		print_console(u8"\x1b[21;22;23;24;25;27;28;29m"_sv);
 	#endif
 		print_console(str, file);
 	}
-	
+
 	void logger_manager::print_console(ucstring_view str, bool file)
 	{
 		if(str.empty()) {
@@ -517,7 +517,7 @@ namespace mfw::core
 		if(file && log_file) {
 			log_file->write(str);
 		}
-		
+
 	#if MFW_OS == MFW_OS_WINDOWS
 		WriteConsoleW(stdout_handle, c_str(str), static_cast<uint32_t>(str.length()), nullptr, nullptr);
 		#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
@@ -525,7 +525,7 @@ namespace mfw::core
 		#endif
 	#elif MFW_OS == MFW_OS_LINUX
 		#if MFW_STD_FLAGGED(API_CONFORMING)
-		::MFW_STD_NAMESPACE::printf("%s", c_str(str));
+		::MFW_STD_NAMESPACE::fputs(c_str(str), stdout);
 		#else
 			#error
 		#endif
@@ -744,7 +744,7 @@ namespace mfw::core
 
 		info.wAttributes &= ~(BACKGROUND_RED|BACKGROUND_GREEN|BACKGROUND_BLUE|BACKGROUND_INTENSITY);
 		info.wPopupAttributes &= ~(BACKGROUND_RED|BACKGROUND_GREEN|BACKGROUND_BLUE|BACKGROUND_INTENSITY);
-	
+
 		info.wAttributes |= __logging_internal::get_color_flags(color, true);
 		info.wPopupAttributes |= __logging_internal::get_color_flags(color, true);
 
@@ -774,7 +774,7 @@ namespace mfw::core
 
 		info.wAttributes &= ~(FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE|FOREGROUND_INTENSITY);
 		info.wPopupAttributes &= ~(FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE|FOREGROUND_INTENSITY);
-	
+
 		info.wAttributes |= __logging_internal::get_color_flags(color, false);
 		info.wPopupAttributes |= __logging_internal::get_color_flags(color, false);
 

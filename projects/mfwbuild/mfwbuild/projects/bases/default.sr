@@ -103,7 +103,7 @@ base_project {
 		$if is_unix_compiler
 			"-fvisibility=hidden"
 			"-fvisibility-inlines-hidden"
-			"-g"
+			"-ggdb3"
 		$endif
 			preprocessor_definitions {
 			$if os == "windows"
@@ -140,12 +140,14 @@ base_project {
 			nologo
 		$if is_unix_linker
 			$if os == "linux"
+			$(file)
 			"-dynamic-linker" "/lib64/ld-linux-x86-64.so.2"
 			$endif
 			"--hash-style=gnu"
 			"-m" "elf_x86_64"
 			"--build-id"
-			"--export-dynamic"
+			//"--export-dynamic"
+			/*
 			$if tool_name == "ld"
 			"--exclude-all-symbols"
 			$endif
@@ -154,6 +156,7 @@ base_project {
 			"--no-export-dynamic"
 			"--no-allow-shlib-undefined"
 			//"--no-undefined"
+			*/
 		$endif
 		}
 	}

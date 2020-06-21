@@ -12,7 +12,7 @@ namespace mfw::core
 {
 	namespace interfaces
 	{
-		class global_allocator
+		class MFW_VISIBILITY_DEFAULT global_allocator
 		{
 		public:
 			MFW_CORE_API MFW_CORE_CALL global_allocator();
@@ -22,7 +22,7 @@ namespace mfw::core
 			virtual void deallocate() = 0;
 		};
 
-		class global_initializer
+		class MFW_VISIBILITY_DEFAULT global_initializer
 		{
 		public:
 			MFW_CORE_API MFW_CORE_CALL global_initializer();
@@ -31,6 +31,16 @@ namespace mfw::core
 			virtual exit_status initialize() = 0;
 			virtual exit_status update() = 0;
 			virtual exit_status shutdown() = 0;
+
+			MFW_CORE_API MFW_CORE_CALL global_initializer(ucstring_view _name_);
+			MFW_CORE_API MFW_CORE_CALL global_initializer(ucstring_view _name_, const initializer_list<ucstring_view> &_depends_);
+
+			const ucstring &name() const { return name_; }
+			const vector<ucstring> &depends() const { return depends_; }
+
+		private:
+			ucstring name_{};
+			vector<ucstring> depends_{};
 		};
 	}
 

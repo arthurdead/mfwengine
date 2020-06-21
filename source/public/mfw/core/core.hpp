@@ -31,6 +31,8 @@ namespace mfw::core
 	MFW_CORE_API exit_status MFW_CORE_CALL update();
 	MFW_CORE_API exit_status MFW_CORE_CALL shutdown();
 
+	MFW_CORE_API void MFW_CORE_CALL terminate();
+
 	MFW_CORE_API void MFW_CORE_CALL expand_env_vars(const ucstring_view &src, ucstring &dst);
 
 #if MFW_OS == MFW_OS_LINUX

@@ -45,7 +45,8 @@ namespace mfw::stl
 				return false;
 			} else {
 				if(res.ptr != end) {
-					MFW_MESSAGE("TODO")
+					dst = static_cast<T>(numeric_limits<T2>::max());
+					return false;
 				}
 				return true;
 			}

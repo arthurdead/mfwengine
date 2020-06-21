@@ -7,7 +7,7 @@ if(UNIX)
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -D_NDEBUG -DNDEBUG")
 endif(UNIX)
 
-set(project_name "builder")
+set(project_name "ide")
 string(TOUPPER ${project_name} project_name_upper)
 project(${project_name})
 
@@ -43,6 +43,12 @@ file(GLOB_RECURSE core_files
 	"${source_dir}/*/mfw/core/*.inl"
 )
 
+file(GLOB_RECURSE renderer_files
+	"${source_dir}/*/mfw/renderer/*.cpp"
+	"${source_dir}/*/mfw/renderer/*.hpp"
+	"${source_dir}/*/mfw/renderer/*.inl"
+)
+
 file(GLOB_RECURSE pugixml_files
 	"${thirdparty_dir}/pugixml/src/*.cpp"
 	"${thirdparty_dir}/pugixml/src/*.hpp"
@@ -62,8 +68,14 @@ if(UNIX)
 	)
 endif(UNIX)
 
+file(REMOVE_RECURSE renderer_files
+	"${source_dir}/*/mfw/renderer/**/vulkan/**"
+	"${source_dir}/*/mfw/renderer/**/xcb/**"
+)
+
 source_group("stl" FILES ${stl_files})
 source_group("core" FILES ${core_files})
+source_group("renderer" FILES ${renderer_files})
 source_group("pugixml" FILES ${pugixml_files})
 source_group("rapidjson" FILES ${rapidjson_files})
 source_group("${project_name}" FILES ${${project_name}_files})
@@ -71,6 +83,7 @@ source_group("${project_name}" FILES ${${project_name}_files})
 list(APPEND files ${${project_name}_files})
 list(APPEND files ${stl_files})
 list(APPEND files ${core_files})
+list(APPEND files ${renderer_files})
 list(APPEND files ${pugixml_files})
 list(APPEND files ${rapidjson_files})
 
@@ -102,6 +115,10 @@ add_compile_definitions(
 	MFW_CORE_BUILD=MFW_BUILD_EMBEDDED
 	MFW_DEPENDS_ON_CORE
 
+	MFW_BUILDING_RENDERER
+	MFW_RENDERER_BUILD=MFW_BUILD_EMBEDDED
+	MFW_DEPENDS_ON_RENDERER
+
 	RAPIDJSON_ERROR_CHARTYPE=char8_t
 	RAPIDJSON_HAS_STDSTRING=1
 
@@ -110,7 +127,7 @@ add_compile_definitions(
 	_CONSOLE CONSOLE
 )
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${base_dir}/build_tools/mfwbuilder")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${base_dir}/build_tools/mfwide")
 
 add_executable(${project_name} ${files})
 target_precompile_headers(${project_name} PRIVATE "${source_dir}/public/mfw/pch.hpp")
@@ -130,4 +147,5 @@ endif(WIN32)
 
 if(UNIX)
 	target_link_libraries(${project_name} dl)
+	target_link_libraries(${project_name} X11 xcb "xcb-randr" vulkan shaderc_shared GL)
 endif(UNIX)

@@ -191,7 +191,7 @@
 #if defined _M_X64 || defined _M_AMD64 || defined __x86_64__ || defined __x86_64 || defined __amd64 || defined __amd64__ || \
 	defined __ia64__ || defined _IA64 || defined __IA64__ || defined __ia64 || defined _M_IA64 || defined __itanium__
 	#define MFW_PROCESSOR MFW_PROCESSOR_X86_64
-#elif defined __aarch64__
+#elif defined __aarch64__ || defined __arm64__
 	#define MFW_PROCESSOR MFW_PROCESSOR_AARCH64
 #elif defined __arm__ || defined __TARGET_ARCH_ARM || defined _ARM || defined _M_ARM || defined __arm
 	#define MFW_PROCESSOR MFW_PROCESSOR_ARM

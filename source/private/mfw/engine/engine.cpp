@@ -16,6 +16,7 @@ namespace mfw::engine
 		{ return ::mfw::engine::engine::instance(); }
 
 	mfw::engine::engine::engine()
+		: core::interfaces::global_initializer{u8"engine"_sv, {u8"renderer"_sv}}
 	{
 		//MFW_DEBUGBREAK();
 	}
@@ -26,37 +27,25 @@ namespace mfw::engine
 		
 		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
 
-	#if MFW_OS == MFW_OS_LINUX
-		#define __MFW_OS_TARGET "linux"
-	#elif MFW_OS == MFW_OS_WINDOWS
-		#define __MFW_OS_TARGET "windows"
-	#else
-		#error
-	#endif
-
-	#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
-		#define __MFW_CONFIGURATION_TARGET u8"debug"_p
-	#else
-		#define __MFW_CONFIGURATION_TARGET u8"release"_p
-	#endif
-
-	#if MFW_PROCESSOR == MFW_PROCESSOR_X86_64
-		#define __MFW_PROCESSOR_TARGET u8"x86_64"_p
-	#elif MFW_PROCESSOR == MFW_PROCESSOR_X86
-		#define __MFW_PROCESSOR_TARGET u8"x86"_p
-	#else
-		#error
-	#endif
-
-		MFW_MESSAGE("get rid of the above")
-
 		core::commandline &cmdline{core::commandline::instance()};
+
+		pstring exepath{filesys.get_working_dir()};
+
+		filesys.add_searchpath({exepath, u8"executable"_sv});
+
+		filesys.add_searchpath({u8"core"_p, u8"root"_sv}, {{}, u8"executable"_sv});
+		filesys.add_searchpath({u8"bin"_p / __MFW_TARGET_TRIPLE, u8"bin"_sv}, {{}, u8"root"_sv});
+		core::library::add_directory({{}, u8"bin"_sv});
+
+		//add_searchpath({u8"thirdparty"_p, u8"root"_sv}, {{}, u8"executable"_sv});
+		//add_searchpath({u8"bin"_p / __MFW_TARGET_TRIPLE, u8"bin"_sv}, {{}, u8"root"_sv});
+		//library::add_directory({{}, u8"bin"_sv});
 
 		//const univalue &game{cmdline.value(u"game"_s, u"test"_uv)};
 		core::univalue game{u8"test"_sv};
 
 		filesys.add_searchpath({game.get_string(), u8"root"_sv}, {{}, u8"executable"_sv});
-		filesys.add_searchpath({u8"bin"_p / __MFW_OS_TARGET "_" __MFW_PROCESSOR_TARGET "_" __MFW_CONFIGURATION_TARGET, u8"bin"_sv}, {{}, u8"root"_sv});
+		filesys.add_searchpath({u8"bin"_p / __MFW_TARGET_TRIPLE, u8"bin"_sv}, {{}, u8"root"_sv});
 
 		filesys.print_searchmap();
 

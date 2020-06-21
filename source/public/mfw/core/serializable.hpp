@@ -28,7 +28,7 @@ namespace mfw::core
 		};
 	}
 
-	class serializable //: public use_allocator<serializable>
+	class MFW_VISIBILITY_DEFAULT serializable //: public use_allocator<serializable>
 	{
 	public:
 		serializable() = default;

@@ -1,11 +1,20 @@
 #include <private/mfw/renderer/monitor.hpp>
+#include <public/mfw/stl/vector.hpp>
+#include <private/mfw/renderer/display_api_funcs.hpp>
 
 namespace mfw::renderer
 {
-	void monitor::bounds(bool work, int32_t *x, int32_t *y, int32_t *w, int32_t *h) const
+	namespace __monitor_internal
 	{
-		const RECT &rect_{rect(work)};
+		static ptr_vector<monitor> monitors{};
+	}
 
-		get_rect_bounds(rect_, x, y, w, h);
+	bool monitor::initialize()
+	{
+		if(!interfaces::display_api_funcs::instance().collect_monitors(__monitor_internal::monitors)) {
+			return false;
+		}
+
+		return true;
 	}
 }

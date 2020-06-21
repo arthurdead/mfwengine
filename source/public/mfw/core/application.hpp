@@ -6,6 +6,7 @@
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/stdint.hpp>
 #include <public/mfw/stl/string_view.hpp>
+#include <public/mfw/core/searchpath.hpp>
 
 namespace mfw::core
 {
@@ -68,7 +69,7 @@ namespace mfw::core
 	pstring executable_path();
 	
 #if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
-	bool core_load_library(ucstring_view name);
+	bool core_load_library(const searchpath &name);
 	exit_status core_update();
 #endif
 }
@@ -90,5 +91,29 @@ bool thread
 #if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
 extern bool application_load_libraries();
 #endif
+
+#if MFW_OS == MFW_OS_LINUX
+	#define __MFW_OS_TARGET "linux"
+#elif MFW_OS == MFW_OS_WINDOWS
+	#define __MFW_OS_TARGET "windows"
+#else
+	#error
+#endif
+
+#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
+	#define __MFW_CONFIGURATION_TARGET "debug"
+#else
+	#define __MFW_CONFIGURATION_TARGET "release"
+#endif
+
+#if MFW_PROCESSOR == MFW_PROCESSOR_X86_64
+	#define __MFW_PROCESSOR_TARGET "x86_64"
+#elif MFW_PROCESSOR == MFW_PROCESSOR_X86
+	#define __MFW_PROCESSOR_TARGET "x86"
+#else
+	#error
+#endif
+
+#define __MFW_TARGET_TRIPLE __MFW_OS_TARGET "_" __MFW_PROCESSOR_TARGET "_" __MFW_CONFIGURATION_TARGET
 
 #endif

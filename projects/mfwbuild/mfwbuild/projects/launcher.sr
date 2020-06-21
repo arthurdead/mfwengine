@@ -4,6 +4,7 @@ launcher : base_project, standards.cpp20, output_executable_console
 {
 	builder::depends {
 		core::delay,
+		//core::shared,
 		stl
 	}
 }

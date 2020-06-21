@@ -51,7 +51,7 @@ namespace mfw::core
 			virtual bool glob(const searchpath &search, vector<pstring> &files) const = 0;
 			virtual bool matches_glob(const searchpath &search, const pstring &pattern) const = 0;
 
-			virtual bool create_symlink(const searchpath &from, const searchpath &to, bool dir=false) const = 0;
+			virtual bool create_link(const searchpath &from, const searchpath &to, bool dir=false, bool hard=false) const = 0;
 			virtual bool remove(const searchpath &search) const = 0;
 			virtual bool exists(const searchpath &search) const = 0;
 			virtual bool is_directory(const searchpath &search) const = 0;
@@ -62,8 +62,6 @@ namespace mfw::core
 			virtual bool save_text_file(const searchpath &search, const ucstring &str) const = 0;
 
 			virtual void print_searchmap() const = 0;
-
-			virtual bool initialize(const pstring &exepath) = 0;
 		};
 	}
 }

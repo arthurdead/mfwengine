@@ -66,6 +66,19 @@ namespace mfw::core
 			//globalinitializers_vector_t &tmp{*__globalinitializers};
 			//tmp.erase(::std::remove(tmp.begin(), tmp.end(), this), tmp.end());
 		}
+
+		MFW_CORE_API MFW_CORE_CALL global_initializer::global_initializer(ucstring_view _name_)
+			: global_initializer{} {
+			name_ = _name_;
+		}
+
+		MFW_CORE_API MFW_CORE_CALL global_initializer::global_initializer(ucstring_view _name_, const initializer_list<ucstring_view> &_depends_)
+			: global_initializer{} {
+			name_ = _name_;
+			for(const ucstring_view &it : _depends_) {
+				depends_.emplace_back(move(it));
+			}
+		}
 	}
 
 	void allocate_all_globals()
@@ -93,6 +106,47 @@ namespace mfw::core
 		tmp.clear();
 
 		delete __globals_internal::globalallocators;
+	}
+
+	void sort_initializers()
+	{
+		MFW_MESSAGE("TODO need to figure this out")
+
+		using list_t = unordered_map<ucstring, vector<interfaces::global_initializer *>>;
+		list_t list{};
+
+		list_t::iterator empty_it{list.emplace(list_t::value_type{{}, {}}).first};
+
+		__globals_internal::globalinitializers_vector_t &tmp{*__globals_internal::globalinitializers};
+		for(interfaces::global_initializer *init : tmp) {
+			const ucstring &name{init->name()};
+			const vector<ucstring> &depends{init->depends()};
+			if(depends.empty()) {
+				empty_it->second.emplace_back(init);
+			} else {
+				for(const ucstring &dep : depends) {
+					list_t::iterator it{list.find(dep)};
+					if(it == list.end()) {
+						it = list.emplace(list_t::value_type{dep, {}}).first;
+					}
+					it->second.emplace_back(init);
+				}
+			}
+		}
+
+		tmp.clear();
+
+		for(interfaces::global_initializer *init : empty_it->second) {
+			tmp.emplace_back(init);
+		}
+
+		list.erase(empty_it);
+
+		for(const list_t::value_type &it : list) {
+			for(interfaces::global_initializer *init : it.second) {
+				tmp.emplace_back(init);
+			}
+		}
 	}
 
 	exit_status initialize_all_globals()

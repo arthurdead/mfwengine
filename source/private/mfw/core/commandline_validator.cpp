@@ -12,6 +12,10 @@ namespace mfw::core
 
 	bool commandline_validator::parse(const commandline &cmdline_, const ucstring_view &str, serializable &temp)
 	{
+		if(str.empty()) {
+			return true;
+		}
+
 		cmdline = &const_cast<commandline &>(cmdline_);
 		if(!temp.from_string(str)) {
 			return false;
