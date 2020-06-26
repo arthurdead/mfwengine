@@ -1,10 +1,10 @@
-#ifndef __MFW_PRIVATE_RENDERER_XCB_XCB_DISPLAY_API_FUNCS_H
-#define __MFW_PRIVATE_RENDERER_XCB_XCB_DISPLAY_API_FUNCS_H
+#ifndef __MFW_PRIVATE_RENDERER_X11_XCB_XCB_DISPLAY_API_FUNCS_H
+#define __MFW_PRIVATE_RENDERER_X11_XCB_XCB_DISPLAY_API_FUNCS_H
 
 #pragma once
 
 #include <private/mfw/renderer/x11/display_api_funcs.hpp>
-#include <private/mfw/renderer/xcb/xcb.hpp>
+#include <private/mfw/renderer/x11/xcb/xcb.hpp>
 
 namespace mfw::renderer
 {

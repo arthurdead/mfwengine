@@ -1,8 +1,8 @@
-#include <private/mfw/renderer/xcb/glx/context_api_funcs.hpp>
+#include <private/mfw/renderer/opengl/xcb_glx/context_api_funcs.hpp>
 
 namespace mfw::renderer
 {
-	MFW_DECLARE_LOG_CONTEXT(log_context_api_xcb_glx, u8"renderer/display_api/xcb/glx"_p)
+	MFW_DECLARE_LOG_CONTEXT(log_context_api_xcb_glx, u8"renderer/render_api/opengl/context_api/xcb_glx"_p)
 
 	context_api_funcs_xcb_glx &context_api_funcs_xcb_glx::instance() {
 		return reinterpret_cast<context_api_funcs_xcb_glx &>(interfaces::context_api_funcs::instance());

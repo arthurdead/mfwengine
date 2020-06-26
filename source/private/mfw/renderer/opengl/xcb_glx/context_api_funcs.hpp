@@ -1,14 +1,14 @@
-#ifndef __MFW_PRIVATE_RENDERER_XCB_GLX_CONTEXT_API_FUNCS_H
-#define __MFW_PRIVATE_RENDERER_XCB_GLX_CONTEXT_API_FUNCS_H
+#ifndef __MFW_PRIVATE_RENDERER_OPENGL_XCB_GLX_CONTEXT_API_FUNCS_H
+#define __MFW_PRIVATE_RENDERER_OPENGL_XCB_GLX_CONTEXT_API_FUNCS_H
 
 #pragma once
 
 #include <private/mfw/renderer/opengl/context_api_funcs.hpp>
-#include <private/mfw/renderer/xcb/glx/glx.hpp>
-#include <private/mfw/renderer/xcb/glx/shared.hpp>
+#include <private/mfw/renderer/opengl/xcb_glx/glx.hpp>
+#include <private/mfw/renderer/opengl/xcb_glx/shared.hpp>
 #include <private/mfw/renderer/opengl/render_api_funcs.hpp>
 #include <private/mfw/renderer/display_api_funcs.hpp>
-#include <private/mfw/renderer/xcb/display_api_funcs.hpp>
+#include <private/mfw/renderer/x11/xcb/display_api_funcs.hpp>
 
 namespace mfw::renderer
 {

@@ -1,4 +1,4 @@
-#include <private/mfw/renderer/xcb/display_api_funcs.hpp>
+#include <private/mfw/renderer/x11/xcb/display_api_funcs.hpp>
 
 #include <dirent.h>
 #include <cstring>
@@ -19,16 +19,13 @@
 #include <private/mfw/renderer/opengl/egl/egl.hpp>
 #include <private/mfw/renderer/opengl/egl/shared.hpp>
 
-#ifdef __MFW_PRIVATE_RENDERER_XCB_GLX_H
-	#error
-#endif
-#include <private/mfw/renderer/xcb/glx/context_api_funcs.hpp>
-#include <private/mfw/renderer/xcb/glx/glx.hpp>
-#include <private/mfw/renderer/xcb/glx/shared.hpp>
+#include <private/mfw/renderer/opengl/xcb_glx/context_api_funcs.hpp>
+#include <private/mfw/renderer/opengl/xcb_glx/glx.hpp>
+#include <private/mfw/renderer/opengl/xcb_glx/shared.hpp>
 
 namespace mfw::renderer
 {
-	MFW_DECLARE_LOG_CONTEXT(log_display_api_xcb, u8"renderer/display_api/xcb"_p)
+	MFW_DECLARE_LOG_CONTEXT(log_display_api_xcb, u8"renderer/display_api/x11/xcb"_p)
 
 	display_api_funcs_xcb::display_info_t::~display_info_t()
 	{

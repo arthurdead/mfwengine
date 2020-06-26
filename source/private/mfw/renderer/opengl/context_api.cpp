@@ -6,7 +6,9 @@
 #define __MFW_EGL_BY_DEFAULT
 
 #include <private/mfw/renderer/opengl/egl/context_api_funcs.hpp>
-#include <private/mfw/renderer/xcb/glx/context_api_funcs.hpp>
+#if MFW_OS_IS(LINUX)
+	#include <private/mfw/renderer/opengl/xcb_glx/context_api_funcs.hpp>
+#endif
 
 namespace mfw::renderer
 {
@@ -90,6 +92,7 @@ namespace mfw::renderer
 
 		switch(__context_api_internal::__context_api) {
 			case context_api::egl: { __context_api_internal::__context_funcs.reset(new context_api_funcs_egl{}); break; }
+		#if MFW_OS_IS(LINUX)
 			case context_api::glx: {
 				if(xcb) {
 					__context_api_internal::__context_api = context_api::xcb_glx;
@@ -98,6 +101,7 @@ namespace mfw::renderer
 				}
 				break;
 			}
+		#endif
 		}
 
 		return !!__context_api_internal::__context_funcs;

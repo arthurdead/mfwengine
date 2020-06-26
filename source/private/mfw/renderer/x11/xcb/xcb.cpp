@@ -1,4 +1,4 @@
-#include <private/mfw/renderer/xcb/xcb.hpp>
+#include <private/mfw/renderer/x11/xcb/xcb.hpp>
 
 namespace mfw::renderer
 {

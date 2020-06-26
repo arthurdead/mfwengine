@@ -7,7 +7,7 @@
 #if MFW_OS_IS(LINUX)
 	#define __MFW_XCB_BY_DEFAULT
 
-	#include <private/mfw/renderer/xcb/display_api_funcs.hpp>
+	#include <private/mfw/renderer/x11/xcb/display_api_funcs.hpp>
 #endif
 
 namespace mfw::renderer
