@@ -37,7 +37,10 @@ namespace mfw::core
 		bool absolutely_succeded() const { return succeded() && warnings() == 0; }
 		bool was_fatal() const { return code() == exit_codes::fatal; }
 		bool failed() const { return was_fatal() || errors() > 0; }
-	
+
+		operator bool() const { return succeded(); }
+		bool operator!() const { return !succeded(); }
+
 		void set_fatal() { set_code(static_cast<uint8_t>(exit_codes::fatal)); }
 		void set_failed(bool err=false) {
 			set_fatal();

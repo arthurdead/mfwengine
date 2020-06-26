@@ -14,13 +14,22 @@ namespace mfw::renderer
 		static bool initialize();
 		static void shutdown();
 
+		using list_t = ptr_vector<graphics_card>;
+		static list_t &list();
+
+		size_t vendor_id() const { return vendor; }
+		size_t device_id() const { return device; }
+
+		static graphics_card &main_gpu() { return *maingpu; }
+
 	public:
 		ucstring name{};
 		size_t vendor{0};
 		size_t device{0};
 
+		static inline graphics_card *maingpu{nullptr};
+
 	public:
-		__MFW_RENDERER_OPAQUE_DATA(display)
 		__MFW_RENDERER_OPAQUE_DATA(render)
 	};
 }

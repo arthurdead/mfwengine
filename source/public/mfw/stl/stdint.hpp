@@ -10,6 +10,7 @@
 #if MFW_STD_FLAGGED(HEADERS_CONFORMING)
 	#include <cstdint>
 	#include <cstddef>
+	#include <cstdbool>
 #else
 	#error
 #endif

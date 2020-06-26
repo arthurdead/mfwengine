@@ -16,7 +16,8 @@ namespace mfw::renderer
 			template <typename T> \
 			T &allocate_##name##_data() { return name##_data.allocate<T>(); } \
 			template <typename T> \
-			void destroy_##name##_data() { name##_data.destroy<T>(); } \
+			T &get_or_allocate_##name##_data() { return name##_data.get_or_allocate<T>(); } \
+			void destroy_##name##_data() { name##_data.destroy(); } \
 		private: \
 			opaque_data name##_data{};
 
@@ -25,31 +26,64 @@ namespace mfw::renderer
 	public:
 		template <typename T>
 		T &get() {
+		#if MFW_CONFIGURATION_IS(DEBUG)
+			if(!actual_data) {
+				MFW_DEBUGBREAK();
+			}
+		#endif
 			return *reinterpret_cast<T *>(actual_data.get());
 		}
 
 		template <typename T>
 		const T &get() const {
+		#if MFW_CONFIGURATION_IS(DEBUG)
+			if(!actual_data) {
+				MFW_DEBUGBREAK();
+			}
+		#endif
 			return *reinterpret_cast<const T *>(actual_data.get());
 		}
 
 		template <typename T>
 		T &allocate() {
+		#if MFW_CONFIGURATION_IS(DEBUG)
+			if(actual_data) {
+				MFW_DEBUGBREAK();
+			}
+		#endif
 			actual_data.reset(new byte[sizeof(T)]{});
 			T &data{get<T>()};
 			new (&data) T{};
+			destroy_func = [this]() -> void {
+				T &data{get<T>()};
+				data.T::~T();
+				actual_data.reset();
+			};
 			return data;
 		}
 
 		template <typename T>
+		T &get_or_allocate() {
+			if(actual_data) {
+				return get<T>();
+			} else {
+				return allocate<T>();
+			}
+		}
+
 		void destroy() {
-			T &data{get<T>()};
-			data.T::~T();
-			actual_data.reset();
+			if(destroy_func) {
+				destroy_func();
+			}
+		}
+
+		~opaque_data() {
+			destroy();
 		}
 
 	private:
 		unique_ptr<byte[]> actual_data{};
+		function<void()> destroy_func{};
 	};
 }
 

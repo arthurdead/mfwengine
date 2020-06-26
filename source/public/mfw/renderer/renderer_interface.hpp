@@ -4,6 +4,7 @@
 #pragma once
 
 #include <public/mfw/renderer/renderer.hpp>
+#include <public/mfw/core/application.hpp>
 
 namespace mfw::renderer::interfaces
 {
@@ -14,6 +15,8 @@ namespace mfw::renderer::interfaces
 
 	public:
 		MFW_RENDERER_API static renderer & MFW_RENDERER_CALL instance();
+
+		virtual core::exit_status initialize_render_api() = 0;
 
 		virtual void do_stuff() = 0;
 	};

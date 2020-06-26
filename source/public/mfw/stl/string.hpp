@@ -15,6 +15,7 @@
 	#pragma push_macro("new")
 	#undef new
 	#include <string>
+	#include <cstring>
 	#include <filesystem>
 	#pragma pop_macro("new")
 #else

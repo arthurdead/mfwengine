@@ -75,6 +75,9 @@ namespace mfw::core
 	#endif
 
 		static bool should_terminate{false};
+	#if MFW_OS_IS(WINDOWS)
+		static bool running_wine{false};
+	#endif
 	}
 
 	MFW_CORE_API void MFW_CORE_CALL terminate()
@@ -130,7 +133,7 @@ namespace mfw::core
 		wordexp_t exp{};
 		wordexp(c_str(src), &exp, 0);
 		for(size_t i{0}; i < exp.we_wordc; i++) {
-			ucstring tmp{reinterpret_cast<const ucchar_t *>(exp.we_wordv[i])};
+			ucstring tmp{uc_str(exp.we_wordv[i])};
 			dst.emplace_back(tmp);
 		}
 		wordfree(&exp);
@@ -196,4 +199,11 @@ namespace mfw::core
 		
 		return time_point.time_since_epoch().count();
 	}
+
+#if MFW_OS_IS(WINDOWS)
+	MFW_CORE_API bool MFW_CORE_CALL is_running_in_wine()
+	{
+		return running_wine;
+	}
+#endif
 }

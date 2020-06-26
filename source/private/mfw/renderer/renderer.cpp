@@ -5,6 +5,7 @@
 #include <private/mfw/renderer/render_api.hpp>
 #include <private/mfw/renderer/graphics_card.hpp>
 #include <private/mfw/renderer/monitor.hpp>
+#include <private/mfw/renderer/render_api_funcs.hpp>
 
 namespace mfw::renderer
 {
@@ -37,6 +38,19 @@ namespace mfw::renderer
 		}
 
 		if(!window::initialize()) {
+			return core::exit_status::fatal;
+		}
+
+		if(!interfaces::render_api_funcs::instance().pre_initialize()) {
+			return core::exit_status::fatal;
+		}
+
+		return {};
+	}
+
+	core::exit_status mfw::renderer::renderer::initialize_render_api()
+	{
+		if(!interfaces::render_api_funcs::instance().initialize()) {
 			return core::exit_status::fatal;
 		}
 
@@ -78,7 +92,11 @@ namespace mfw::renderer
 		win->enable(true);
 		*/
 		monitor &mon{monitor::main_monitor()};
-		window *test{new window{mon, 100, 100, 0, 0}};
+		graphics_card &gpu{graphics_card::main_gpu()};
+		window *test{new window{mon, gpu, 1600, 900, 0, 0}};
+		test->on_render([test]{
+			interfaces::render_api_funcs::instance().render_window(*test);
+		});
 		test->show(true);
 	}
 }

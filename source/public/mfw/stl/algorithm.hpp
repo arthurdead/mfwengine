@@ -20,6 +20,10 @@ namespace mfw::stl
 	using ::MFW_STD_NAMESPACE::clamp;
 	using ::MFW_STD_NAMESPACE::min;
 	using ::MFW_STD_NAMESPACE::max;
+	using ::MFW_STD_NAMESPACE::transform;
+	using ::MFW_STD_NAMESPACE::find;
+	using ::MFW_STD_NAMESPACE::find_if;
+	using ::MFW_STD_NAMESPACE::find_if_not;
 #else
 	#error
 #endif

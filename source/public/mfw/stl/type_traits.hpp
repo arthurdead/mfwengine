@@ -16,21 +16,36 @@ namespace mfw::stl
 {
 #if MFW_STD_FLAGGED(API_CONFORMING)
 	using ::MFW_STD_NAMESPACE::declval;
+	using ::MFW_STD_NAMESPACE::integral_constant;
+	using ::MFW_STD_NAMESPACE::bool_constant;
 	using ::MFW_STD_NAMESPACE::true_type;
 	using ::MFW_STD_NAMESPACE::false_type;
+	using ::MFW_STD_NAMESPACE::enable_if;
 	using ::MFW_STD_NAMESPACE::enable_if_t;
 	using ::MFW_STD_NAMESPACE::nullptr_t;
+	using ::MFW_STD_NAMESPACE::underlying_type;
 	using ::MFW_STD_NAMESPACE::underlying_type_t;
+	using ::MFW_STD_NAMESPACE::remove_reference;
 	using ::MFW_STD_NAMESPACE::remove_reference_t;
+	using ::MFW_STD_NAMESPACE::remove_const;
 	using ::MFW_STD_NAMESPACE::remove_const_t;
+	using ::MFW_STD_NAMESPACE::remove_cv;
 	using ::MFW_STD_NAMESPACE::remove_cv_t;
+	using ::MFW_STD_NAMESPACE::remove_pointer;
 	using ::MFW_STD_NAMESPACE::remove_pointer_t;
+	using ::MFW_STD_NAMESPACE::remove_all_extents;
 	using ::MFW_STD_NAMESPACE::remove_all_extents_t;
+	using ::MFW_STD_NAMESPACE::add_lvalue_reference;
 	using ::MFW_STD_NAMESPACE::add_lvalue_reference_t;
+	using ::MFW_STD_NAMESPACE::add_rvalue_reference;
 	using ::MFW_STD_NAMESPACE::add_rvalue_reference_t;
+	using ::MFW_STD_NAMESPACE::add_pointer;
 	using ::MFW_STD_NAMESPACE::add_pointer_t;
+	using ::MFW_STD_NAMESPACE::add_const;
 	using ::MFW_STD_NAMESPACE::add_const_t;
+	using ::MFW_STD_NAMESPACE::make_signed;
 	using ::MFW_STD_NAMESPACE::make_signed_t;
+	using ::MFW_STD_NAMESPACE::make_unsigned;
 	using ::MFW_STD_NAMESPACE::make_unsigned_t;
 	using ::MFW_STD_NAMESPACE::decay_t;
 	using ::MFW_STD_NAMESPACE::void_t;
@@ -52,6 +67,7 @@ namespace mfw::stl
 	using ::MFW_STD_NAMESPACE::is_assignable;
 	using ::MFW_STD_NAMESPACE::is_convertible;
 	using ::MFW_STD_NAMESPACE::is_same;
+	using ::MFW_STD_NAMESPACE::is_standard_layout;
 
 	#if MFW_CPP_COMPARE(>=, 17)
 	using ::MFW_STD_NAMESPACE::is_convertible_v;
@@ -72,6 +88,7 @@ namespace mfw::stl
 	using ::MFW_STD_NAMESPACE::is_fundamental_v;
 	using ::MFW_STD_NAMESPACE::is_constructible_v;
 	using ::MFW_STD_NAMESPACE::is_assignable_v;
+	using ::MFW_STD_NAMESPACE::is_standard_layout_v;
 	#else
 	template <typename F, typename T>
 	constexpr bool is_convertible_v{is_convertible<F, T>::value};
@@ -109,6 +126,8 @@ namespace mfw::stl
 	constexpr bool is_constructible_v{is_constructible<T, Args...>::value};
 	template <typename T, typename U>
 	constexpr bool is_assignable_v{is_assignable<T, U>::value};
+	template <typename T>
+	constexpr bool is_standard_layout_v{is_standard_layout<T>::value};
 	#endif
 	
 	#if MFW_CPP_COMPARE(>, 17)

@@ -44,7 +44,7 @@ sh "${build_scripts}/git_clone.sh" "https://github.com/Tencent/rapidjson.git" ma
 #sh "${build_scripts}/git_clone.sh" "https://github.com/g-truc/glm.git" master glm
 #sh "${build_scripts}/git_clone.sh" "https://github.com/Neargye/magic_enum.git" master magic_enum
 
-#sh "${build_scripts}/git_clone.sh" "https://github.com/Dav1dde/glad.git" glad2 glad
+sh "${build_scripts}/git_clone.sh" "https://github.com/Dav1dde/glad.git" glad2 glad
 #sh "${build_scripts}/git_clone.sh" "https://github.com/FLIF-hub/FLIF.git" master FLIF
 #sh "${build_scripts}/git_clone.sh" "https://github.com/webmproject/libwebm.git" master libwebm
 #libopus

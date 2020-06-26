@@ -37,6 +37,19 @@ namespace mfw::ide
 			return core::exit_status::fatal;
 		}
 
+		core::interfaces::filesystem &filesys{core::interfaces::filesystem::instance()};
+
+		pstring exepath{core::executable_path()};
+		exepath.remove_filename();
+
+		filesys.add_searchpath({exepath, u8"executable"_sv});
+		filesys.add_searchpath({exepath, u8"root"_sv});
+		filesys.add_searchpath({u8"/run/media/arthurdead/New Volume/mfwengine/package/core/shaders"_p, u8"shaders"_sv});
+
+		if(!renderer::interfaces::renderer::instance().initialize_render_api()) {
+			return core::exit_status::fatal;
+		}
+
 		renderer::interfaces::renderer::instance().do_stuff();
 
 		return core::exit_status::success;

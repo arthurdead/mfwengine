@@ -6,7 +6,12 @@ namespace mfw::renderer
 {
 	namespace __graphics_card_internal
 	{
-		static ptr_vector<graphics_card> gpus{};
+		static graphics_card::list_t gpus{};
+	}
+
+	graphics_card::list_t &graphics_card::list()
+	{
+		return __graphics_card_internal::gpus;
 	}
 
 	bool graphics_card::initialize()
@@ -14,7 +19,7 @@ namespace mfw::renderer
 		if(!interfaces::display_api_funcs::instance().collect_gpus(__graphics_card_internal::gpus)) {
 			return false;
 		}
-
+		
 		return true;
 	}
 

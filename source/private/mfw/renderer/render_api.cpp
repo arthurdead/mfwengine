@@ -3,6 +3,11 @@
 #include <public/mfw/core/logging_interface.hpp>
 #include <public/mfw/core/environment.hpp>
 
+//#define __MFW_VULKAN_BY_DEFAULT
+
+#include <private/mfw/renderer/vulkan/render_api_funcs.hpp>
+#include <private/mfw/renderer/opengl/render_api_funcs.hpp>
+
 namespace mfw::renderer
 {
 	MFW_DECLARE_LOG_CONTEXT(log_render_api, u8"renderer/render_api"_p)
@@ -10,6 +15,11 @@ namespace mfw::renderer
 	namespace __render_api_internal
 	{
 		static render_api __render_api{render_api::unknown};
+		static unique_ptr<interfaces::render_api_funcs> __render_funcs{};
+	}
+
+	interfaces::render_api_funcs &interfaces::render_api_funcs::instance() {
+		return *__render_api_internal::__render_funcs;
 	}
 
 	render_api get_render_api()
@@ -26,26 +36,32 @@ namespace mfw::renderer
 			if(*value == u8"directx") {
 			#if MFW_OS_IS(LINUX)
 				log_render_api().error(u8"cant use directx on linux"_sv);
-				__render_api_internal::__render_api = render_api::unknown;
 			#elif MFW_OS_IS(WINDOWS)
 				log_render_api().error(u8"directx not supported"_sv);
-				__render_api_internal::__render_api = render_api::unknown;
 			#else
 				#error
 			#endif
 			} else if(*value == u8"opengl") {
-				log_render_api().error(u8"opengl not supported"_sv);
-				__render_api_internal::__render_api = render_api::unknown;
+				__render_api_internal::__render_api = render_api::opengl;
 			} else if(*value == u8"vulkan"_sv) {
 				__render_api_internal::__render_api = render_api::vulkan;
 			} else {
 				log_render_api().error(u8"unknown render api {}"_sv, *value);
-				__render_api_internal::__render_api = render_api::unknown;
 			}
 		} else {
+			MFW_MESSAGE("detect whats supported")
+		#ifdef __MFW_VULKAN_BY_DEFAULT
 			__render_api_internal::__render_api = render_api::vulkan;
+		#else
+			__render_api_internal::__render_api = render_api::opengl;
+		#endif
 		}
 
-		return __render_api_internal::__render_api != render_api::unknown;
+		switch(__render_api_internal::__render_api) {
+			case render_api::vulkan: { __render_api_internal::__render_funcs.reset(new render_api_funcs_vulkan{}); break; }
+			case render_api::opengl: { __render_api_internal::__render_funcs.reset(new render_api_funcs_opengl{}); break; }
+		}
+
+		return !!__render_api_internal::__render_funcs;
 	}
 }

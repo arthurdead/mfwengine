@@ -430,6 +430,7 @@ MFW_ATTRIBUTE(__destructor__) void __shared_exit()
 
 #if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
 extern "C" {
+	MFW_MESSAGE("move this somewhere else")
 	MFW_SHARED_EXPORT ::mfw::uint32_t NvOptimusEnablement{0x00000001};
 	MFW_SHARED_EXPORT ::mfw::int32_t AmdPowerXpressRequestHighPerformance{1};
 }

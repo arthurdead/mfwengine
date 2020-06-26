@@ -22,7 +22,7 @@ renderer : base_project, standards.cpp20, output_shared
 	$if os == "linux"
 		xcb
 		X11
-		vulkan
+		//vulkan
 		GL
 		shaderc_shared
 	$endif

@@ -44,6 +44,10 @@ namespace mfw::core
 
 	MFW_CORE_API int64_t MFW_CORE_CALL time_now();
 
+#if MFW_OS_IS(WINDOWS)
+	MFW_CORE_API bool MFW_CORE_CALL is_running_in_wine();
+#endif
+
 	inline void get_last_error_string(ucstring &str)
 	{
 		int32_t code{get_last_error()};

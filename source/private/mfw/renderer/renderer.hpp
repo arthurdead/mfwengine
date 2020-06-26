@@ -22,8 +22,12 @@ namespace mfw::renderer
 		core::exit_status update() override;
 		core::exit_status shutdown() override;
 
+		core::exit_status initialize_render_api() override;
+
 		//virtual gpu *create_gpu() const;
 		//virtual renderwindow *create_window() const;
+
+		bool wants_integrated() const { return true; }
 
 	private:
 		void do_stuff() override;

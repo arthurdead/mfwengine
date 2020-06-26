@@ -15,8 +15,10 @@ namespace mfw::stl
 {
 #if MFW_STD_FLAGGED(API_CONFORMING)
 	using ::MFW_STD_NAMESPACE::tuple;
+	using ::MFW_STD_NAMESPACE::tuple_element;
 	using ::MFW_STD_NAMESPACE::tuple_element_t;
 	using ::MFW_STD_NAMESPACE::get;
+	using ::MFW_STD_NAMESPACE::tie;
 #else
 	#error
 #endif

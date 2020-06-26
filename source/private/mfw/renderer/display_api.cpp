@@ -5,6 +5,8 @@
 #include <public/mfw/core/environment.hpp>
 
 #if MFW_OS_IS(LINUX)
+	#define __MFW_XCB_BY_DEFAULT
+
 	#include <private/mfw/renderer/xcb/display_api_funcs.hpp>
 #endif
 
@@ -36,27 +38,22 @@ namespace mfw::renderer
 			if(*value == u8"winapi") {
 			#if MFW_OS_IS(LINUX)
 				log_display_api().error(u8"cant use winapi on linux"_sv);
-				__display_api_internal::__display_api = display_api::unknown;
 			#elif MFW_OS_IS(WINDOWS)
 				log_display_api().error(u8"winapi not supported"_sv);
-				__display_api_internal::__display_api = display_api::unknown;
 			#else
 				#error
 			#endif
 			} else if(*value == u8"xlib"_sv) {
 			#if MFW_OS_IS(WINDOWS)
-				log_display_api().error(u8"xlib not supported"_sv);
-				__display_api_internal::__display_api = display_api::unknown;
+				log_display_api().error(u8"cant use xlib on windows"_sv);
 			#elif MFW_OS_IS(LINUX)
 				log_display_api().error(u8"xlib not supported"_sv);
-				__display_api_internal::__display_api = display_api::unknown;
 			#else
 				#error
 			#endif
 			} else if(*value == u8"xcb"_sv) {
 			#if MFW_OS_IS(WINDOWS)
-				log_display_api().error(u8"xcb not supported on windows"_sv);
-				__display_api_internal::__display_api = display_api::unknown;
+				log_display_api().error(u8"cant use xcb on windows"_sv);
 			#elif MFW_OS_IS(LINUX)
 				__display_api_internal::__display_api = display_api::xcb;
 			#else
@@ -65,45 +62,46 @@ namespace mfw::renderer
 			} else if(*value == u8"wayland"_sv) {
 			#if MFW_OS_IS(WINDOWS)
 				log_display_api().error(u8"cant use wayland on windows"_sv);
-				__display_api_internal::__display_api = display_api::unknown;
 			#elif MFW_OS_IS(LINUX)
 				log_display_api().error(u8"wayland not supported"_sv);
-				__display_api_internal::__display_api = display_api::unknown;
 			#else
 				#error
 			#endif
 			} else {
 				log_display_api().error(u8"unknown display api {}"_sv, *value);
-				__display_api_internal::__display_api = display_api::unknown;
 			}
 		} else {
 		#if MFW_OS_IS(WINDOWS)
-			__display_api_internal::__display_api = display_api::winapi;
+			log_display_api().error(u8"winapi not supported"_sv);
 		#elif MFW_OS_IS(LINUX)
 			core::environment_var var{u8"XDG_SESSION_TYPE"_sv};
 			if(var.is_set()) {
 				const ucstring &value{var.value()};
 				if(value == u8"x11"_sv) {
+				#ifdef __MFW_XCB_BY_DEFAULT
 					__display_api_internal::__display_api = display_api::xcb;
+				#else
+					log_display_api().error(u8"xlib not supported"_sv);
+				#endif
 				} else if(value == u8"wayland"_sv) {
 					log_display_api().error(u8"wayland not supported"_sv);
-					__display_api_internal::__display_api = display_api::unknown;
 				} else {
 					log_display_api().error(u8"unknown display api {}"_sv, value);
-					__display_api_internal::__display_api = display_api::unknown;
 				}
 			} else {
 				var.reset(u8"WAYLAND_DISPLAY"_sv);
 				if(var.is_set()) {
 					log_display_api().error(u8"wayland not supported"_sv);
-					__display_api_internal::__display_api = display_api::unknown;
 				} else {
 					var.reset(u8"DISPLAY"_sv);
 					if(var.is_set()) {
+					#ifdef __MFW_XCB_BY_DEFAULT
 						__display_api_internal::__display_api = display_api::xcb;
+					#else
+						log_display_api().error(u8"xlib not supported"_sv);
+					#endif
 					} else {
 						log_display_api().error(u8"unknown display api"_sv);
-						__display_api_internal::__display_api = display_api::unknown;
 					}
 				}
 			}
@@ -113,9 +111,11 @@ namespace mfw::renderer
 		}
 
 		switch(__display_api_internal::__display_api) {
+		#if MFW_OS_IS(LINUX)
 			case display_api::xcb: { __display_api_internal::__display_funcs.reset(new display_api_funcs_xcb{}); break; }
+		#endif
 		}
 
-		return __display_api_internal::__display_api != display_api::unknown;
+		return !!__display_api_internal::__display_funcs;
 	}
 }

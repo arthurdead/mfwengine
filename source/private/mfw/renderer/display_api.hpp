@@ -10,12 +10,12 @@ namespace mfw::renderer
 	enum class display_api
 	{
 		unknown,
+	#if MFW_OS_IS(LINUX)
 		xlib,
 		xcb,
-	#if MFW_OS_IS(LINUX)
 		wayland,
 	#elif MFW_OS_IS(WINDOWS)
-		windows,
+		winapi,
 	#endif
 	};
 

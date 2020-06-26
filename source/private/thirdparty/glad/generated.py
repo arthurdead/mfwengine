@@ -3,7 +3,8 @@ import os, sys, argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true", required=False, default=False, dest="debug")
 parser.add_argument("--wgl", action="store_true", required=False, default=False, dest="wgl")
-parser.add_argument("--vulkan", action="store_true", required=False, default=False, dest="vulkan")
+parser.add_argument("--glx", action="store_true", required=False, default=False, dest="glx")
+parser.add_argument("--egl", action="store_true", required=False, default=False, dest="egl")
 parser.add_argument("--gladdir", action="store", required=True, dest="gladdir")
 parser.add_argument("--outdir", action="store", required=True, dest="outdir")
 args = parser.parse_args()
@@ -26,8 +27,47 @@ if args.wgl:
 		extensions += [
 			"WGL_ARB_create_context_no_error",
 		]
-elif args.vulkan:
-	pass
+elif args.glx:
+	extensions += [
+		"GLX_ARB_create_context",
+		"GLX_ARB_create_context_profile",
+
+		"GLX_ARB_get_proc_address",
+	]
+
+	if not args.debug:
+		extensions += [
+			"GLX_ARB_create_context_no_error",
+		]
+elif args.egl:
+	extensions += [
+		"EGL_KHR_create_context",
+
+		"EGL_EXT_device_query",
+		"EGL_KHR_display_reference",
+
+		"EGL_EXT_platform_base",
+		"EGL_EXT_platform_device",
+		"EGL_EXT_device_base",
+
+		"EGL_EXT_platform_x11",
+		"EGL_EXT_platform_x11",
+
+		"EGL_EXT_platform_wayland",
+		"EGL_KHR_platform_wayland",
+
+		"EGL_KHR_surfaceless_context",
+		"EGL_MESA_platform_surfaceless",
+	]
+
+	if args.debug:
+		extensions += [
+			"EGL_KHR_debug",
+		]
+	else:
+		extensions += [
+			"EGL_KHR_create_context_no_error",
+		]
 else:
 	extensions += [
 		"GL_ARB_program_interface_query",
@@ -74,7 +114,7 @@ extensions_string = extensions_string[:-1]
 
 glad2 = True
 
-out_path = args.outdir + "\\"+ ("debug" if (args.debug == True) else "release")
+out_path = os.path.join(args.outdir, ("debug" if (args.debug == True) else "release"))
 os.makedirs(out_path, exist_ok=True)
 os.chdir(args.gladdir)
 command ="\"" + sys.executable + "\" -m glad --quiet --out-path=\"" + out_path + "\" "
@@ -84,8 +124,10 @@ if not glad2:
 	spec = ""
 	if args.wgl:
 		spec += "wgl"
-	elif args.vulkan:
-		spec += "vulkan"
+	elif args.glx:
+		spec += "glx"
+	elif args.egl:
+		spec += "egl"
 	else:
 		profile += "core"
 		spec += "gl"
@@ -97,15 +139,17 @@ if not glad2:
 
 	command += "--extensions=\""+extensions_string+"\" --spec=\""+spec+"\" --api=\""+api+"=\" --generator=\""+ ("c-debug" if ((args.debug == True) and (args.wgl == False)) else "c") + "\""
 else:
-	ext_file = out_path + "\\extensions.txt"
+	ext_file = os.path.join(out_path, "extensions.txt")
 	with open(ext_file, "w+") as file:
 		file.write(extensions_string)
 
 	api = ""
 	if args.wgl:
 		api += "wgl="
-	elif args.vulkan:
-		api += "vulkan="
+	elif args.glx:
+		api += "glx="
+	elif args.egl:
+		api += "egl="
 	else:
 		api += "gl:core="
 
@@ -118,4 +162,4 @@ else:
 	command += "--extensions=\"" + ext_file + "\" --api=\"" + api + "\" c " + options
 
 #print(command)
-os.system("\"" + command + "\"")
+os.system(command)

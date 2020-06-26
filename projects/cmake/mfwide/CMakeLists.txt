@@ -19,6 +19,10 @@ set(thirdparty_dir "${base_dir}/thirdparty")
 
 set(include_dirs ${source_dir} ${thirdparty_dir})
 
+list(APPEND include_dirs
+	"${source_dir}/private/thirdparty/glad/generated/debug/include"
+)
+
 if(UNIX)
 	list(APPEND include_dirs
 		"${thirdparty_dir}/libsupc++"
@@ -49,6 +53,10 @@ file(GLOB_RECURSE renderer_files
 	"${source_dir}/*/mfw/renderer/*.inl"
 )
 
+file(GLOB_RECURSE glad_files
+	"${source_dir}/private/thirdparty/glad/generated/debug/src/*.c"
+)
+
 file(GLOB_RECURSE pugixml_files
 	"${thirdparty_dir}/pugixml/src/*.cpp"
 	"${thirdparty_dir}/pugixml/src/*.hpp"
@@ -76,6 +84,7 @@ file(REMOVE_RECURSE renderer_files
 source_group("stl" FILES ${stl_files})
 source_group("core" FILES ${core_files})
 source_group("renderer" FILES ${renderer_files})
+source_group("glad" FILES ${glad_files})
 source_group("pugixml" FILES ${pugixml_files})
 source_group("rapidjson" FILES ${rapidjson_files})
 source_group("${project_name}" FILES ${${project_name}_files})
@@ -84,11 +93,13 @@ list(APPEND files ${${project_name}_files})
 list(APPEND files ${stl_files})
 list(APPEND files ${core_files})
 list(APPEND files ${renderer_files})
+list(APPEND files ${glad_files})
 list(APPEND files ${pugixml_files})
 list(APPEND files ${rapidjson_files})
 
 if(UNIX)
-	add_compile_options(-Wfatal-errors -Wall -Wextra -Wdeprecated -Wpedantic -pedantic -pedantic-errors)
+	add_compile_options(-Wfatal-errors -Wall -Wextra -Wdeprecated)
+	#add_compile_options(-Wpedantic -pedantic -pedantic-errors)
 	add_compile_options("$<$<CONFIG:DEBUG>:-pg>")
 	add_link_options("$<$<CONFIG:DEBUG>:-pg>")
 endif(UNIX)
@@ -147,5 +158,6 @@ endif(WIN32)
 
 if(UNIX)
 	target_link_libraries(${project_name} dl)
-	target_link_libraries(${project_name} X11 xcb "xcb-randr" vulkan shaderc_shared GL)
+	target_link_libraries(${project_name} X11 "X11-xcb" xcb "xcb-glx" "xcb-randr" shaderc_shared GL)
+	#target_link_libraries(${project_name} vulkan)
 endif(UNIX)

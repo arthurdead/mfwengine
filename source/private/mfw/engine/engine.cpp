@@ -29,7 +29,7 @@ namespace mfw::engine
 
 		core::commandline &cmdline{core::commandline::instance()};
 
-		pstring exepath{filesys.get_working_dir()};
+		pstring exepath{core::executable_path()};
 
 		filesys.add_searchpath({exepath, u8"executable"_sv});
 
@@ -61,6 +61,10 @@ namespace mfw::engine
 			//return core::exit_code::error;
 		}*/
 		
+		if(!renderer::interfaces::renderer::instance().initialize_render_api()) {
+			return core::exit_status::fatal;
+		}
+
 		renderer::interfaces::renderer::instance().do_stuff();
 
 		return {};
