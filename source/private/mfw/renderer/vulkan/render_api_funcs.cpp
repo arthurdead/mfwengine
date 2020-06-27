@@ -146,7 +146,7 @@ namespace mfw::renderer
 
 		__render_api_funcs_internal::remove_unsupported(required, supported,
 			[anyunsupported](const ucstring_view &name) -> void {
-				log_render_api_vulkan().warning(u8"{} not supported"_sv, name);
+				log_render_api_vulkan().warning(u8"instance layer {} not supported"_sv, name);
 				if(anyunsupported) {
 					*anyunsupported = true;
 				}
@@ -173,7 +173,7 @@ namespace mfw::renderer
 
 		__render_api_funcs_internal::remove_unsupported(required, supported,
 			[anyunsupported](const ucstring_view &name) -> void {
-				log_render_api_vulkan().warning(u8"{} not supported"_sv, name);
+				log_render_api_vulkan().warning(u8"instance extension {} not supported"_sv, name);
 				if(anyunsupported) {
 					*anyunsupported = true;
 				}
@@ -286,7 +286,7 @@ namespace mfw::renderer
 
 		__render_api_funcs_internal::remove_unsupported(required, supported,
 			[anyunsupported](const ucstring_view &name) -> void {
-				log_render_api_vulkan().warning(u8"{} not supported"_sv, name);
+				log_render_api_vulkan().warning(u8"device layer {} not supported"_sv, name);
 				if(anyunsupported) {
 					*anyunsupported = true;
 				}
@@ -303,7 +303,7 @@ namespace mfw::renderer
 
 		__render_api_funcs_internal::remove_unsupported(required, supported,
 			[anyunsupported](const ucstring_view &name) -> void {
-				log_render_api_vulkan().warning(u8"{} not supported"_sv, name);
+				log_render_api_vulkan().warning(u8"device extension {} not supported"_sv, name);
 				if(anyunsupported) {
 					*anyunsupported = true;
 				}

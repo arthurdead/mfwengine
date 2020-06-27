@@ -160,6 +160,7 @@ namespace mfw::core
 			console_color fg_color{console_color::invalid};
 		};
 		screenbuffer_t screenbuffer{};
+		static inline uint32_t term_width{0};
 	#endif
 	};
 }

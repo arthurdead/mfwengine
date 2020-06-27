@@ -132,6 +132,8 @@ namespace mfw::renderer
 					ucstring msg{};
 					msg.assign(uc_str(std_message), std_message.length());
 
+					MFW_MESSAGE("TODO proper color code")
+
 					log_spirv_shader().warning(u8"{}"_sv, msg);
 				}
 			} else {

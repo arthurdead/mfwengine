@@ -198,9 +198,11 @@ namespace mfw::core
 	{
 		for(const search_map_t::value_type &it : searchmap) {
 			log_filesystem().info(u8"{}:"_sv, it.first);
+			log_filesystem().add_ident();
 			for(const pstring &file : it.second) {
-				log_filesystem().info(u8"\t{}"_sv, as_string<ucstring>(file));
+				log_filesystem().info(u8"{}"_sv, as_string<ucstring>(file));
 			}
+			log_filesystem().remove_ident();
 		}
 	}
 

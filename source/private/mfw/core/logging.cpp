@@ -11,6 +11,9 @@
 	#include <Windows.h>
 #elif MFW_OS == MFW_OS_LINUX
 	#include <ncurses.h>
+	#include <sys/ioctl.h>
+	#include <unistd.h>
+	#include <signal.h>
 #endif
 #if MFW_STD_FLAGGED(HEADERS_CONFORMING)
 	#include <cstdio>
@@ -281,10 +284,6 @@ namespace mfw::core
 			ident += vars.ident;
 		}
 
-		if(!vars.sub) {
-			ident++;
-		}
-
 		if(ident > 0) {
 			tmp.insert(tmp.cbegin(), ident * 2, u8' ');
 			return true;
@@ -408,8 +407,12 @@ namespace mfw::core
 		ucstring pre_insert{};
 		if(did_pre_insert) {
 			get_pre_insert(pre_insert, ctx);
+			pre_insert.pop_back();
+			size_t middle{(term_width / 2) - (pre_insert.length() / 2)};
+			pre_insert.insert(pre_insert.cbegin(), middle, u8'-');
+			pre_insert.insert(pre_insert.cend(), middle, u8'-');
 			print_console(pre_insert, log_context::severity::info, true);
-			print_console(u8"\n\r"_sv, true);
+			print_console(u8"\n"_sv, true);
 			print_console(emoji, severity_, false);
 		}
 
@@ -597,7 +600,11 @@ namespace mfw::core
 
 		::MFW_STD_NAMESPACE::setbuf(stdout, nullptr);
 
-		log_file = interfaces::filesystem::instance().open_file({u8"console.log"_sv, u8"executable"_sv}, open_flags::all);
+		pstring logpath{executable_path()};
+		logpath.remove_filename();
+		logpath /= u8"console.log"_p;
+
+		log_file = interfaces::filesystem::instance().open_file({logpath}, open_flags::all);
 
 	#if MFW_OS == MFW_OS_WINDOWS
 		if(!AttachConsole(ATTACH_PARENT_PROCESS)) {
@@ -636,6 +643,15 @@ namespace mfw::core
 		newmode |= ENABLE_LVB_GRID_WORLDWIDE;
 
 		SetConsoleMode(stdout_handle, newmode);
+	#else
+		winsize w{};
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+		term_width = w.ws_col;
+		signal(SIGWINCH, [](int32_t)->void{
+			winsize w{};
+			ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+			term_width = w.ws_col;
+		});
 	#endif
 
 		/*
@@ -673,6 +689,7 @@ namespace mfw::core
 		FreeConsole();
 		#endif
 	#elif MFW_OS == MFW_OS_LINUX
+		signal(SIGWINCH, SIG_IGN);
 		print_console(u8"\x1b[0m"_sv, false);
 	#endif
 	}
