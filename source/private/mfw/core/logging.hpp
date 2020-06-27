@@ -116,7 +116,7 @@ namespace mfw::core
 		log_context *current_ctx{nullptr};
 		print_vars_t *current_vars{nullptr};
 		
-		void print_internal(ucstring &str, log_context &ctx, print_vars_t &vars, log_context::severity severity_);
+		void print_internal(ucstring &str, log_context &ctx, print_vars_t &vars, log_context::severity severity_, bool changed);
 		
 		void print_console(ucstring_view str, bool file=false);
 		void print_console(ucstring_view str, log_context::severity severity_, bool file=true);
@@ -125,9 +125,9 @@ namespace mfw::core
 		using subs_vec_t = vector<subs_t>;
 		static bool handle_vars(ucstring &str, subs_vec_t &subs);
 		
-		void print_sub(subs_t &sub, log_context &ctx, print_vars_t &vars, log_context::severity severity_);
+		void print_sub(subs_t &sub, log_context &ctx, print_vars_t &vars, log_context::severity severity_, bool changed);
 		
-		static bool get_pre_spaces(ucstring &tmp, const log_context &ctx, print_vars_t &vars);
+		static bool get_pre_spaces(ucstring &tmp, const log_context &ctx, print_vars_t &vars, bool changed);
 		static void get_pre_insert(ucstring &tmp, const log_context &ctx);
 		static void get_pre_insert_emoji(ucstring &tmp, log_context::severity severity_);
 

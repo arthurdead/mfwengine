@@ -158,6 +158,6 @@ endif(WIN32)
 
 if(UNIX)
 	target_link_libraries(${project_name} dl)
-	target_link_libraries(${project_name} X11 "X11-xcb" xcb "xcb-glx" "xcb-randr" shaderc_shared GL)
+	target_link_libraries(${project_name} X11 "X11-xcb" Xrandr xcb "xcb-glx" "xcb-randr" shaderc_shared GL)
 	#target_link_libraries(${project_name} vulkan)
 endif(UNIX)

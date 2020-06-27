@@ -47,10 +47,9 @@ namespace mfw::renderer
 			#endif
 			} else if(*value == u8"egl") {
 				if(xcb) {
-					log_context_api().error(u8"egl doenst support xcb"_sv);
-				} else {
-					__context_api_internal::__context_api = context_api::egl;
+					log_context_api().warning(u8"egl doenst support xcb"_sv);
 				}
+				__context_api_internal::__context_api = context_api::egl;
 			} else if(*value == u8"glx"_sv) {
 			#if MFW_OS_IS(LINUX)
 				if(xcb) {
@@ -70,11 +69,9 @@ namespace mfw::renderer
 			MFW_MESSAGE("detect whats supported")
 		#ifdef __MFW_EGL_BY_DEFAULT
 			if(xcb) {
-				log_context_api().error(u8"egl doenst support xcb switching to glx instead"_sv);
-				__context_api_internal::__context_api = context_api::glx;
-			} else {
-				__context_api_internal::__context_api = context_api::egl;
+				log_context_api().warning(u8"egl doenst support xcb"_sv);
 			}
+			__context_api_internal::__context_api = context_api::egl;
 		#else
 			#if MFW_OS_IS(LINUX)
 			if(xcb) {

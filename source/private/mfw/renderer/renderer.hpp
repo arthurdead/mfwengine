@@ -27,7 +27,7 @@ namespace mfw::renderer
 		//virtual gpu *create_gpu() const;
 		//virtual renderwindow *create_window() const;
 
-		bool wants_integrated() const { return true; }
+		bool wants_integrated() const { return false; }
 
 	private:
 		void do_stuff() override;

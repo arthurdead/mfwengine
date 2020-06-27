@@ -49,6 +49,7 @@ namespace mfw::renderer
 
 			ucstring msg{uc_str(message)};
 
+			log_render_api_opengl().resume();
 			log_render_api_opengl().error(u8"{}\n{"_sv, msg);
 			log_render_api_opengl().add_ident();
 			log_render_api_opengl().error(u8"{}: {}"_sv, source, str_source);
@@ -81,6 +82,9 @@ namespace mfw::renderer
 
 			log_render_api_opengl().remove_ident();
 			log_render_api_opengl().info(u8"}"_sv);
+
+			log_render_api_opengl().clear_history();
+			log_render_api_opengl().resume();
 		}
 
 		static void glad_pre(const char *name, GLADapiproc funcptr, int32_t len_args, ...)
@@ -140,6 +144,18 @@ namespace mfw::renderer
 		if(!gladLoadGL(func)) {
 			MFW_DEBUGBREAK();
 		}
+
+		log_render_api_opengl().clear_history();
+		log_render_api_opengl().resume();
+
+		ucstring name{reinterpret_cast<const ucchar_t *>(glGetString(GL_VENDOR))};
+		log_render_api_opengl().info(u8"GL_VENDOR​: {}"_sv, name);
+		name = reinterpret_cast<const ucchar_t *>(glGetString(GL_RENDERER));
+		log_render_api_opengl().info(u8"GL_RENDERER: {}"_sv, name);
+		name = reinterpret_cast<const ucchar_t *>(glGetString(GL_VERSION));
+		log_render_api_opengl().info(u8"GL_VERSION: {}"_sv, name);
+		name = reinterpret_cast<const ucchar_t *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
+		log_render_api_opengl().info(u8"GL_SHADING_LANGUAGE_VERSION: {}"_sv, name);
 
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);

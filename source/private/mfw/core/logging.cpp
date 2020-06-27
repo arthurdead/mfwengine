@@ -115,7 +115,7 @@ namespace mfw::core
 		return false;
 	}
 
-	void logger_manager::print_sub(subs_t &sub, log_context &ctx, print_vars_t &vars, log_context::severity severity_)
+	void logger_manager::print_sub(subs_t &sub, log_context &ctx, print_vars_t &vars, log_context::severity severity_, bool changed)
 	{
 		const ucstring &var{sub.first};
 		if(var == u8"black"_sv) {
@@ -160,7 +160,7 @@ namespace mfw::core
 				return;
 			}
 		}
-		print_internal(sub.second, ctx, vars, severity_);
+		print_internal(sub.second, ctx, vars, severity_, changed);
 	}
 
 	namespace __logging_internal
@@ -181,6 +181,7 @@ namespace mfw::core
 
 	void logger_manager::print(const ucstring_view &str, log_context &ctx)
 	{
+		bool changed{current_ctx != &ctx};
 		current_ctx = &ctx;
 
 		if(str.empty()) {
@@ -208,7 +209,7 @@ namespace mfw::core
 			vars.last = false;
 			subs_vec_t::iterator it{subs.begin()};
 			if(!fixedstr.empty()) {
-				print_internal(fixedstr, ctx, vars, severity_);
+				print_internal(fixedstr, ctx, vars, severity_, changed);
 			} else {
 				subs_vec_t::iterator tmp{it};
 				it++;
@@ -216,7 +217,7 @@ namespace mfw::core
 				if(end) {
 					vars.last = true;
 				}
-				print_sub(*tmp, ctx, vars, severity_);
+				print_sub(*tmp, ctx, vars, severity_, changed);
 				if(end) {
 					return;
 				}
@@ -224,15 +225,15 @@ namespace mfw::core
 			vars.sub = true;
 			subs_vec_t::iterator end{subs.end()-1};
 			while(it != end) {
-				print_sub(*it, ctx, vars, severity_);
+				print_sub(*it, ctx, vars, severity_, changed);
 				it++;
 			}
 			it = end;
 			vars.last = true;
-			print_sub(*it, ctx, vars, severity_);
+			print_sub(*it, ctx, vars, severity_, changed);
 			return;
 		} else {
-			print_internal(fixedstr, ctx, vars, severity_);
+			print_internal(fixedstr, ctx, vars, severity_, changed);
 		}
 	}
 
@@ -267,7 +268,7 @@ namespace mfw::core
 		tmp += u8' ';
 	}
 
-	bool logger_manager::get_pre_spaces(ucstring &tmp, const log_context &ctx, print_vars_t &vars)
+	bool logger_manager::get_pre_spaces(ucstring &tmp, const log_context &ctx, print_vars_t &vars, bool changed)
 	{
 		tmp.clear();
 
@@ -278,6 +279,10 @@ namespace mfw::core
 
 		if(vars.ident != 0) {
 			ident += vars.ident;
+		}
+
+		if(!vars.sub) {
+			ident++;
 		}
 
 		if(ident > 0) {
@@ -373,7 +378,7 @@ namespace mfw::core
 		}
 	}
 
-	void logger_manager::print_internal(ucstring &fixedstr, log_context &ctx, print_vars_t &vars, log_context::severity severity_)
+	void logger_manager::print_internal(ucstring &fixedstr, log_context &ctx, print_vars_t &vars, log_context::severity severity_, bool changed)
 	{
 		current_vars = &vars;
 
@@ -385,25 +390,32 @@ namespace mfw::core
 		bool ident_change{(vars.ident != 0 && vars.sub) || (vars.ident == 0 && vars.sub && had_ident_change)};
 		had_ident_change = ident_change;
 
-		ucstring pre_insert{};
-		bool did_pre_insert{!vars.sub || ident_change};
-		if(did_pre_insert) {
-			get_pre_insert(pre_insert, ctx);
-		}
-
-		ucstring tmp{};
-		get_pre_spaces(tmp, ctx, vars);
-		pre_insert += tmp;
+		bool did_pre_insert{(!vars.sub || ident_change) && changed};
 
 		if(ident_change) {
 			print_console(u8"\n\r"_sv, true);
 		}
 
-		if(did_pre_insert) {
-			get_pre_insert_emoji(tmp, severity_);
-			print_console(tmp, severity_, false);
+		ucstring emoji{};
+		bool did_emoji{!did_pre_insert && (!vars.sub && !changed)};
+		if(did_emoji || did_pre_insert) {
+			get_pre_insert_emoji(emoji, severity_);
 		}
-		print_console(pre_insert, severity_);
+		if(did_emoji) {
+			print_console(emoji, severity_, false);
+		}
+
+		ucstring pre_insert{};
+		if(did_pre_insert) {
+			get_pre_insert(pre_insert, ctx);
+			print_console(pre_insert, log_context::severity::info, true);
+			print_console(u8"\n\r"_sv, true);
+			print_console(emoji, severity_, false);
+		}
+
+		ucstring spaces{};
+		get_pre_spaces(spaces, ctx, vars, changed);
+		print_console(spaces, true);
 
 		bool endsinnewline{false};
 		if(*(fixedstr.cend()-1) == u8'\n') {
@@ -414,7 +426,7 @@ namespace mfw::core
 
 		size_t pos{0};
 		while(true) {
-			pos = fixedstr.find(u8'\n', 1);
+			pos = fixedstr.find(u8'\n', 0);
 			if(pos == ucstring::npos || pos >= fixedstr.length()) {
 				break;
 			}
@@ -431,7 +443,7 @@ namespace mfw::core
 
 			bool was_sub{vars.sub};
 			vars.sub = true;
-			print_internal(sub, ctx, vars, severity_);
+			print_internal(sub, ctx, vars, severity_, false);
 			vars.sub = was_sub;
 			newline = true;
 
@@ -443,21 +455,10 @@ namespace mfw::core
 			}
 
 			if(!ignore_insert) {
-				if(!did_pre_insert) {
-					get_pre_insert(tmp, ctx);
-					pre_insert.insert(0, tmp);
-					did_pre_insert = true;
-				}
-				get_pre_insert_emoji(tmp, severity_);
-				print_console(tmp, severity_, false);
-				print_console(pre_insert, severity_);
+				print_console(emoji, severity_, false);
+				print_console(spaces, true);
 			}
 		}
-
-		/*if(newline) {
-			get_pre_spaces(tmp, ctx, vars);
-			//print_console(tmp, true);
-		}*/
 
 	#if MFW_OS == MFW_OS_LINUX
 		attributes attr{vars.attr};
@@ -468,11 +469,10 @@ namespace mfw::core
 			attr |= attributes::italic;
 		}
 
-		pre_insert.clear();
+		ucstring attribs{};
+		attr_to_str(attr, attribs);
 
-		attr_to_str(attr, pre_insert);
-
-		print_console(pre_insert);
+		print_console(attribs, false);
 	#endif
 
 		if(vars.last) {
@@ -481,9 +481,23 @@ namespace mfw::core
 
 		if(vars.txt_color != console_color::invalid) {
 			set_txt_color(vars.txt_color);
+		} else {
+			console_color txt_color{console_color::purple};
+			switch(severity_) {
+				case log_context::severity::warning: { txt_color = console_color::yellow; break; }
+				case log_context::severity::error: { txt_color = console_color::red; break; }
+				case log_context::severity::success: { txt_color = console_color::green; break; }
+				case log_context::severity::info: { txt_color = console_color::aqua; break; }
+				case log_context::severity::unknown: { txt_color = console_color::purple; break; }
+			}
+			set_txt_color(txt_color);
 		}
 
 		print_console(fixedstr, true);
+
+		if(vars.last) {
+			print_console(u8"\x1b[0m"_sv, false);
+		}
 	}
 
 	void logger_manager::print_console(ucstring_view str, log_context::severity severity_, bool file)
@@ -536,11 +550,16 @@ namespace mfw::core
 
 	MFW_CORE_API void MFW_CORE_CALL log_context::resume()
 	{
-		if(!paused_ || history.empty()) {
+		if(!paused_) {
 			return;
 		}
 
 		paused_ = false;
+
+		if(history.empty()) {
+			return;
+		}
+
 		print_vars_t saved{print_vars_};
 		for(history_vars_t &vars : history) {
 			print_vars_ = vars;

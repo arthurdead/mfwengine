@@ -135,7 +135,7 @@ namespace mfw::renderer
 		interfaces::display_api_funcs::instance().query_data(u8"egl_get_window"_sv, output, &input);
 		egl::output_get_window_t &output_get_win{output.get<egl::output_get_window_t>()};
 
-		#define __MFW_USE_PLATFORM_WINDOW_SURFACE
+		//#define __MFW_USE_PLATFORM_WINDOW_SURFACE
 
 		constexpr
 	#ifdef __MFW_USE_PLATFORM_WINDOW_SURFACE

@@ -5,9 +5,10 @@
 #include <public/mfw/core/environment.hpp>
 
 #if MFW_OS_IS(LINUX)
-	#define __MFW_XCB_BY_DEFAULT
+	//#define __MFW_XCB_BY_DEFAULT
 
 	#include <private/mfw/renderer/x11/xcb/display_api_funcs.hpp>
+	#include <private/mfw/renderer/x11/xlib/display_api_funcs.hpp>
 #endif
 
 namespace mfw::renderer
@@ -47,7 +48,7 @@ namespace mfw::renderer
 			#if MFW_OS_IS(WINDOWS)
 				log_display_api().error(u8"cant use xlib on windows"_sv);
 			#elif MFW_OS_IS(LINUX)
-				log_display_api().error(u8"xlib not supported"_sv);
+				__display_api_internal::__display_api = display_api::xlib;
 			#else
 				#error
 			#endif
@@ -81,7 +82,7 @@ namespace mfw::renderer
 				#ifdef __MFW_XCB_BY_DEFAULT
 					__display_api_internal::__display_api = display_api::xcb;
 				#else
-					log_display_api().error(u8"xlib not supported"_sv);
+					__display_api_internal::__display_api = display_api::xlib;
 				#endif
 				} else if(value == u8"wayland"_sv) {
 					log_display_api().error(u8"wayland not supported"_sv);
@@ -98,7 +99,7 @@ namespace mfw::renderer
 					#ifdef __MFW_XCB_BY_DEFAULT
 						__display_api_internal::__display_api = display_api::xcb;
 					#else
-						log_display_api().error(u8"xlib not supported"_sv);
+						__display_api_internal::__display_api = display_api::xlib;
 					#endif
 					} else {
 						log_display_api().error(u8"unknown display api"_sv);
@@ -113,6 +114,7 @@ namespace mfw::renderer
 		switch(__display_api_internal::__display_api) {
 		#if MFW_OS_IS(LINUX)
 			case display_api::xcb: { __display_api_internal::__display_funcs.reset(new display_api_funcs_xcb{}); break; }
+			case display_api::xlib: { __display_api_internal::__display_funcs.reset(new display_api_funcs_xlib{}); break; }
 		#endif
 		}
 
