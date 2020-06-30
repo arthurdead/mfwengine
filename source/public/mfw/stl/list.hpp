@@ -1,13 +1,15 @@
-#ifndef __MFW_PUBLIC_STL_LIST_H
-#define __MFW_PUBLIC_STL_LIST_H
+#ifndef _MFW_PUBLIC_STL_LIST_HPP
+#define _MFW_PUBLIC_STL_LIST_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/memory.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <list>
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/list.h>
 #else
 	#error
 #endif
@@ -16,35 +18,31 @@
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	template <typename T, typename A = allocator<T>>
-	using list = ::MFW_STD_NAMESPACE::list<T, A>;
+	template <typename _Tp, typename _Alloc = allocator<T>>
+	using list = ::MFW_STD_NAMESPACE::list<T, _Alloc>;
 
-	template <typename T, typename A = allocator<unique_ptr<T>>>
-	class ptr_list : public ptr_vector_like<list<unique_ptr<T>, A>>
+	template <typename _Tp, typename _Alloc = allocator<unique_ptr<_Tp>>>
+	class ptr_list : public ptr_vector_like<list<unique_ptr<_Tp>, _Alloc>>
 	{
 	public:
-		using super = ptr_vector_like<list<unique_ptr<T>, A>>;
+		using super = ptr_vector_like<list<unique_ptr<_Tp>, _Alloc>>;
 
 		using value_type = typename super::value_type;
 		using reference = typename super::reference;
 
-		void push_front(const value_type &value);
+		void push_front(const value_type &__value);
 
-		#if MFW_CPP_COMPARE(>=, 11)
-		template <typename ...Args>
-			#if MFW_CPP_COMPARE(>=, 17)
+	#if MFW_CPP_COMPARE(>=, 11)
+		template <typename... _Args>
+		#if MFW_CPP_COMPARE(>=, 17)
 		reference
-			#else
+		#else
 		void
-			#endif
-			emplace_front(Args &&... args);
-		void push_front(value_type &&value);
 		#endif
+		emplace_front(_Args &&... __args);
+		void push_front(value_type &&__value);
+	#endif
 	};
-#else
-	#error
-#endif
 }
 
 #include <public/mfw/stl/impl/list.ipp>

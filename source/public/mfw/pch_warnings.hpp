@@ -46,6 +46,7 @@
 		MFW_WARNING_DISABLE_UNIX("-Wunused-function")
 		MFW_WARNING_DISABLE_UNIX("-Wunused-variable")
 		MFW_WARNING_DISABLE_UNIX("-Wunused-parameter")
+		MFW_WARNING_DISABLE_UNIX("-Wattributes")
 		#if MFW_COMPILER_FLAGGED(CLANG)
 			MFW_WARNING_DISABLE_UNIX("-Wunused-local-typedef")
 		#endif

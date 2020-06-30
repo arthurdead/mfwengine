@@ -2,67 +2,53 @@
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	namespace __string_funcs_internal
+	namespace __private_string_funcs_cpp MFW_VISIBILITY_LOCAL
 	{
-		template <typename S, typename C>
-		size_t replace_all_char(S &str, C from, C to)
+		template <typename _Sp, typename _Cp>
+		static size_t _replace_all_impl_c_c(_Sp &__str, _Cp __from, _Cp __to) noexcept
 		{
-			size_t count{0};
+			size_t __count{0};
 
-			replace_if(str.begin(), str.end(), [from, &count](C old) -> bool {
-				if(old == from) {
-					count++;
+			replace_if(__str.begin(), __str.end(), [__from, &__count](_Cp __old) -> bool {
+				if(__old == __from) {
+					__count++;
 					return true;
 				}
 				return false;
-			}, to);
+			}, __to);
 
-			return count;
+			return __count;
 		}
 
-		template <typename S, typename V>
-		size_t replace_all_view(S &str, V from, V to)
+		template <typename _Sp, typename _Vp>
+		static size_t _replace_all_impl_v_v(_Sp &__str, _Vp __from, _Vp __to) noexcept
 		{
-			size_t count{0};
+			size_t __count{0};
 
-			size_t pos{0};
+			size_t __pos{0};
 			while(true) {
-				pos = str.find(from, pos);
-				if(pos == S::npos) {
+				__pos = __str.find(__from, __pos);
+				if(__pos == _Sp::npos) {
 					break;
 				}
 
-				str.replace(pos, from.length(), to);
-				count++;
+				__str.replace(__pos, __from.length(), __to);
+				__count++;
 
-				pos += to.length();
+				__pos += __to.length();
 			}
 
-			return count;
+			return __count;
 		}
 	}
 
-	MFW_STL_API size_t MFW_STL_CALL replace_all(ucstring &str, ucchar_t from, ucchar_t to)
-	{
-		return __string_funcs_internal::replace_all_char(str, from, to);
-	}
+	MFW_STL_API size_t MFW_STL_CALL replace_all(string &__str, char __from, char __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_c_c(__str, __from, __to); }
+	MFW_STL_API size_t MFW_STL_CALL replace_all(string &__str, string_view __from, string_view __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_v_v(__str, __from, __to); }
 
-	MFW_STL_API size_t MFW_STL_CALL replace_all(uwstring &str, uwchar_t from, uwchar_t to)
-	{
-		return __string_funcs_internal::replace_all_char(str, from, to);
-	}
-
-	MFW_STL_API size_t MFW_STL_CALL replace_all(ucstring &str, ucstring_view from, ucstring_view to)
-	{
-		return __string_funcs_internal::replace_all_view(str, from, to);
-	}
-
-	MFW_STL_API size_t MFW_STL_CALL replace_all(uwstring &str, uwstring_view from, uwstring_view to)
-	{
-		return __string_funcs_internal::replace_all_view(str, from, to);
-	}
-#else
-	#error
-#endif
+	MFW_STL_API size_t MFW_STL_CALL replace_all(wstring &__str, wchar_t __from, wchar_t __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_c_c(__str, __from, __to); }
+	MFW_STL_API size_t MFW_STL_CALL replace_all(wstring &__str, wstring_view __from, wstring_view __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_v_v(__str, __from, __to); }
 }

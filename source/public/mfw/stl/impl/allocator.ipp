@@ -1,18 +1,17 @@
 namespace mfw::stl
 {
-#ifdef __MFW_ENABLE_CUSTOM_ALLOCATORS
-	#if MFW_STD_FLAGGED(API_CONFORMING)
-	template <typename T>
-	[[nodiscard]] __MFW_ALLOC_PRE T *allocator<T>::allocate(size_t size) noexcept //__MFW_ALLOC_POST(1)
+#ifdef _MFW_ENABLE_CUSTOM_ALLOCATORS
+	template <typename _Tp>
+	[[nodiscard]] MFW_VISIBILITY_LOCAL _MFW_ALLOC_PRE _Tp *allocator<_Tp>::allocate(size_t __size) noexcept //_MFW_ALLOC_POST(1)
 	{
-		size *= sizeof(value_type);
+		__size *= sizeof(value_type);
 		return reinterpret_cast<value_type *>(::mfw::stl::allocate(
-			size,
-			alignof(value_type), 0,
+			__size,
+			alignof(__value_type), 0,
 			false
 		#if MFW_CONFIGURATION_IS(DEBUG)
 			#if MFW_OS_IS(WINDOWS)
-			,__MFW_MEM_BLOCK
+			,_MFW_MEM_BLOCK
 			#endif
 			,__FILE__, __LINE__,
 			&get_typeid<value_type>()
@@ -20,38 +19,35 @@ namespace mfw::stl
 		));
 	}
 
-	template <typename T>
-	void allocator<T>::deallocate(value_type *&ptr, size_t size) noexcept
+	template <typename _Tp>
+	void allocator<_Tp>::deallocate(value_type *&__ptr, size_t __size) noexcept
 	{
-		__impl_deallocate(ptr, size);
+		_deallocate_impl(__ptr, __size);
 	}
 
-	template <typename T>
-	void allocator<T>::deallocate(value_type *const &ptr, size_t size) noexcept
+	template <typename _Tp>
+	void allocator<_Tp>::deallocate(value_type *const &__ptr, size_t __size) noexcept
 	{
-		value_type *tmp{ptr};
-		__impl_deallocate(tmp, size);
+		value_type *__tmp{__ptr};
+		_deallocate_impl(__tmp, __size);
 	}
 
-	template <typename T>
-	void allocator<T>::__impl_deallocate(value_type *&ptr, size_t size) noexcept
+	template <typename _Tp>
+	void allocator<_Tp>::_deallocate_impl(value_type *&__ptr, size_t __size) noexcept
 	{
-		size *= sizeof(value_type);
+		__size *= sizeof(value_type);
 		::mfw::stl::deallocate(
-			reinterpret_cast<void *&>(ptr), size,
+			reinterpret_cast<void *&>(__ptr), __size,
 			alignof(value_type), 0,
 			false
 		#if MFW_CONFIGURATION_IS(DEBUG)
 			#if MFW_OS_IS(WINDOWS)
-			,__MFW_MEM_BLOCK
+			,_MFW_MEM_BLOCK
 			#endif
 			,__FILE__, __LINE__,
 			&get_typeid<value_type>()
 		#endif
 		);
 	}
-	#else
-		#error
-	#endif
 #endif
 }

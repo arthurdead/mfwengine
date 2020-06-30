@@ -1,23 +1,21 @@
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	template <typename K, typename T>
-	inline void to_string(const unordered_map<K, T> &src, ucstring &dst)
-	{
-		if(src.empty()) {
+	template <typename _Kp, typename _Tp, typename _Sp>
+	void to_string(const unordered_map<_Kp, _Tp> &__src, _Sp &__dst) noexcept;
+	/*{
+		if(__src.empty()) {
 			return;
 		}
 
-		for(const pair<K, T> &it : src) {
-			dst += as_string<ucstring>(it.first);
-			dst += u8'=';
-			dst += as_string<ucstring>(it.second);
-			dst += u8',';
-			dst += u8' ';
+		using __C = typename _Sp::value_type;
+
+		for(const pair<_Kp, _Tp> &__it : __src) {
+			_MFW_TO_STRING_HELPER(__it.first, _Kp, __dst, _Sp)
+			__dst.append(1, static_cast<__C>('='));
+			_MFW_TO_STRING_HELPER(__it.second, _Tp, __dst, _Sp)
+			__dst.append(1, static_cast<__C>(','));
+			__dst.append(1, static_cast<__C>(' '));
 		}
-		dst.erase(dst.end() - 2, dst.end());
-	}
-#else
-	#error
-#endif
+		__dst.erase(__dst.end()-2, __dst.end());
+	}*/
 }

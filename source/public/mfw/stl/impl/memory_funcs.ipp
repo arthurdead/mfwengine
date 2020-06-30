@@ -4,37 +4,37 @@
 
 namespace mfw::stl
 {
-	template <typename T>
-	bool is_valid(T *ptr) noexcept(false)
+	template <typename _Tp>
+	bool is_valid(_Tp *__ptr) noexcept(false)
 	{
 	#if MFW_OS_IS(WINDOWS)
-		return is_valid(reinterpret_cast<const void *>(ptr), sizeof(T));
+		return is_valid(reinterpret_cast<const void *>(__ptr), sizeof(_Tp));
 	#else
-		return is_valid(reinterpret_cast<const void *>(ptr));
+		return is_valid(reinterpret_cast<const void *>(__ptr));
 	#endif
 	}
 
-	template <typename T, typename ...Args>
-	[[nodiscard]] __MFW_ALLOC_PRE T *__create(
+	template <typename _Tp, typename... _Args>
+	[[nodiscard]] MFW_VISIBILITY_LOCAL _MFW_ALLOC_PRE _Tp *__create(
 #if MFW_CONFIGURATION_IS(DEBUG)
-	const char *file, size_t line,
+	const char *__file, size_t __line,
 #endif
-	Args &&... args
+	_Args &&... __args
 	) noexcept //MFW_ATTRIBUTE(__malloc__)
 	{
 		#pragma push_macro("new")
 		#undef new
 
-		return new(sizeof(T),
+		return new(sizeof(_Tp),
 	#if MFW_CONFIGURATION_IS(DEBUG)
 		#if MFW_OS_IS(WINDOWS)
-		__MFW_MEM_BLOCK,
+		_MFW_MEM_BLOCK,
 		#endif
-		file, line
+		__file, __line
 	#else
-		static_cast<align_val_t>(alignof(T)), nothrow
+		static_cast<align_val_t>(alignof(_Tp)), nothrow
 	#endif
-		) T(forward<Args>(args)...);
+		) _Tp(forward<_Args>(__args)...);
 
 		#pragma pop_macro("new")
 	}
@@ -44,26 +44,26 @@ namespace mfw::stl
 	MFW_WARNING_DISABLE_UNIX("-Wunused-parameter")
 #endif
 
-	template <typename T>
-	void __destroy(T *&ptr
+	template <typename _Tp>
+	MFW_VISIBILITY_LOCAL void __destroy(_Tp *&__ptr
 #if MFW_CONFIGURATION_IS(DEBUG)
-	,const char *file, size_t line
+	,const char *__file, size_t __line
 #endif
 	) noexcept {
 	#if 1
-		ptr->~T();
-		::operator delete(ptr,
+		__ptr->~_Tp();
+		::operator delete(__ptr,
 		#if MFW_CONFIGURATION_IS(DEBUG)
 			#if MFW_OS_IS(WINDOWS)
-		__MFW_MEM_BLOCK,
+		_MFW_MEM_BLOCK,
 			#endif
-		file, line
+		__file, __line
 		#else
-		sizeof(T), static_cast<align_val_t>(alignof(T)), nothrow
+		sizeof(_Tp), static_cast<align_val_t>(alignof(_Tp)), nothrow
 		#endif
 		);
 	#else
-		delete ptr;
+		delete __ptr;
 	#endif
 	}
 
@@ -90,44 +90,44 @@ namespace mfw::stl
 #elif MFW_COMPILER_IS(GCC)
 	MFW_WARNING_DISABLE("-Wstrict-aliasing")
 #endif
-	template <typename D, typename S>
-	constexpr D &force_cast(const S &src_) noexcept
+	template <typename _Dp, typename _Sp>
+	constexpr inline _Dp &force_cast(const _Sp &__src) noexcept
 	{
-		using __D = remove_cvref_t<D>;
-		using __S = remove_cvref_t<S>;
+		using __D = remove_cvref_t<_Dp>;
+		using __S = remove_cvref_t<_Sp>;
 		MFW_IF_CONSTEXPR(is_convertible_v<__S, __D>) {
-			return reinterpret_cast<D &>(const_cast<S &>(src_));
+			return reinterpret_cast<_Dp &>(const_cast<_Sp &>(__src));
 		} else {
-			const union U final {
+			const union __U final {
 			public:
-				constexpr inline U(const U &) = delete;
-				inline U(const S &_src) : src{_src} {}
-				inline ~U() {}
-				constexpr inline operator D &() const { return type_cast(D &, dst); }
+				constexpr inline __U(const __U &) = delete;
+				constexpr inline __U(const _Sp &__src)
+					: _M_src{__src} {}
+				constexpr inline ~__U() {}
+				constexpr inline operator _Dp &() const
+				{ return type_cast(_Dp &, _M_dst); }
 			private:
-				const __S src;
-				const __D *dst;
-			} u{src_};
-			return static_cast<D &>(u);
+				const __S _M_src;
+				const __D *_M_dst;
+			} __u{__src};
+			return static_cast<_Dp &>(__u);
 		}
 	}
 	MFW_WARNING_POP()
 
-	template <typename V, typename T>
-	constexpr size_t var_offset(V T:: *var) noexcept
-	{ return (reinterpret_cast<uintptr_t>(&reinterpret_cast<unsigned char &>((reinterpret_cast<T *>(nullptr))->*var))); }
+	template <typename _Vp, typename _Tp>
+	constexpr inline size_t var_offset(_Vp _Tp:: *__var) noexcept
+	{ return (reinterpret_cast<uintptr_t>(&reinterpret_cast<unsigned char &>((reinterpret_cast<_Tp *>(nullptr))->*__var))); }
 
-	template <typename V, typename T>
-	constexpr T &get_outer(V *ptr, V T:: *var) noexcept
-	{ return *reinterpret_cast<T *>(reinterpret_cast<unsigned char *>(ptr) - var_offset(var)); }
+	template <typename _Vp, typename _Tp>
+	constexpr inline _Tp &get_outer(_Vp *__ptr, _Vp _Tp:: *__var) noexcept
+	{ return *reinterpret_cast<_Tp *>(reinterpret_cast<unsigned char *>(__ptr) - var_offset(__var)); }
 
-	template <typename V, typename T>
-	constexpr T &get_outer(V *ptr, V *T:: *var) noexcept
-	{ return *reinterpret_cast<T *>(reinterpret_cast<unsigned char *>(ptr) - var_offset(var)); }
+	template <typename _Vp, typename _Tp>
+	constexpr inline _Tp &get_outer(_Vp *__ptr, _Vp *_Tp:: *__var) noexcept
+	{ return *reinterpret_cast<_Tp *>(reinterpret_cast<unsigned char *>(__ptr) - var_offset(__var)); }
 
-	template <typename T>
-	inline void to_string(T *src, ucstring &dst)
-	{
-		dst += as_string<ucstring>(*src);
-	}
+	template <typename _Tp, typename _Sp>
+	void to_string(_Tp *__src, _Sp &__dst) noexcept;
+	//{ _MFW_TO_STRING_HELPER(__src, _Tp, __dst, _Sp) }
 }

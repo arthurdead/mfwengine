@@ -1,30 +1,29 @@
-#ifndef __MFW_PUBLIC_STL_SYSTEM_ERROR_H
-#define __MFW_PUBLIC_STL_SYSTEM_ERROR_H
+#ifndef _MFW_PUBLIC_STL_SYSTEM_ERROR_HPP
+#define _MFW_PUBLIC_STL_SYSTEM_ERROR_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
-	#include <system_error>
-#else
-	#error
+#include <system_error>
+
+#if MFW_HAS_FEATURE(cxx_exceptions) || \
+	defined __cpp_exceptions || \
+	defined __EXCEPTIONS || \
+	defined _HAS_EXCEPTIONS
+	#define MFW_CPP_EXCEPTIONS_SUPPORTED 1
 #endif
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	using ::MFW_STD_NAMESPACE::error_code;
-	using ::MFW_STD_NAMESPACE::errc;
-	using ::MFW_STD_NAMESPACE::is_error_code_enum;
-	using ::MFW_STD_NAMESPACE::error_category;
-	using ::MFW_STD_NAMESPACE::logic_error;
-	using ::MFW_STD_NAMESPACE::system_error;
-	using ::MFW_STD_NAMESPACE::error_condition;
-	using ::MFW_STD_NAMESPACE::runtime_error;
-#else
-	#error
-#endif
+	using ::std::error_code;
+	using ::std::errc;
+	using ::std::is_error_code_enum;
+	using ::std::error_category;
+	using ::std::logic_error;
+	using ::std::system_error;
+	using ::std::error_condition;
+	using ::std::runtime_error;
 }
 
 #endif

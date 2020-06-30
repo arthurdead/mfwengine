@@ -78,13 +78,13 @@ namespace mfw::core
 }
 
 #if MFW_BUILD & MFW_BUILD_SHARED_FLAG
-extern MFW_SHARED_LOCAL mfw::core::exit_status application_main(
+extern MFW_SHARED_LOCAL ::mfw::core::exit_status application_main(
 	#if MFW_BUILD == MFW_BUILD_SHARED && MFW_OS == MFW_OS_WINDOWS
 bool thread
 	#endif
 );
 
-extern MFW_SHARED_LOCAL mfw::core::exit_status application_exit(
+extern MFW_SHARED_LOCAL ::mfw::core::exit_status application_exit(
 	#if MFW_BUILD == MFW_BUILD_SHARED && MFW_OS == MFW_OS_WINDOWS
 bool thread
 	#endif

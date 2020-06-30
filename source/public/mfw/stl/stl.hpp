@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_STL_H
-#define __MFW_PUBLIC_STL_H
+#ifndef _MFW_PUBLIC_STL_HPP
+#define _MFW_PUBLIC_STL_HPP
 
 #pragma once
 

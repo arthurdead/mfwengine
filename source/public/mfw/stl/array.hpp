@@ -1,24 +1,22 @@
-#ifndef __MFW_PUBLIC_STL_ARRAY_H
-#define __MFW_PUBLIC_STL_ARRAY_H
+#ifndef _MFW_PUBLIC_STL_ARRAY_HPP
+#define _MFW_PUBLIC_STL_ARRAY_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <array>
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/array.h>
 #else
 	#error
 #endif
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	template <typename T, size_t S>
-	using array = ::MFW_STD_NAMESPACE::array<T, S>;
-#else
-	#error
-#endif
+	template <typename _Tp, size_t _Sp>
+	using array = ::MFW_STD_NAMESPACE::array<_Tp, _Sp>;
 }
 
 #endif

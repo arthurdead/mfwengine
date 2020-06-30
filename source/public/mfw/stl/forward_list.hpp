@@ -1,28 +1,32 @@
-#ifndef __MFW_PUBLIC_STL_FORWARD_LIST_H
-#define __MFW_PUBLIC_STL_FORWARD_LIST_H
+#ifndef _MFW_PUBLIC_STL_FORWARD_LIST_HPP
+#define _MFW_PUBLIC_STL_FORWARD_LIST_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/memory.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
-	#pragma push_macro("new")
-	#undef new
+#pragma push_macro("new")
+#undef new
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <forward_list>
-	#pragma pop_macro("new")
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/slist.h>
 #else
 	#error
 #endif
+#pragma pop_macro("new")
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	template <typename T, typename A = allocator<T>>
-	using forward_list = ::MFW_STD_NAMESPACE::forward_list<T, A>;
+	template <typename _Tp, typename _Alloc = allocator<_Tp>>
+	using forward_list = ::MFW_STD_NAMESPACE::
+#if MFW_STDCPP_IS(EASTL)
+	slist
 #else
-	#error
+	forward_list
 #endif
+	<_Tp, _Alloc>;
 }
 
 #endif

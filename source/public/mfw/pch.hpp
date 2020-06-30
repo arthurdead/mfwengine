@@ -17,10 +17,8 @@
 	#endif
 
 	#ifdef MFW_DEPENDS_ON_CORE
-		#include <public/mfw/core/pch.hpp>
+		//#include <public/mfw/core/pch.hpp>
 	#endif
-	
-	#include <public/mfw/pch_literals.hpp>
 #endif
 
 #include <public/mfw/pch_warnings.hpp>

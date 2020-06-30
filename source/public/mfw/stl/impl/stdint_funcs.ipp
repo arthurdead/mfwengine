@@ -1,29 +1,37 @@
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	namespace __stdint_funcs_internal
+	namespace __public_impl_stdint_funcs_ipp_internal MFW_VISIBILITY_LOCAL
 	{
-		template <typename S, typename C>
-		void to_string(bool src, S &dst, C strtrue[4], C strfalse[5])
+		template <typename _Sp>
+		static MFW_VISIBILITY_LOCAL void _to_string_impl(bool __src, _Sp &__dst) noexcept
 		{
-			if(src) {
-				dst.insert(0, strtrue, 4);
+			using __C = typename _Sp::value_type;
+
+			if(__src) {
+				__dst.append(1, static_cast<__C>('t'));
+				__dst.append(1, static_cast<__C>('r'));
+				__dst.append(1, static_cast<__C>('u'));
+				__dst.append(1, static_cast<__C>('e'));
 			} else {
-				dst.insert(0, strfalse, 5);
+				__dst.append(1, static_cast<__C>('f'));
+				__dst.append(1, static_cast<__C>('a'));
+				__dst.append(1, static_cast<__C>('l'));
+				__dst.append(1, static_cast<__C>('s'));
+				__dst.append(1, static_cast<__C>('e'));
 			}
 		}
 	}
 
-	inline void to_string(bool src, ucstring &dst)
-	{
-		__stdint_funcs_internal::to_string(src, dst, STR_C("true"), STR_C("false"));
-	}
-
-	inline void to_string(bool src, uwstring &dst)
-	{
-		__stdint_funcs_internal::to_string(src, dst, STR_W("true"), STR_W("false"));
-	}
-#else
-	#error
+	inline void to_string(bool __src, string &__dst) noexcept
+	{ __public_impl_stdint_funcs_ipp_internal::_to_string_impl(__src, __dst); }
+	inline void to_string(bool __src, wstring &__dst) noexcept
+	{ __public_impl_stdint_funcs_ipp_internal::_to_string_impl(__src, __dst); }
+#ifdef MFW_CPP_CHAR8_SUPPORTED
+	inline void to_string(bool __src, u8string &__dst) noexcept
+	{ __public_impl_stdint_funcs_ipp_internal::_to_string_impl(__src, __dst); }
 #endif
+	inline void to_string(bool __src, u16string &__dst) noexcept
+	{ __public_impl_stdint_funcs_ipp_internal::_to_string_impl(__src, __dst); }
+	inline void to_string(bool __src, u32string &__dst) noexcept
+	{ __public_impl_stdint_funcs_ipp_internal::_to_string_impl(__src, __dst); }
 }

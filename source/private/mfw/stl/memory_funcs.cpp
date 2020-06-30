@@ -6,7 +6,7 @@
 	#include <Windows.h>
 #endif
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDC_IS(DEFAULT)
 	#include <cstring>
 #else
 	#error
@@ -14,7 +14,7 @@
 
 namespace mfw::stl
 {
-	namespace __memory_funcs_internal
+	namespace __private_memory_funcs_cpp MFW_VISIBILITY_LOCAL
 	{
 		static bool check_bytes(const unsigned char *first, unsigned char value, size_t size) noexcept
 		{
@@ -26,20 +26,15 @@ namespace mfw::stl
 			}
 			return true;
 		}
-
-		static bool is_block_an_aligned_allocation(const void *block) noexcept
-		{
-			static constexpr size_t align_gap_size{sizeof(void *)};
-			static constexpr unsigned char align_land_fill{0xED};
-
-			const unsigned char *possible_alignment_gap{reinterpret_cast<const unsigned char *>(reinterpret_cast<uintptr_t>(block) & (~sizeof(uintptr_t) - 1)) - align_gap_size};
-			return check_bytes(possible_alignment_gap, align_land_fill, align_gap_size);
-		}
 	}
 	
 	MFW_STL_API bool MFW_STL_CALL is_aligned(const void *ptr) noexcept
 	{
-		return __memory_funcs_internal::is_block_an_aligned_allocation(ptr);
+		static constexpr size_t align_gap_size{sizeof(void *)};
+		static constexpr unsigned char align_land_fill{0xED};
+
+		const unsigned char *possible_alignment_gap{reinterpret_cast<const unsigned char *>(reinterpret_cast<uintptr_t>(ptr) & (~sizeof(uintptr_t) - 1)) - align_gap_size};
+		return __private_memory_funcs_cpp::check_bytes(possible_alignment_gap, align_land_fill, align_gap_size);
 	}
 
 	MFW_STL_API size_t MFW_STL_CALL get_size(const void *ptr,
@@ -50,24 +45,24 @@ namespace mfw::stl
 	{
 	#if MFW_OS_IS(WINDOWS)
 		if(alignment != 0) {
-			#if MFW_CONFIGURATION_IS(DEBUG)
+		#if MFW_CONFIGURATION_IS(DEBUG)
 			return _aligned_msize_dbg(const_cast<void *>(ptr), alignment, offset);
-			#else
+		#else
 			return _aligned_msize(const_cast<void *>(ptr), alignment, offset);
-			#endif
+		#endif
 		} else {
-			#if MFW_CONFIGURATION_IS(DEBUG)
+		#if MFW_CONFIGURATION_IS(DEBUG)
 			return _msize_dbg(const_cast<void *>(ptr), block);
-			#else
+		#else
 			return _msize(const_cast<void *>(ptr));
-			#endif
+		#endif
 		}
 	#else
 		return malloc_usable_size(const_cast<void *>(ptr));
 	#endif
 	}
 
-#if MFW_COMPILER_IS(MSVC)
+#if MFW_COMPILER_FLAGGED(MSVC)
 	MFW_WARNING_PUSH()
 	MFW_WARNING_DISABLE(6320)
 #endif
@@ -129,11 +124,11 @@ namespace mfw::stl
 
 		return true;
 	}
-#if MFW_COMPILER_IS(MSVC)
+#if MFW_COMPILER_FLAGGED(MSVC)
 	MFW_WARNING_POP()
 #endif
 
-	[[nodiscard]] MFW_STL_API __MFW_ALLOC_PRE void * MFW_STL_CALL allocate(
+	[[nodiscard]] MFW_STL_API _MFW_ALLOC_PRE void * MFW_STL_CALL allocate(
 		size_t size,
 		size_t alignment, size_t offset,
 		bool is_array
@@ -144,7 +139,7 @@ namespace mfw::stl
 		,const char *file, int32_t line,
 		const type_info *type
 	#endif
-	) noexcept //__MFW_ALIGN_ALLOC_POST(1, 2)
+	) noexcept //_MFW_ALIGN_ALLOC_POST(1, 2)
 	{
 		if(size == 0) {
 			return nullptr;
@@ -191,7 +186,7 @@ namespace mfw::stl
 		return ptr;
 	}
 
-	MFW_STL_API __MFW_ALLOC_PRE void * MFW_STL_CALL reallocate(
+	MFW_STL_API _MFW_ALLOC_PRE void * MFW_STL_CALL reallocate(
 		void *&ptr, size_t size,
 		size_t alignment, size_t offset,
 		bool is_array
@@ -202,7 +197,7 @@ namespace mfw::stl
 		,const char *file, int32_t line,
 		const type_info *type
 	#endif
-	) noexcept //__MFW_ALIGN_REALLOC_POST(2, 3)
+	) noexcept //_MFW_ALIGN_REALLOC_POST(2, 3)
 	{
 		if(size == 0) {
 			deallocate(ptr, size, alignment, offset, is_array
@@ -219,8 +214,8 @@ namespace mfw::stl
 	#if MFW_OS_IS(WINDOWS)
 		if(alignment == 0) {
 		#if MFW_CONFIGURATION_IS(DEBUG)
-			#if MFW_COMPILER_IS(MSVC)
-				#pragma warning(suppress: 6308)
+			#if MFW_COMPILER_FLAGGED(MSVC)
+				MFW_WARNING_SUPPRESS(6308)
 			#endif
 			ptr = _realloc_dbg(ptr, size, block, file, line);
 		#else
@@ -271,13 +266,13 @@ namespace mfw::stl
 			return;
 		}
 
-	#if MFW_COMPILER_IS(MSVC)
-		#pragma warning(suppress: 6387)
+	#if MFW_COMPILER_FLAGGED(MSVC)
+		MFW_WARNING_SUPPRESS(6387)
 	#endif
 		ptr = memset(ptr, 0x0, size);
 
 	#if MFW_OS_IS(WINDOWS)
-		if(alignment == 0 && !__memory_funcs_internal::is_block_an_aligned_allocation(ptr)) {
+		if(alignment == 0 && !is_aligned(ptr)) {
 		#if MFW_CONFIGURATION_IS(DEBUG)
 			_free_dbg(ptr, block);
 		#else
@@ -297,16 +292,5 @@ namespace mfw::stl
 	#endif
 
 		ptr = nullptr;
-	}
-
-	MFW_STL_API void MFW_STL_CALL copy(void *dst, [[maybe_unused]] size_t max, const void *src, size_t size)
-	{
-	#if MFW_OS_IS(WINDOWS)
-		memcpy_s(dst, max, src, size);
-	#elif MFW_OS == MFW_OS_LINUX
-		memcpy(dst, src, size);
-	#else
-		#error
-	#endif
 	}
 }

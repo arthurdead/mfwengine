@@ -1,67 +1,69 @@
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	namespace literals
+	namespace __public_impl_string_view_funcs_ipp_internal MFW_VISIBILITY_LOCAL
 	{
-		constexpr inline ucstring_view operator""_sv(const ucchar_t *ptr, size_t len)
-		{ return {ptr, len}; }
-		constexpr inline uwstring_view operator""_sv(const uwchar_t *ptr, size_t len)
-		{ return {ptr, len}; }
-	}
-
-	inline const char *c_str(ucstring_view src)
-	{ return reinterpret_cast<const char *>(src.data()); }
-	inline const wchar_t *c_str(uwstring_view src)
-	{ return reinterpret_cast<const wchar_t *>(src.data()); }
-	
-	inline void to_string(ucstring_view src, pstring &dst)
-	{
-	#ifdef __MFW_STD_FILESYSTEM_WIDE_CHAR
-		#error
-	#else
-		const char *ptr{c_str(src)};
-		dst.assign(ptr, ptr + src.length());
-	#endif
-	}
-
-	namespace __string_view_funcs_internal
-	{
-		template <typename S, typename C>
-		inline bool to_bool(S src, C strtrue[4], C strfalse[5], bool &dst)
+		template <typename _Sp>
+		static bool _to_bool_impl(_Sp __src, size_t __len, bool &__dst) noexcept
 		{
-			if(src.empty()) {
-				dst = false;
+			using __C = typename _Sp::value_type;
+
+			if(__len == 0) {
+				__dst = false;
+				return false;
+			} else if(__len == 4) {
+				if(__src[0] == static_cast<__C>('t') &&
+					__src[1] == static_cast<__C>('r') &&
+					__src[2] == static_cast<__C>('u') &&
+					__src[3] == static_cast<__C>('e')) {
+					__dst = true;
+					return true;
+				}
+			} else if(__len == 5) {
+				if(__src[0] == static_cast<__C>('f') &&
+					__src[1] == static_cast<__C>('a') &&
+					__src[2] == static_cast<__C>('l') &&
+					__src[3] == static_cast<__C>('s') &&
+					__src[4] == static_cast<__C>('e')) {
+					__dst = false;
+					return true;
+				}
+			}
+
+			uint8_t __i{0};
+			if(!to_int(__src, __i)) {
+				__dst = false;
 				return false;
 			}
-			
-			if(src.compare(0, S::npos, strtrue, 4) == 0) {
-				dst = true;
-				return true;
-			} else if(src.compare(0, S::npos, strfalse, 5) == 0) {
-				dst = false;
-				return true;
-			} else {
-				uint8_t i{0};
-				if(!to_int(src, i)) {
-					dst = false;
-					return false;
-				}
-				dst = (i > 0);
-				return true;
-			}
+			__dst = (__i > 0);
+			return true;
 		}
 	}
 
-	inline bool to_bool(ucstring_view src, bool &dst)
-	{
-		return __string_view_funcs_internal::to_bool(src, STR_C("true"), STR_C("false"), dst);
-	}
-
-	inline bool to_bool(uwstring_view src, bool &dst)
-	{
-		return __string_view_funcs_internal::to_bool(src, STR_W("true"), STR_W("false"), dst);
-	}
-#else
-	#error
+	inline bool to_bool(string_view __src, bool &__dst) noexcept
+	{ return __public_impl_string_view_funcs_ipp_internal::_to_bool_impl(__src, __src.length(), __dst); }
+	/*
+	inline bool to_bool(wstring_view __src, bool &__dst) noexcept
+	{ return  __public_impl_string_view_funcs_ipp_internal::_to_bool_impl(__src, __src.length(), __dst); }
+#ifdef MFW_CPP_CHAR8_SUPPORTED
+	inline bool to_bool(u8string_view __src, bool &__dst) noexcept
+	{ return  __public_impl_string_view_funcs_ipp_internal::_to_bool_impl(__src, __src.length(), __dst); }
 #endif
+	inline bool to_bool(u16string_view __src, bool &__dst) noexcept
+	{ return  __public_impl_string_view_funcs_ipp_internal::_to_bool_impl(__src, __src.length(), __dst); }
+	inline bool to_bool(u32string_view __src, bool &__dst) noexcept
+	{ return  __public_impl_string_view_funcs_ipp_internal::_to_bool_impl(__src, __src.length(), __dst); }
+	*/
 }
+
+constexpr ::mfw::stl::string_view operator""_sv(const char *__ptr, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::string_view{__ptr, __len}; }
+constexpr ::mfw::stl::wstring_view operator""_sv(const wchar_t *__ptr, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::wstring_view{__ptr, __len}; }
+#ifdef MFW_CPP_CHAR8_SUPPORTED
+constexpr ::mfw::stl::u8string_view operator""_sv(const char8_t *__ptr, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::u8string_view{__ptr, __len}; }
+#endif
+constexpr ::mfw::stl::u16string_view operator""_sv(const char16_t *__ptr, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::u16string_view{__ptr, __len}; }
+constexpr ::mfw::stl::u32string_view operator""_sv(const char32_t *__ptr, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::u32string_view{__ptr, __len}; }

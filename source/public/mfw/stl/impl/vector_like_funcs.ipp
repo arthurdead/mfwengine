@@ -1,53 +1,38 @@
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	template <typename T>
-	void to_string(const __MFW_VECTOR_LIKE_CONTAINER<T> &src, ucstring &dst)
-	{
-		if(src.empty()) {
+	template <typename _Tp, typename _Sp>
+	void to_string(const _MFW_VECTOR_LIKE_CONTAINER<_Tp> &__src, _Sp &__dst) noexcept;
+	/*{
+		if(__src.empty()) {
 			return;
 		}
 
-		for(const T &it : src) {
-			dst += as_string<ucstring>(it);
-			dst += u8',';
-			dst += u8' ';
-		}
-		dst.erase(dst.end() - 2, dst.end());
-	}
+		extern void to_string(const _Tp &, _Sp &);
 
-	template <typename T>
-	void to_string(const __MFW_VECTOR_LIKE_CONTAINER<T> &src, uwstring &dst)
+		using __C = typename _Sp::value_type;
+
+		for(const _Tp &__it : __src) {
+			_MFW_TO_STRING_HELPER(__it, _Tp, __dst, _Sp)
+			__dst.append(1, static_cast<__C>(','));
+			__dst.append(1, static_cast<__C>(' '));
+		}
+		__dst.erase(__dst.end()-2, __dst.end());
+	}*/
+
+	template <typename _Tp, typename _Vp>
+	bool contains(const _MFW_VECTOR_LIKE_CONTAINER<_Tp> &__vec, const _Vp &__value) noexcept
 	{
-		if(src.empty()) {
-			return;
-		}
-
-		for(const T &it : src) {
-			dst += as_string<uwstring>(it);
-			dst += u',';
-			dst += u' ';
-		}
-		dst.erase(dst.end() - 2, dst.end());
-	}
-
-	template <typename T, typename V>
-	bool contains(const __MFW_VECTOR_LIKE_CONTAINER<T> &vec, const V &value)
-	{
-		if(vec.empty()) {
+		if(__vec.empty()) {
 			return false;
-		} else if(vec.size() == 1) {
-			return (*vec.cbegin() == value);
+		} else if(__vec.size() == 1) {
+			return (*__vec.cbegin() == __value);
 		} else {
-			for(const T &it : vec) {
-				if(it == value) {
+			for(const _Tp &__it : __vec) {
+				if(__it == __value) {
 					return true;
 				}
 			}
 			return false;
 		}
 	}
-#else
-	#error
-#endif
 }

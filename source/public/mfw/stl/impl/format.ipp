@@ -2,62 +2,48 @@
 
 namespace mfw::stl
 {
-	namespace literals
-	{
-		inline __format_internal::lit_fmt_c operator""_fmt(const ucchar_t *str, size_t len)
-		{ return {str, len}; }
-		inline __format_internal::lit_fmt_w operator""_fmt(const uwchar_t *str, size_t len)
-		{ return {str, len}; }
-	}
-
-	namespace __format_internal
+	namespace __public_impl_format_ipp MFW_VISIBILITY_LOCAL
 	{
 		MFW_IMPLEMENT_TUPLE_TO_VECTOR_INTERNAL(string)
 	}
 
 	MFW_IMPLEMENT_AS_TO_FUNC_GLOBAL(string)
-	MFW_IMPLEMENT_TUPLE_TO_VECTOR(string, __format_internal::)
+	MFW_IMPLEMENT_TUPLE_TO_VECTOR(string, __public_impl_format_ipp::)
 
-	namespace __format_internal
+	namespace __public_impl_format_ipp MFW_VISIBILITY_LOCAL
 	{
-		#define __MFW_STL_FORMAT \
-			overload_cast_static(bool, MFW_STL_CALL, stl::format, S &, SV, const vector<S> &)
+		#define _MFW_STL_FORMAT \
+			overload_cast_static(bool, MFW_STL_CALL, stl::format, _Sp &, _SVp, const vector<_Sp> &)
 
-		#define __MFW_STL_TO_VECTOR \
-			overload_cast_static(bool, MFW_STL_CALL, stl::to_vector_string, const tuple<Args...> &, vector<S> &)
+		#define _MFW_STL_TO_VECTOR \
+			overload_cast_static(bool, MFW_STL_CALL, stl::to_vector_string, const tuple<_Args...> &, vector<_Sp> &)
 
-		template <typename S, typename SV, typename ...Args>
-		bool format(S &str, SV fmtstr, Args &&... args)
+		template <typename _Sp, typename _SVp, typename... _Args>
+		MFW_VISIBILITY_LOCAL bool _format_impl(_Sp &__str, _Sp __fmtstr, _Args &&... __args) noexcept
 		{
-			tuple<Args...> tuple_args{forward<Args>(args)...};
-			vector<S> vec_args{};
-			if(!__MFW_STL_TO_VECTOR(tuple_args, vec_args)) {
+			tuple<_Args...> __tuple_args{forward<_Args>(__args)...};
+			vector<_Sp> __vec_args{};
+			if(!_MFW_STL_TO_VECTOR(__tuple_args, __vec_args)) {
 				return false;
 			}
-			return __MFW_STL_FORMAT(str, fmtstr, static_cast<const vector<S> &>(vec_args));
-		}
-
-		template <typename S, typename SV, typename C>
-		lit_fmt_base<S, SV, C>::lit_fmt_base(const C *str, size_t len)
-			: fmtstr{str, len}
-		{
-
-		}
-
-		template <typename S, typename SV, typename C> template <typename ...Args>
-		S lit_fmt_base<S, SV, C>::operator()(Args &&... args) const
-		{
-			S str{};
-			__format_internal::format(str, fmtstr, forward<Args>(args)...);
-			return str;
+			return _MFW_STL_FORMAT(__str, __fmtstr, static_cast<const vector<_Sp> &>(__vec_args));
 		}
 	}
 
-	template <typename ...Args>
-	bool format(ucstring &str, ucstring_view fmtstr, Args &&... args)
-	{ return __format_internal::format(str, fmtstr, forward<Args>(args)...); }
-
-	template <typename ...Args>
-	bool format(uwstring &str, uwstring_view fmtstr, Args &&... args)
-	{ return __format_internal::format(str, fmtstr, forward<Args>(args)...); }
+	template <typename _Sp, typename _SVp, typename... _Args>
+	bool format(_Sp &__str, _SVp __fmtstr, _Args &&... __args) noexcept
+	{ return __public_impl_format_ipp::_format_impl(__str, __fmtstr, forward<_Args>(__args)...); }
 }
+
+inline ::mfw::stl::lit_fmt_c operator""_fmt(const char *__str, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::lit_fmt_c{__str, __len}; }
+inline ::mfw::stl::lit_fmt_w operator""_fmt(const wchar_t *__str, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::lit_fmt_w{__str, __len}; }
+#ifdef MFW_CPP_CHAR8_SUPPORTED
+inline ::mfw::stl::lit_fmt_u8 operator""_fmt(const char8_t *__str, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::lit_fmt_u8{__str, __len}; }
+#endif
+inline ::mfw::stl::lit_fmt_u16 operator""_fmt(const char16_t *__str, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::lit_fmt_u16{__str, __len}; }
+inline ::mfw::stl::lit_fmt_u32 operator""_fmt(const char32_t *__str, ::mfw::stl::size_t __len) noexcept
+{ return ::mfw::stl::lit_fmt_u32{__str, __len}; }

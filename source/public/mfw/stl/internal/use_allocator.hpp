@@ -1,34 +1,34 @@
 namespace mfw::stl
 {
-	template <typename T>
+	template <typename _Tp>
 	class use_allocator
 	{
-	#ifdef __MFW_ENABLE_CUSTOM_ALLOCATORS
+#ifdef _MFW_ENABLE_CUSTOM_ALLOCATORS
 	public:
 		#pragma push_macro("new")
 		#undef new
 
-		[[nodiscard]] static __MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(size_t size) noexcept __MFW_NEW_POST;
-		[[nodiscard]] static __MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(size_t size, align_val_t alignment) noexcept __MFW_ALIGN_NEW_POST;
+		[[nodiscard]] static _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(size_t size) noexcept _MFW_NEW_POST;
+		[[nodiscard]] static _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(size_t size, align_val_t alignment) noexcept _MFW_ALIGN_NEW_POST;
 
-		[[nodiscard]] static __MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](size_t size) noexcept __MFW_NEW_POST;
-		[[nodiscard]] static __MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](size_t size, align_val_t alignment) noexcept __MFW_ALIGN_NEW_POST;
+		[[nodiscard]] static _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](size_t size) noexcept _MFW_NEW_POST;
+		[[nodiscard]] static _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](size_t size, align_val_t alignment) noexcept _MFW_ALIGN_NEW_POST;
 
-		[[nodiscard]] static __MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(size_t size
+		[[nodiscard]] static _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(size_t size
 	#if MFW_OS_IS(WINDOWS)
 		,int32_t block
 	#endif
-		,const char *file, int32_t line) noexcept __MFW_NEW_POST
+		,const char *file, int32_t line) noexcept _MFW_NEW_POST
 	#if MFW_CONFIGURATION_IS(RELEASE)
 		= delete
 	#endif
 		;
 
-		[[nodiscard]] static __MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](size_t size
+		[[nodiscard]] static _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](size_t size
 	#if MFW_OS_IS(WINDOWS)
 		,int32_t block
 	#endif
-		,const char *file, int32_t line) noexcept __MFW_NEW_POST
+		,const char *file, int32_t line) noexcept _MFW_NEW_POST
 	#if MFW_CONFIGURATION_IS(RELEASE)
 		= delete
 	#endif
@@ -70,7 +70,7 @@ namespace mfw::stl
 		#pragma pop_macro("delete")
 
 	private:
-		[[nodiscard]] static __MFW_ALLOC_PRE T *allocate(
+		[[nodiscard]] static _MFW_ALLOC_PRE _Tp *allocate(
 			size_t size,
 			size_t alignment, size_t offset,
 			bool isarray
@@ -80,10 +80,10 @@ namespace mfw::stl
 			#endif
 			,const char *file, int32_t line
 		#endif
-		) noexcept __MFW_ALIGN_ALLOC_POST(1, 2);
+		) noexcept _MFW_ALIGN_ALLOC_POST(1, 2);
 
 		static void deallocate(
-			T *&ptr, size_t size,
+			_Tp *&ptr, size_t size,
 			size_t alignment, size_t offset,
 			bool isarray
 		#if MFW_CONFIGURATION_IS(DEBUG)
@@ -93,7 +93,7 @@ namespace mfw::stl
 			,const char *file, int32_t line
 		#endif
 		) noexcept;
-	#endif
+#endif
 	};
 }
 

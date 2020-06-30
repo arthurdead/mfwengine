@@ -1,29 +1,27 @@
-#ifndef __MFW_PUBLIC_STL_TUPLE_H
-#define __MFW_PUBLIC_STL_TUPLE_H
+#ifndef _MFW_PUBLIC_STL_TUPLE_HPP
+#define _MFW_PUBLIC_STL_TUPLE_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <tuple>
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/tuple.h>
 #else
 	#error
 #endif
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
 	using ::MFW_STD_NAMESPACE::tuple;
 	using ::MFW_STD_NAMESPACE::tuple_element;
 	using ::MFW_STD_NAMESPACE::tuple_element_t;
 	using ::MFW_STD_NAMESPACE::get;
 	using ::MFW_STD_NAMESPACE::tie;
-#else
-	#error
-#endif
 }
 
-#include <public/mfw/stl/detail/tuple_funcs.hpp>
+#include <public/mfw/stl/internal/tuple_funcs.hpp>
 
 #endif

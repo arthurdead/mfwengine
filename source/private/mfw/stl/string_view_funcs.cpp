@@ -3,7 +3,7 @@
 #include <public/mfw/stl/limits.hpp>
 #include <public/mfw/stl/system_error.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDC_IS(DEFAULT)
 	#include <charconv>
 	#include <cctype>
 #else
@@ -12,163 +12,159 @@
 
 #if MFW_LIBC_FLAGGED(UNIX)
 	#include <fnmatch.h>
+#else
+	#error
 #endif
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	namespace __string_view_funcs_internal
+	namespace __private_string_view_funcs_cpp MFW_VISIBILITY_LOCAL
 	{
-		template <typename T, typename T2>
-		bool __to_int_impl(ucstring_view src, T &dst, int32_t base = 10)
+		template <typename _T2p, typename _SVp, typename _Tp>
+		static bool _to_int_impl(_SVp __src, _Tp &__dst, radix_t __base = radix_t::decimal) noexcept
 		{
-			if(src == u8"true"_sv) {
-				dst = static_cast<T>(1);
-				return true;
-			} else if(src == u8"false"_sv) {
-				dst = static_cast<T>(0);
-				return true;
-			} else if(src.empty()) {
-				dst = static_cast<T>(numeric_limits<T2>::max());
+			using __C = typename _SVp::value_type;
+
+			size_t __len{__src.length()};
+			if(__len == 4) {
+				if(__src[0] == static_cast<__C>('t') &&
+					__src[1] == static_cast<__C>('r') &&
+					__src[2] == static_cast<__C>('u') &&
+					__src[3] == static_cast<__C>('e')) {
+					__dst = static_cast<_Tp>(1);
+					return true;
+				}
+			} else if(__len == 5) {
+				if(__src[0] == static_cast<__C>('f') &&
+					__src[1] == static_cast<__C>('a') &&
+					__src[2] == static_cast<__C>('l') &&
+					__src[3] == static_cast<__C>('s') &&
+					__src[3] == static_cast<__C>('e')) {
+					__dst = static_cast<_Tp>(0);
+					return true;
+				}
+			} else if(__len == 0) {
+				__dst = static_cast<_Tp>(numeric_limits<_T2p>::max());
 				return false;
 			}
 			
 			using ::MFW_STD_NAMESPACE::from_chars_result;
 			using ::MFW_STD_NAMESPACE::from_chars;
 
-			const char *begin{reinterpret_cast<const char *>(&(*src.cbegin()))};
-			const char *end{reinterpret_cast<const char *>(&(*src.cend()))};
-			from_chars_result res{from_chars(begin, end, reinterpret_cast<T2 &>(dst), base)};
+			const __C *__begin{reinterpret_cast<const __C *>(&(*__src.cbegin()))};
+			const __C *__end{reinterpret_cast<const __C *>(&(*__src.cend()))};
+			_T2p __tmp{static_cast<_T2p>(0)};
+			from_chars_result __res{from_chars(__begin, __end, __tmp, static_cast<int32_t>(__base))};
+			__dst = static_cast<_Tp>(__tmp);
 
-			if(res.ec == errc::invalid_argument || res.ptr == begin) {
-				dst = static_cast<T>(numeric_limits<T2>::max());
+			if(__res.ec == errc::invalid_argument || __res.ptr == __begin) {
+				__dst = static_cast<_Tp>(numeric_limits<_T2p>::max());
 				return false;
 			} else {
-				if(res.ptr != end) {
-					dst = static_cast<T>(numeric_limits<T2>::max());
+				if(__res.ptr != __end) {
+					MFW_MESSAGE("TODO check for f/b/i8/16/32/64")
+					__dst = static_cast<_Tp>(numeric_limits<_T2p>::max());
 					return false;
 				}
 				return true;
 			}
 		}
 
-		template <typename T>
-		bool to_int(ucstring_view src, T &dst, int32_t base = 10)
-		{ return __to_int_impl<T, T>(src, dst, base); }
-
-		template <>
-		bool to_int<int8_t>(ucstring_view src, int8_t &dst, int32_t base)
-		{ return __to_int_impl<int8_t, int16_t>(src, dst, base); }
-
-		template <>
-		bool to_int<uint8_t>(ucstring_view src, uint8_t &dst, int32_t base)
-		{ return __to_int_impl<uint8_t, uint16_t>(src, dst, base); }
-
-		template <typename T, typename F>
-		bool to_float(ucstring_view src, T &dst, F func)
+		template <typename _SVp, typename _Tp, typename _Fp>
+		static bool _to_float_impl(_SVp __src, _Tp &__dst, _Fp __func) noexcept
 		{
-			if(src == u8"true"_sv) {
-				dst = static_cast<T>(1.0f);
-				return true;
-			} else if(src == u8"false"_sv) {
-				dst = static_cast<T>(0.0f);
-				return true;
-			} else if(src.empty()) {
-				dst = numeric_limits<T>::max();
+			using __C = typename _SVp::value_type;
+
+			size_t __len{__src.length()};
+			if(__len == 4) {
+				if(__src[0] == static_cast<__C>('t') &&
+					__src[1] == static_cast<__C>('r') &&
+					__src[2] == static_cast<__C>('u') &&
+					__src[3] == static_cast<__C>('e')) {
+					__dst = static_cast<_Tp>(1.0f);
+					return true;
+				}
+			} else if(__len == 5) {
+				if(__src[0] == static_cast<__C>('f') &&
+					__src[1] == static_cast<__C>('a') &&
+					__src[2] == static_cast<__C>('l') &&
+					__src[3] == static_cast<__C>('s') &&
+					__src[3] == static_cast<__C>('e')) {
+					__dst = static_cast<_Tp>(0.0f);
+					return true;
+				}
+			} else if(__len == 0) {
+				__dst = static_cast<_Tp>(numeric_limits<_Tp>::max());
 				return false;
 			}
 			
-			ucchar_t *end{nullptr};
-			const ucchar_t *start{&(*src.cbegin())};
-			T ff{func(c_str(start), &c_str(end))};
-			if(end == start) {
-				dst = numeric_limits<T>::max();
+			__C *__end{nullptr};
+			const __C *__start{&(*__src.cbegin())};
+			_Tp __ff{__func(__start, &__end)};
+			if(__end == __start) {
+				__dst = numeric_limits<_Tp>::max();
 				return false;
 			} else {
-				if(end != &(*src.cend())) {
-					MFW_MESSAGE("TODO")
+				if(__end != &(*__src.cend())) {
+					MFW_MESSAGE("TODO check for f/b/i8/16/32/64")
+					__dst = static_cast<_Tp>(numeric_limits<_Tp>::max());
+					return false;
 				}
-				dst = ff;
+				__dst = __ff;
 				return true;
 			}
 		}
-		
-		template <typename T>
-		T toupper(T c)
+
+		template <typename _SVp, typename _Sp>
+		static void _to_upper_impl(_SVp __src, _Sp &__dst) noexcept
 		{
-			return static_cast<T>(::MFW_STD_NAMESPACE::toupper(static_cast<int32_t>(c)));
+			using __C = _SVp::value_type;
+
+			__dst = __src;
+			transform(__dst.begin(), __dst.end(), __dst.begin(), [](__C __c) noexcept -> __C {
+				return static_cast<__C>(::MFW_STD_NAMESPACE::toupper(static_cast<int32_t>(__c)));
+			});
 		}
 	}
 
-	MFW_STL_API bool MFW_STL_CALL to_int(ucstring_view src, int8_t &dst, int32_t base)
-	{
-		return __string_view_funcs_internal::to_int(src, dst, base);
-	}
+	MFW_STL_API bool MFW_STL_CALL to_int(string_view __src, int8_t &__dst, radix_t __base) noexcept
+	{ return __private_string_view_funcs_cpp::_to_int_impl<int16_t>(__src, __dst, __base); }
+	MFW_STL_API bool MFW_STL_CALL to_int(string_view __src, uint8_t &__dst, radix_t __base) noexcept
+	{ return __private_string_view_funcs_cpp::_to_int_impl<uint16_t>(__src, __dst, __base); }
 
-	MFW_STL_API bool MFW_STL_CALL to_int(ucstring_view src, uint8_t &dst, int32_t base)
-	{
-		return __string_view_funcs_internal::to_int(src, dst, base);
-	}
+	MFW_STL_API bool MFW_STL_CALL to_int(string_view __src, int16_t &__dst, radix_t __base) noexcept
+	{ return __private_string_view_funcs_cpp::_to_int_impl<int16_t>(__src, __dst, __base); }
+	MFW_STL_API bool MFW_STL_CALL to_int(string_view __src, uint16_t &__dst, radix_t __base) noexcept
+	{ return __private_string_view_funcs_cpp::_to_int_impl<uint16_t>(__src, __dst, __base); }
 
-	MFW_STL_API bool MFW_STL_CALL to_int(ucstring_view src, int16_t &dst, int32_t base)
-	{
-		return __string_view_funcs_internal::to_int(src, dst, base);
-	}
+	MFW_STL_API bool MFW_STL_CALL to_int(string_view __src, int32_t &__dst, radix_t __base) noexcept
+	{ return __private_string_view_funcs_cpp::_to_int_impl<int32_t>(__src, __dst, __base); }
+	MFW_STL_API bool MFW_STL_CALL to_int(string_view __src, uint32_t &__dst, radix_t __base) noexcept
+	{ return __private_string_view_funcs_cpp::_to_int_impl<uint32_t>(__src, __dst, __base); }
 
-	MFW_STL_API bool MFW_STL_CALL to_int(ucstring_view src, uint16_t &dst, int32_t base)
-	{
-		return __string_view_funcs_internal::to_int(src, dst, base);
-	}
+	MFW_STL_API bool MFW_STL_CALL to_int(string_view __src, int64_t &__dst, radix_t __base) noexcept
+	{ return __private_string_view_funcs_cpp::_to_int_impl<int64_t>(__src, __dst, __base); }
+	MFW_STL_API bool MFW_STL_CALL to_int(string_view __src, uint64_t &__dst, radix_t __base) noexcept
+	{ return __private_string_view_funcs_cpp::_to_int_impl<uint64_t>(__src, __dst, __base); }
 
-	MFW_STL_API bool MFW_STL_CALL to_int(ucstring_view src, int32_t &dst, int32_t base)
-	{
-		return __string_view_funcs_internal::to_int(src, dst, base);
-	}
+	MFW_STL_API bool MFW_STL_CALL to_float(string_view __src, float32_t &__dst) noexcept
+	{ return __private_string_view_funcs_cpp::_to_float_impl(__src, __dst, ::MFW_STD_NAMESPACE::strtof); }
+	MFW_STL_API bool MFW_STL_CALL to_float(string_view __src, float64_t &__dst) noexcept
+	{ return __private_string_view_funcs_cpp::_to_float_impl(__src, __dst, ::MFW_STD_NAMESPACE::strtod); }
+	MFW_STL_API bool MFW_STL_CALL to_float(string_view __src, float80_t &__dst) noexcept
+	{ return __private_string_view_funcs_cpp::_to_float_impl(__src, __dst, ::MFW_STD_NAMESPACE::strtold); }
 
-	MFW_STL_API bool MFW_STL_CALL to_int(ucstring_view src, uint32_t &dst, int32_t base)
-	{
-		return __string_view_funcs_internal::to_int(src, dst, base);
-	}
-
-	MFW_STL_API bool MFW_STL_CALL to_int(ucstring_view src, int64_t &dst, int32_t base)
-	{
-		return __string_view_funcs_internal::to_int(src, dst, base);
-	}
-
-	MFW_STL_API bool MFW_STL_CALL to_int(ucstring_view src, uint64_t &dst, int32_t base)
-	{
-		return __string_view_funcs_internal::to_int(src, dst, base);
-	}
-
-	MFW_STL_API bool MFW_STL_CALL to_float(ucstring_view src, float32_t &dst)
-	{
-		return __string_view_funcs_internal::to_float(src, dst, strtof);
-	}
-
-	MFW_STL_API bool MFW_STL_CALL to_float(ucstring_view src, float64_t &dst)
-	{
-		return __string_view_funcs_internal::to_float(src, dst, strtod);
-	}
-
-	MFW_STL_API bool MFW_STL_CALL to_float(ucstring_view src, float80_t &dst)
-	{
-		return __string_view_funcs_internal::to_float(src, dst, strtold);
-	}
-
-	MFW_STL_API void MFW_STL_CALL to_upper(ucstring_view src, ucstring &dst)
-	{
-		dst = src;
-		transform(dst.begin(), dst.end(), dst.begin(), static_cast<ucchar_t(*)(ucchar_t)>(__string_view_funcs_internal::toupper));
-	}
+	MFW_STL_API void MFW_STL_CALL to_upper(string_view __src, string &__dst) noexcept
+	{ __private_string_view_funcs_cpp::_to_upper_impl(__src, __dst); }
 	
-	MFW_STL_API bool MFW_STL_CALL matches_pattern(ucstring_view str, ucstring_view pattern)
+	MFW_STL_API bool MFW_STL_CALL matches_pattern(string_view __str, string_view __pattern) noexcept
 	{
-		if(str == pattern) {
+		if(__str == __pattern) {
 			return true;
 		}
 		
 	#if MFW_LIBC_FLAGGED(UNIX)
-		return (fnmatch(c_str(pattern), c_str(str), FNM_CASEFOLD
+		return (fnmatch(__pattern.data(), __str.data(), FNM_CASEFOLD
 		#if !MFW_LIBC_IS(MUSL)
 		|FNM_EXTMATCH
 		#endif
@@ -177,7 +173,4 @@ namespace mfw::stl
 		#error
 	#endif
 	}
-#else
-	#error
-#endif
 }

@@ -1,132 +1,63 @@
-#ifndef __MFW_PUBLIC_STL_STRING_H
-#define __MFW_PUBLIC_STL_STRING_H
+#ifndef _MFW_PUBLIC_STL_STRING_HPP
+#define _MFW_PUBLIC_STL_STRING_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/defines.hpp>
 #include <public/mfw/stl/stl.hpp>
-#include <public/mfw/stl/detail/allocator.hpp>
+#include <public/mfw/stl/internal/allocator.hpp>
 #include <public/mfw/stl/functional.hpp>
 #include <public/mfw/stl/shared/char_traits.hpp>
 #include <public/mfw/stl/type_traits.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
-	#pragma push_macro("new")
-	#undef new
+#pragma push_macro("new")
+#undef new
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <string>
-	#include <cstring>
-	#include <filesystem>
-	#pragma pop_macro("new")
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/string.h>
 #else
 	#error
 #endif
+#if MFW_STDC_IS(DEFAULT)
+	#include <cstring>
+#else
+	#error
+#endif
+#include <filesystem>
+#pragma pop_macro("new")
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
 	template <typename C, typename T = char_traits<C>, typename A = allocator<C>>
 	using basic_string = ::MFW_STD_NAMESPACE::basic_string<C, T, A>;
 
 	using string = basic_string<char, char_traits<char>, allocator<char>>;
 	using wstring = basic_string<wchar_t, char_traits<wchar_t>, allocator<wchar_t>>;
+#ifdef MFW_CPP_CHAR8_SUPPORTED
 	using u8string = basic_string<char8_t, char_traits<char8_t>, allocator<char8_t>>;
+#endif
 	using u16string = basic_string<char16_t, char_traits<char16_t>, allocator<char16_t>>;
 	using u32string = basic_string<char32_t, char_traits<char32_t>, allocator<char32_t>>;
-	using ucstring = basic_string<ucchar_t, char_traits<ucchar_t>, allocator<ucchar_t>>;
-	using uwstring = basic_string<uwchar_t, char_traits<uwchar_t>, allocator<uwchar_t>>;
-	using usstring = basic_string<uschar_t, char_traits<uschar_t>, allocator<uschar_t>>;
+	
+	using osstring = basic_string<oschar_t, char_traits<oschar_t>, allocator<oschar_t>>;
 
-	using pstring = ::MFW_STD_NAMESPACE::filesystem::path;
+	using pstring = ::std::filesystem::path;
 	using npstring = pstring::string_type;
-	#ifdef __MFW_FILESYSTEM_CHAR8
-	using u8npstring = ::MFW_STD_NAMESPACE::u8string;
-	#else
-	using u8npstring = ::MFW_STD_NAMESPACE::string;
-	#endif
-	#ifdef __MFW_STD_FILESYSTEM_WIDE_CHAR
-	using unpstring = uwstring;
-	#else
-	using unpstring = ucstring;
-	#endif
-
-	namespace literals
-	{
-		using namespace ::MFW_STD_NAMESPACE::string_literals;
-	}
-#else
-	#error
-#endif
 }
 
 namespace MFW_STD_NAMESPACE
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
 	template <>
 	class hash<::mfw::stl::pstring>
 	{
 	public:
-		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::pstring &str) const
-		{
-			MFW_MESSAGE("remove this later")
-			size_t length{str.native().length() * sizeof(::mfw::stl::pchar_t)};
-		#if MFW_LIBCPP_IS(LLVM)
-			return ::MFW_STD_NAMESPACE::__do_string_hash(str.c_str(), str.c_str() + length);
-		#elif MFW_LIBCPP_FLAGGED(UNIX)
-			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), length);
-		#elif MFW_LIBCPP_IS(MSVC)
-			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), length);
-		#else
-			#error
-		#endif
-		}
+		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::pstring &__str) const noexcept;
 	};
-
-	#ifdef __MFW_ENABLE_CUSTOM_ALLOCATORS
-	template <>
-	class hash<::mfw::stl::ucstring>
-	{
-	public:
-		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::ucstring &str) const
-		{
-			MFW_MESSAGE("remove this later")
-			size_t length{str.length() * sizeof(::mfw::stl::ucchar_t)};
-		#if MFW_LIBCPP_IS(LLVM)
-			return ::MFW_STD_NAMESPACE::__do_string_hash(str.c_str(), str.c_str() + length);
-		#elif MFW_LIBCPP_FLAGGED(UNIX)
-			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), length);
-		#elif MFW_LIBCPP_IS(MSVC)
-			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), length);
-		#else
-			#error
-		#endif
-		}
-	};
-
-	template <>
-	class hash<::mfw::stl::uwstring>
-	{
-	public:
-		::MFW_STD_NAMESPACE::size_t operator()(const ::mfw::stl::uwstring &str) const
-		{
-			MFW_MESSAGE("remove this later")
-			size_t length{str.length() * sizeof(::mfw::stl::uwchar_t)};
-		#if MFW_LIBCPP_IS(LLVM)
-			return ::MFW_STD_NAMESPACE::__do_string_hash(str.c_str(), str.c_str() + length);
-		#elif MFW_LIBCPP_FLAGGED(UNIX)
-			return ::MFW_STD_NAMESPACE::_Hash_impl::hash(str.c_str(), str.length() * sizeof(::mfw::stl::uwchar_t));
-		#elif MFW_LIBCPP_IS(MSVC)
-			return ::MFW_STD_NAMESPACE::_Hash_array_representation(str.c_str(), str.length() * sizeof(::mfw::stl::uwchar_t));
-		#else
-			#error
-		#endif
-		}
-	};
-	#endif
-#endif
 }
 
-#include <public/mfw/stl/detail/string_funcs.hpp>
 #include <public/mfw/stl/impl/string.ipp>
+#include <public/mfw/stl/internal/string_funcs.hpp>
 
 #endif

@@ -1,6 +1,6 @@
 #include <public/mfw/stl/float.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDC_IS(DEFAULT)
 	#include <cstdio>
 #else
 	#error
@@ -8,71 +8,40 @@
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	namespace __float_funcs_internal
+	namespace __private_float_funcs_cpp MFW_VISIBILITY_LOCAL
 	{
 		MFW_MESSAGE("replace both with tochars on msvc")
-		template <typename S>
-		void to_string(S src, ucstring &dst, const char *fmt)
+		template <typename _Tp, typename _Sp, typename _Cp, typename _Fp>
+		static void _to_string_impl(_Tp __src, _Sp &__dst, const _Cp *__fmt, _Fp __func) noexcept
 		{
-			dst.clear();
+			__dst.clear();
 		#if MFW_COMPILER_FLAGGED(MSVC)
 			MFW_WARNING_SUPPRESS(4774)
 		#endif
-			int32_t size{snprintf(nullptr, 0, fmt, src)};
-			dst.resize(static_cast<size_t>(size));
+			int32_t __size{__func(nullptr, 0, __fmt, __src)};
+			__dst.resize(static_cast<size_t>(__size));
 		#if MFW_COMPILER_FLAGGED(MSVC)
 			MFW_WARNING_SUPPRESS(4774)
 		#endif
-			snprintf(c_str(dst), static_cast<size_t>(size+1), fmt, src);
-		}
-
-		template <typename S>
-		void to_string(S src, uwstring &dst, const wchar_t *fmt)
-		{
-			dst.clear();
-		#if MFW_COMPILER_FLAGGED(MSVC)
-			MFW_WARNING_SUPPRESS(4774)
-		#endif
-			int32_t size{swprintf(nullptr, 0, fmt, src)};
-			dst.resize(static_cast<size_t>(size));
-		#if MFW_COMPILER_FLAGGED(MSVC)
-			MFW_WARNING_SUPPRESS(4774)
-		#endif
-			swprintf(c_str(dst), static_cast<size_t>(size+1), fmt, src);
+			__func(__dst.data(), static_cast<size_t>(__size+1), __fmt, __src);
 		}
 	}
 
-	MFW_STL_API void MFW_STL_CALL to_string(float32_t src, ucstring &dst)
-	{
-		__float_funcs_internal::to_string(src, dst, "%f");
-	}
+	MFW_STL_API void MFW_STL_CALL to_string(float32_t __src, string &__dst) noexcept
+	{ __private_float_funcs_cpp::_to_string_impl(__src, __dst, "%f", ::MFW_STD_NAMESPACE::snprintf); }
 
-	MFW_STL_API void MFW_STL_CALL to_string(float32_t src, uwstring &dst)
-	{
-		__float_funcs_internal::to_string(src, dst, L"%f");
-	}
+	MFW_STL_API void MFW_STL_CALL to_string(float64_t __src, string &__dst) noexcept
+	{ __private_float_funcs_cpp::_to_string_impl(__src, __dst, "%lf", ::MFW_STD_NAMESPACE::snprintf); }
 
-	MFW_STL_API void MFW_STL_CALL to_string(float64_t src, ucstring &dst)
-	{
-		__float_funcs_internal::to_string(src, dst, "%lf");
-	}
+	MFW_STL_API void MFW_STL_CALL to_string(float80_t __src, string &__dst) noexcept
+	{ __private_float_funcs_cpp::_to_string_impl(__src, __dst, "%Lf", ::MFW_STD_NAMESPACE::snprintf); }
 
-	MFW_STL_API void MFW_STL_CALL to_string(float64_t src, uwstring &dst)
-	{
-		__float_funcs_internal::to_string(src, dst, L"%lf");
-	}
+	MFW_STL_API void MFW_STL_CALL to_string(float32_t __src, wstring &__dst) noexcept
+	{ __private_float_funcs_cpp::_to_string_impl(__src, __dst, L"%f", ::MFW_STD_NAMESPACE::swprintf); }
 
-	MFW_STL_API void MFW_STL_CALL to_string(float80_t src, ucstring &dst)
-	{
-		__float_funcs_internal::to_string(src, dst, "%Lf");
-	}
+	MFW_STL_API void MFW_STL_CALL to_string(float64_t __src, wstring &__dst) noexcept
+	{ __private_float_funcs_cpp::_to_string_impl(__src, __dst, L"%lf", ::MFW_STD_NAMESPACE::swprintf); }
 
-	MFW_STL_API void MFW_STL_CALL to_string(float80_t src, uwstring &dst)
-	{
-		__float_funcs_internal::to_string(src, dst, L"%Lf");
-	}
-#else
-	#error
-#endif
+	MFW_STL_API void MFW_STL_CALL to_string(float80_t __src, wstring &__dst) noexcept
+	{ __private_float_funcs_cpp::_to_string_impl(__src, __dst, L"%Lf", ::MFW_STD_NAMESPACE::swprintf); }
 }

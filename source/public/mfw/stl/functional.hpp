@@ -1,22 +1,23 @@
-#ifndef __MFW_PUBLIC_STL_FUNCTIONAL_H
-#define __MFW_PUBLIC_STL_FUNCTIONAL_H
+#ifndef _MFW_PUBLIC_STL_FUNCTIONAL_HPP
+#define _MFW_PUBLIC_STL_FUNCTIONAL_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
-	#pragma push_macro("new")
-	#undef new
+#pragma push_macro("new")
+#undef new
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <functional>
-	#pragma pop_macro("new")
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/functional.h>
 #else
 	#error
 #endif
+#pragma pop_macro("new")
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
 	using ::MFW_STD_NAMESPACE::equal_to;
 	using ::MFW_STD_NAMESPACE::hash;
 	using ::MFW_STD_NAMESPACE::function;
@@ -24,9 +25,6 @@ namespace mfw::stl
 	using ::MFW_STD_NAMESPACE::ref;
 	using ::MFW_STD_NAMESPACE::cref;
 	using ::MFW_STD_NAMESPACE::bind;
-#else
-	#error
-#endif
 }
 
 #endif

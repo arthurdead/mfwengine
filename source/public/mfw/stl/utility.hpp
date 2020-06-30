@@ -1,26 +1,24 @@
-#ifndef __MFW_PUBLIC_STL_UTILITY_H
-#define __MFW_PUBLIC_STL_UTILITY_H
+#ifndef _MFW_PUBLIC_STL_UTILITY_HPP
+#define _MFW_PUBLIC_STL_UTILITY_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <utility>
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/utility.h>
 #else
 	#error
 #endif
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
 	using ::MFW_STD_NAMESPACE::pair;
 	using ::MFW_STD_NAMESPACE::forward;
 	using ::MFW_STD_NAMESPACE::move;
 	using ::MFW_STD_NAMESPACE::swap;
-#else
-	#error
-#endif
 }
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_STL_UNORDERED_MAP_H
-#define __MFW_PUBLIC_STL_UNORDERED_MAP_H
+#ifndef _MFW_PUBLIC_STL_UNORDERED_MAP_HPP
+#define _MFW_PUBLIC_STL_UNORDERED_MAP_HPP
 
 #pragma once
 
@@ -8,22 +8,20 @@
 #include <public/mfw/stl/utility.hpp>
 #include <public/mfw/stl/functional.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <unordered_map>
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/unordered_map.h>
 #else
 	#error
 #endif
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
 	template <typename K, typename T, typename H = hash<K>, typename E = equal_to<K>, typename A = allocator<pair<const K, T>>>
 	using unordered_map = ::MFW_STD_NAMESPACE::unordered_map<K, T, H, E, A>;
-#else
-	#error
-#endif
 }
 
-#include <public/mfw/stl/detail/unordered_map_funcs.hpp>
+#include <public/mfw/stl/internal/unordered_map_funcs.hpp>
 
 #endif

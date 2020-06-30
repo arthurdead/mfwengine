@@ -1,25 +1,23 @@
-#ifndef __MFW_PUBLIC_STL_STACK_H
-#define __MFW_PUBLIC_STL_STACK_H
+#ifndef _MFW_PUBLIC_STL_STACK_HPP
+#define _MFW_PUBLIC_STL_STACK_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/deque.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <stack>
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/stack.h>
 #else
 	#error
 #endif
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
 	template <typename T, typename D = deque<T, allocator<T>>>
 	using stack = ::MFW_STD_NAMESPACE::stack<T, D>;
-#else
-	#error
-#endif
 }
 
 #endif

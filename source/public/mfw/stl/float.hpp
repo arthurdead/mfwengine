@@ -1,17 +1,13 @@
-#ifndef __MFW_PUBLIC_STL_FLOAT_H
-#define __MFW_PUBLIC_STL_FLOAT_H
+#ifndef _MFW_PUBLIC_STL_FLOAT_HPP
+#define _MFW_PUBLIC_STL_FLOAT_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
-	#include <cfloat>
-	#if MFW_COMPILER_FLAGGED(UNIX) && !defined __MFW_BROWSER_DETECTED
-		#include <bits/floatn.h>
-	#endif
-#else
-	#error
+#include <cfloat>
+#if MFW_COMPILER_FLAGGED(UNIX) && !MFW_LIBC_IS(MUSL)
+	#include <bits/floatn.h>
 #endif
 
 #if (defined(__HAVE_FLOAT16) && __HAVE_FLOAT16) || (defined(__HAVE_DISTINCT_FLOAT16) && __HAVE_DISTINCT_FLOAT16) || defined __STDC_WANT_IEC_60559_TYPES_EXT__
@@ -26,27 +22,23 @@
 	#define __MFW_FLOAT128_UNIQUE
 #endif
 
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	#ifdef __STDC_WANT_IEC_60559_TYPES_EXT__
-		#define MFW_FLT16_MAX FLT16_MAX
-		#define MFW_FLT32_MAX FLT32_MAX
-		#define MFW_FLT64_MAX FLT64_MAX
-		#define MFW_FLT80_MAX FLT128_MAX
-		#define MFW_FLT128_MAX FLT128_MAX
-	#else
-		#define MFW_FLT16_MAX FLT_MAX
-		#define MFW_FLT32_MAX FLT_MAX
-		#define MFW_FLT64_MAX DBL_MAX
-		#define MFW_FLT80_MAX LDBL_MAX
-		#define MFW_FLT128_MAX LDBL_MAX
-	#endif
+#ifdef __STDC_WANT_IEC_60559_TYPES_EXT__
+	#define MFW_FLT16_MAX FLT16_MAX
+	#define MFW_FLT32_MAX FLT32_MAX
+	#define MFW_FLT64_MAX FLT64_MAX
+	#define MFW_FLT80_MAX FLT128_MAX
+	#define MFW_FLT128_MAX FLT128_MAX
 #else
-	#error
+	#define MFW_FLT16_MAX FLT_MAX
+	#define MFW_FLT32_MAX FLT_MAX
+	#define MFW_FLT64_MAX DBL_MAX
+	#define MFW_FLT80_MAX LDBL_MAX
+	#define MFW_FLT128_MAX LDBL_MAX
 #endif
 
 namespace mfw::stl
 {
-#if MFW_COMPILER_IS(MSVC) || defined __MFW_BROWSER_DETECTED
+#if MFW_COMPILER_FLAGGED(MSVC) || MFW_LIBC_IS(MUSL)
 	using float16_t = float;
 	using float32_t = float;
 	using float64_t = double;
@@ -72,6 +64,6 @@ namespace mfw::stl
 #endif
 }
 
-#include <public/mfw/stl/detail/float_funcs.hpp>
+#include <public/mfw/stl/internal/float_funcs.hpp>
 
 #endif

@@ -2,8 +2,7 @@
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
-	namespace __tuple_funcs_internal
+	namespace __public_impl_tuple_funcs_ipp_internal MFW_VISIBILITY_LOCAL
 	{
 		MFW_MESSAGE("TODO!! add back below to __MFW_TUPLE_TO_VECTOR_CONVERT once MFW_DECLARE_FUNC_CHECK_MEMBER/GLOBAL supports templates")
 		/*
@@ -16,75 +15,72 @@ namespace mfw::stl
 		}
 		*/
 
-		#define __MFW_TUPLE_TO_VECTOR_CONVERT(name) \
+		#define _MFW_TUPLE_TO_VECTOR_CONVERT(name) \
 			if constexpr(test_funcs_##name<__T>::member::template has_to_v<__V>) { \
-				T str{}; \
-				tup_val.to_##name(str); \
-				vec.emplace_back(move(str)); \
+				__T __str{}; \
+				__tup_val.to_##name(__str); \
+				__vec.emplace_back(move(__str)); \
 			} else if constexpr(test_funcs_##name<__T>::template global<__V>::has_to_v) { \
-				T str{}; \
-				to_##name(tup_val, str); \
-				vec.emplace_back(move(str)); \
+				__T __str{}; \
+				to_##name(__tup_val, __str); \
+				__vec.emplace_back(move(__str)); \
 			}
 
-		#define __MFW_TUPLE_TO_VECTOR_IMPLEMENT_START(name) \
-			template <size_t i = 0, typename T, typename ...Args> \
-			bool to_vector##name(const tuple<Args...> &tup, vector<T> &vec) \
+		#define _MFW_TUPLE_TO_VECTOR_IMPLEMENT_START(pre, name) \
+			template <size_t _Ip = 0, typename _Tp, typename... _Args> \
+			pre bool to_vector##name(const tuple<_Args...> &__tup, vector<_Tp> &__vec) noexcept \
 			{ \
-				if constexpr(i == sizeof...(Args)) { \
+				if constexpr(_Ip == sizeof...(_Args)) { \
 					return true; \
 				} else { \
-					const auto &tup_val{get<i>(tup)}; \
-					using V = decltype(tup_val); \
-					using __V = remove_cvref_t<V>; \
-					using __T = remove_cvref_t<T>;
+					const auto &__tup_val{get<_Ip>(__tup)}; \
+					using __tup_val_t = decltype(__tup_val); \
+					using __V = remove_cvref_t<__tup_val_t>; \
+					using __T = remove_cvref_t<_Tp>;
 
-		#define __MFW_TUPLE_TO_VECTOR_IMPLEMENT_END(name) \
+		#define _MFW_TUPLE_TO_VECTOR_IMPLEMENT_END(name) \
 					if constexpr(is_same_v<__T, __V>) { \
-						vec.emplace_back(tup_val); \
+						__vec.emplace_back(__tup_val); \
 					} else if constexpr(is_constructible_v<__T, __V>) { \
-						vec.emplace_back(tup_val); \
+						__vec.emplace_back(__tup_val); \
 					} else if constexpr(is_convertible_v<__V, __T>) { \
-						vec.emplace_back(static_cast<__T>(tup_val)); \
+						__vec.emplace_back(static_cast<__T>(__tup_val)); \
 					} else if constexpr(is_assignable_v<__T, __V>) { \
-						__T vec_val{}; \
-						vec_val = tup_val; \
-						vec.emplace_back(move(vec_val)); \
+						__T __vec_val{}; \
+						__vec_val = __tup_val; \
+						__vec.emplace_back(move(__vec_val)); \
 					} else { \
 						MFW_DEBUGBREAK(); \
 						return false; \
 					} \
-					return to_vector##name<i + 1>(tup, vec); \
+					return to_vector##name<_Ip + 1>(__tup, __vec); \
 				} \
 			}
 
-		#define __MFW_DECLARE_TUPLE_TO_VECTOR(name) \
-			template <typename T, typename ...Args> \
-			bool to_vector##name(const tuple<Args...> &tup, vector<T> &vec);
+		#define _MFW_DECLARE_TUPLE_TO_VECTOR_IMPL(name) \
+			template <typename _Tp, typename... _Args> \
+			bool to_vector##name(const tuple<_Args...> &__tup, vector<_Tp> &__vec) noexcept;
 
-		#define __MFW_IMPLEMENT_TUPLE_TO_VECTOR(name, space) \
-			template <typename T, typename ...Args> \
-			bool to_vector##name(const tuple<Args...> &tup, vector<T> &vec) \
-			{ return space to_vector##name(tup, vec); }
+		#define _MFW_IMPLEMENT_TUPLE_TO_VECTOR_IMPL(name, space) \
+			template <typename _Tp, typename... _Args> \
+			bool to_vector##name(const tuple<_Args...> &__tup, vector<_Tp> &__vec) noexcept \
+			{ return space to_vector##name(__tup, __vec); }
 
-		__MFW_TUPLE_TO_VECTOR_IMPLEMENT_START(MFW_NOTHING)
-		__MFW_TUPLE_TO_VECTOR_IMPLEMENT_END(MFW_NOTHING)
+		_MFW_TUPLE_TO_VECTOR_IMPLEMENT_START(static, MFW_NOTHING)
+		_MFW_TUPLE_TO_VECTOR_IMPLEMENT_END(MFW_NOTHING)
 
 		#define MFW_IMPLEMENT_TUPLE_TO_VECTOR_INTERNAL(name) \
-			__MFW_TUPLE_TO_VECTOR_IMPLEMENT_START(_##name) \
-			__MFW_TUPLE_TO_VECTOR_CONVERT(name) \
+			_MFW_TUPLE_TO_VECTOR_IMPLEMENT_START(static MFW_VISIBILITY_LOCAL, _##name) \
+			_MFW_TUPLE_TO_VECTOR_CONVERT(name) \
 			else \
-			__MFW_TUPLE_TO_VECTOR_IMPLEMENT_END(_##name)
+			_MFW_TUPLE_TO_VECTOR_IMPLEMENT_END(_##name)
 
 		#define MFW_IMPLEMENT_TUPLE_TO_VECTOR(name, space) \
-			__MFW_IMPLEMENT_TUPLE_TO_VECTOR(_##name, space)
+			_MFW_IMPLEMENT_TUPLE_TO_VECTOR_IMPL(_##name, space)
 
 		#define MFW_DECLARE_TUPLE_TO_VECTOR(name) \
-			__MFW_DECLARE_TUPLE_TO_VECTOR(_##name)
+			_MFW_DECLARE_TUPLE_TO_VECTOR_IMPL(_##name)
 	}
 
-	__MFW_IMPLEMENT_TUPLE_TO_VECTOR(MFW_NOTHING, __tuple_funcs_internal::)
-#else
-	#error
-#endif
+	_MFW_IMPLEMENT_TUPLE_TO_VECTOR_IMPL(MFW_NOTHING, __public_impl_tuple_funcs_ipp_internal::)
 }

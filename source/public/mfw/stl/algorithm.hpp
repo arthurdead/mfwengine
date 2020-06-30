@@ -1,22 +1,23 @@
-#ifndef __MFW_PUBLIC_STL_ALGORITHM_H
-#define __MFW_PUBLIC_STL_ALGORITHM_H
+#ifndef _MFW_PUBLIC_STL_ALGORITHM_HPP
+#define _MFW_PUBLIC_STL_ALGORITHM_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
-	#pragma push_macro("new")
-	#undef new
+#pragma push_macro("new")
+#undef new
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <algorithm>
-	#pragma pop_macro("new")
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/algorithm.h>
 #else
 	#error
 #endif
+#pragma pop_macro("new")
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
 	using ::MFW_STD_NAMESPACE::clamp;
 	using ::MFW_STD_NAMESPACE::min;
 	using ::MFW_STD_NAMESPACE::max;
@@ -24,9 +25,6 @@ namespace mfw::stl
 	using ::MFW_STD_NAMESPACE::find;
 	using ::MFW_STD_NAMESPACE::find_if;
 	using ::MFW_STD_NAMESPACE::find_if_not;
-#else
-	#error
-#endif
 }
 
 #endif

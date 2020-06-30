@@ -1,25 +1,23 @@
-#ifndef __MFW_PUBLIC_STL_DEQUE_H
-#define __MFW_PUBLIC_STL_DEQUE_H
+#ifndef _MFW_PUBLIC_STL_DEQUE_HPP
+#define _MFW_PUBLIC_STL_DEQUE_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/memory.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDCPP_IS(DEFAULT)
 	#include <deque>
+#elif MFW_STDCPP_IS(EA)
+	#include <EASTL/deque.h>
 #else
 	#error
 #endif
 
 namespace mfw::stl
 {
-#if MFW_STD_FLAGGED(API_CONFORMING)
 	template <typename T, typename A = allocator<T>>
 	using deque = ::MFW_STD_NAMESPACE::deque<T, A>;
-#else
-	#error
-#endif
 }
 
 #endif

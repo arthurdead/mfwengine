@@ -1,39 +1,33 @@
-#if MFW_STD_FLAGGED(API_CONFORMING)
 namespace mfw::stl
 {
-	template <typename T, typename A>
-	void ptr_list<T, A>::push_front(const value_type &value)
+	template <typename _Tp, typename _Alloc>
+	void ptr_list<_Tp, _Alloc>::push_front(const value_type &__value) noexcept
 	{
 		super::push_front({});
-		unique_ptr<value_type> &ptr{super::front()};
-		ptr.reset(new value_type{value});
+		super::front().reset(new value_type{__value});
 	}
 
-	#if MFW_CPP_COMPARE(>=, 11)
-	template <typename T, typename A> template <typename ...Args>
-		#if MFW_CPP_COMPARE(>=, 17)
-	typename ptr_list<T, A>::reference
-		#else
+#if MFW_CPP_COMPARE(>=, 11)
+	template <typename _Tp, typename _Alloc> template <typename... _Args>
+	#if MFW_CPP_COMPARE(>=, 17)
+	typename ptr_list<_Tp, _Alloc>::reference
+	#else
 	void
-		#endif
-	ptr_list<T, A>::emplace_front(Args &&... args)
+	#endif
+	ptr_list<_Tp, _Alloc>::emplace_front(_Args &&... __args) noexcept
 	{
-		unique_ptr<value_type> &ptr{super::emplace_front()};
-		ptr.reset(new value_type{forward<Args>(args)...});
-		#if MFW_CPP_COMPARE(>=, 17)
-		return *ptr.get();
-		#endif
+		unique_ptr<value_type> &__ptr{super::emplace_front()};
+		__ptr.reset(new value_type{forward<_Args>(__args)...});
+	#if MFW_CPP_COMPARE(>=, 17)
+		return *__ptr.get();
+	#endif
 	}
 
-	template <typename T, typename A>
-	void ptr_list<T, A>::push_front(value_type &&value)
+	template <typename _Tp, typename _Alloc>
+	void ptr_list<_Tp, _Alloc>::push_front(value_type &&__value) noexcept
 	{
 		super::push_front({});
-		unique_ptr<value_type> &ptr{super::front()};
-		ptr.reset(new value_type{value});
+		super::front().reset(new value_type{__value});
 	}
-	#endif
-}
-#else
-	#error
 #endif
+}
