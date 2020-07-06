@@ -1,4 +1,5 @@
 #include <public/mfw/stl/string.hpp>
+#include <public/mfw/stl/string_view.hpp>
 
 namespace mfw::stl
 {
@@ -50,5 +51,20 @@ namespace mfw::stl
 	MFW_STL_API size_t MFW_STL_CALL replace_all(wstring &__str, wchar_t __from, wchar_t __to) noexcept
 	{ return __private_string_funcs_cpp::_replace_all_impl_c_c(__str, __from, __to); }
 	MFW_STL_API size_t MFW_STL_CALL replace_all(wstring &__str, wstring_view __from, wstring_view __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_v_v(__str, __from, __to); }
+
+	MFW_STL_API size_t MFW_STL_CALL replace_all(u8string &__str, char8_t __from, char8_t __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_c_c(__str, __from, __to); }
+	MFW_STL_API size_t MFW_STL_CALL replace_all(u8string &__str, u8string_view __from, u8string_view __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_v_v(__str, __from, __to); }
+
+	MFW_STL_API size_t MFW_STL_CALL replace_all(u16string &__str, char16_t __from, char16_t __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_c_c(__str, __from, __to); }
+	MFW_STL_API size_t MFW_STL_CALL replace_all(u16string &__str, u16string_view __from, u16string_view __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_v_v(__str, __from, __to); }
+
+	MFW_STL_API size_t MFW_STL_CALL replace_all(u32string &__str, char32_t __from, char32_t __to) noexcept
+	{ return __private_string_funcs_cpp::_replace_all_impl_c_c(__str, __from, __to); }
+	MFW_STL_API size_t MFW_STL_CALL replace_all(u32string &__str, u32string_view __from, u32string_view __to) noexcept
 	{ return __private_string_funcs_cpp::_replace_all_impl_v_v(__str, __from, __to); }
 }

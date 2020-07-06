@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_CORE_GLOBALS_H
-#define __MFW_PUBLIC_CORE_GLOBALS_H
+#ifndef __MFW_PUBLIC_CORE_GLOBALS_HPP
+#define __MFW_PUBLIC_CORE_GLOBALS_HPP
 
 #pragma once
 
@@ -10,63 +10,79 @@
 
 namespace mfw::core
 {
-	namespace interfaces
+	class MFW_VISIBILITY_PUBLIC GlobalAllocator
 	{
-		class MFW_VISIBILITY_DEFAULT global_allocator
+		template <typename T>
+		friend class GlobalAllocatorImpl;
+
+		MFW_CORE_API MFW_CORE_CALL GlobalAllocator() noexcept;
+		virtual MFW_CORE_API MFW_CORE_CALL ~GlobalAllocator() noexcept;
+
+	public:
+		virtual void allocate() noexcept = 0;
+		virtual void deallocate() noexcept = 0;
+	};
+
+	class MFW_VISIBILITY_PUBLIC GlobalInitializer
+	{
+	protected:
+		enum class init_type_t : stl::uchar_t
 		{
-		public:
-			MFW_CORE_API MFW_CORE_CALL global_allocator();
-			virtual MFW_CORE_API MFW_CORE_CALL ~global_allocator();
-
-			virtual void allocate() = 0;
-			virtual void deallocate() = 0;
+			init = MFW_BIT(0),
+			update = MFW_BIT(1),
+			shutdown = MFW_BIT(2),
 		};
+		MFW_CLASS_ENUM_FLAGS(init_type_t)
 
-		class MFW_VISIBILITY_DEFAULT global_initializer
-		{
-		public:
-			MFW_CORE_API MFW_CORE_CALL global_initializer();
-			virtual MFW_CORE_API MFW_CORE_CALL ~global_initializer();
+		MFW_CORE_API MFW_CORE_CALL GlobalInitializer(init_type_t type) noexcept;
+		virtual MFW_CORE_API MFW_CORE_CALL ~GlobalInitializer() noexcept;
 
-			virtual exit_status initialize() = 0;
-			virtual exit_status update() = 0;
-			virtual exit_status shutdown() = 0;
+		MFW_VISIBILITY_LOCAL GlobalInitializer(init_type_t type, stl::osstring_view name) noexcept
+			: GlobalInitializer{type} { m_name.assign(name); }
+		MFW_VISIBILITY_LOCAL GlobalInitializer(init_type_t type, stl::osstring_view name, stl::initializer_list<stl::osstring_view> depends) noexcept
+			: GlobalInitializer{type, name} { m_depends.assign(depends.begin(), depends.end()); }
 
-			MFW_CORE_API MFW_CORE_CALL global_initializer(ucstring_view _name_);
-			MFW_CORE_API MFW_CORE_CALL global_initializer(ucstring_view _name_, const initializer_list<ucstring_view> &_depends_);
+	public:
+		virtual ExitStatus initialize() noexcept
+		{ return ExitStatus::success; }
+		virtual ExitStatus update() noexcept
+		{ return ExitStatus::success; }
+		virtual ExitStatus shutdown() noexcept
+		{ return ExitStatus::success; }
 
-			const ucstring &name() const { return name_; }
-			const vector<ucstring> &depends() const { return depends_; }
+		MFW_VISIBILITY_LOCAL const stl::osstring &name() const noexcept
+		{ return m_name; }
+		MFW_VISIBILITY_LOCAL const stl::vector<stl::osstring> &depends() const noexcept
+		{ return m_depends; }
 
-		private:
-			ucstring name_{};
-			vector<ucstring> depends_{};
-		};
-	}
+	private:
+		stl::osstring m_name{};
+		stl::vector<stl::osstring> m_depends{};
+	};
 
 	template <typename T>
-	class global_allocator final : interfaces::global_allocator
+	class MFW_VISIBILITY_LOCAL GlobalAllocatorImpl final : private GlobalAllocator
 	{
 	public:
-		T &instance() {
+		T &instance() noexcept {
 			allocate();
 			return *pointer;
 		}
+
+		GlobalAllocatorImpl() noexcept
+			: GlobalAllocator{} {}
 		
-		~global_allocator() {
-			deallocate();
-		}
+		~GlobalAllocatorImpl() noexcept override
+		{ deallocate(); }
 
 	private:
-		void allocate()
-		{
+		void allocate() noexcept override {
 			if(!pointer) {
 				pointer = new T{};
 			}
 		}
 		
-		void deallocate()
-		{
+		void deallocate() noexcept override {
 			if(pointer) {
 				delete pointer;
 			}
@@ -77,11 +93,11 @@ namespace mfw::core
 	};
 
 	#define MFW_DECLARE_GLOBAL_ALLOCATOR(name, type) \
-		static ::mfw::core::global_allocator<type> MFW_MACRO_CONCATENATE(MFW_MACRO_CONCATENATE(__, name), _global_allocator){};
+		static MFW_VISIBILITY_LOCAL ::mfw::core::GlobalAllocatorImpl<type> MFW_MACRO_CONCATENATE(MFW_MACRO_CONCATENATE(__, name), _global_allocator){};
 
 	#define MFW_DECLARE_GLOBAL_CLASS_FUNCTION(globalname, classname, classfuncname) \
 		template <typename ...Args> \
-		auto globalname(Args &&... args) { \
+		MFW_VISIBILITY_LOCAL auto globalname(Args &&... args) noexcept { \
 			return classname::instance().classfuncname(forward<Args>(args)...); \
 		}
 }

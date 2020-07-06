@@ -13,6 +13,18 @@
 	#error
 #endif
 
+#if MFW_STDC_IS(DEFAULT)
+	#include <climits>
+#else
+	#error
+#endif
+
+#if MFW_OS_IS(LINUX)
+	#define _PATH_MAX MFW_MACRO_EXPAND(PATH_MAX)
+	#undef PATH_MAX
+	#define PATH_MAX please avoid this
+#endif
+
 namespace mfw::stl
 {
 	using ::MFW_STD_NAMESPACE::numeric_limits;

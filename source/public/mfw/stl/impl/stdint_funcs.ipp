@@ -3,7 +3,7 @@ namespace mfw::stl
 	namespace __public_impl_stdint_funcs_ipp_internal MFW_VISIBILITY_LOCAL
 	{
 		template <typename _Sp>
-		static MFW_VISIBILITY_LOCAL void _to_string_impl(bool __src, _Sp &__dst) noexcept
+		static void _to_string_impl(bool __src, _Sp &__dst) noexcept
 		{
 			using __C = typename _Sp::value_type;
 
@@ -26,10 +26,8 @@ namespace mfw::stl
 	{ __public_impl_stdint_funcs_ipp_internal::_to_string_impl(__src, __dst); }
 	inline void to_string(bool __src, wstring &__dst) noexcept
 	{ __public_impl_stdint_funcs_ipp_internal::_to_string_impl(__src, __dst); }
-#ifdef MFW_CPP_CHAR8_SUPPORTED
 	inline void to_string(bool __src, u8string &__dst) noexcept
 	{ __public_impl_stdint_funcs_ipp_internal::_to_string_impl(__src, __dst); }
-#endif
 	inline void to_string(bool __src, u16string &__dst) noexcept
 	{ __public_impl_stdint_funcs_ipp_internal::_to_string_impl(__src, __dst); }
 	inline void to_string(bool __src, u32string &__dst) noexcept

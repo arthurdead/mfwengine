@@ -1,118 +1,151 @@
-#ifndef __MFW_PUBLIC_CORE_APPLICATION_H
-#define __MFW_PUBLIC_CORE_APPLICATION_H
+#ifndef __MFW_PUBLIC_CORE_APPLICATION_HPP
+#define __MFW_PUBLIC_CORE_APPLICATION_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/stdint.hpp>
 #include <public/mfw/stl/string_view.hpp>
+#include <public/mfw/stl/array.hpp>
 #include <public/mfw/core/searchpath.hpp>
 
 namespace mfw::core
 {
-	struct exit_status
+	struct MFW_VISIBILITY_LOCAL ExitStatus
 	{
 	public:
-		enum class exit_codes : uchar_t
+		enum class exit_codes_t : stl::uchar_t
 		{
-			success,
-			fatal,
+			success = 0,
+			fatal = 1,
 		};
-		MFW_CLASS_ENUM(exit_codes)
+		MFW_CLASS_ENUM(exit_codes_t)
 		
-		exit_status() = default;
-		exit_status(uint8_t code, uint8_t warnings = {}, uint8_t errors = {})
-			{ set_code(code); add_warning(warnings); add_error(errors); }
-		exit_status(exit_codes code, uint8_t warnings = {}, uint8_t errors = {})
-			: exit_status{static_cast<uint8_t>(code), warnings, errors} {}
+		ExitStatus() noexcept = default;
+		ExitStatus(stl::uint8_t code) noexcept
+		{ this->code() = code; }
+		ExitStatus(exit_codes_t code) noexcept
+		{ this->code() = static_cast<stl::uint8_t>(code); }
 		
-		static const exit_status success;
-		static const exit_status fatal;
+		static const ExitStatus success;
+		static const ExitStatus fatal;
 	
-		uint8_t warnings() const { return values[2]; }
-		uint8_t errors() const { return values[3]; }
-		uint8_t code() const { return values[1]; }
-		
-		bool succeded() const { return !was_fatal() && errors() == 0; }
-		bool absolutely_succeded() const { return succeded() && warnings() == 0; }
-		bool was_fatal() const { return code() == exit_codes::fatal; }
-		bool failed() const { return was_fatal() || errors() > 0; }
+		stl::uint8_t &code() noexcept
+		{ return m_values[values_index::exit_code]; }
+		stl::uint8_t code() const noexcept
+		{ return m_values[values_index::exit_code]; }
 
-		operator bool() const { return succeded(); }
-		bool operator!() const { return !succeded(); }
+		stl::uint8_t &warnings() noexcept
+		{ return m_values[values_index::warnings_]; }
+		stl::uint8_t warnings() const noexcept
+		{ return m_values[values_index::warnings_]; }
 
-		void set_fatal() { set_code(static_cast<uint8_t>(exit_codes::fatal)); }
-		void set_failed(bool err=false) {
-			set_fatal();
-			if(err) {
-				add_error();
-			}
-		}
-		void set_code(uint8_t code) { values[1] = code; }
-		void add_error(uint8_t c=uint8_t{1}) { values[3] += c; }
-		void add_warning(uint8_t c=uint8_t{1}) { values[2] += c; }
+		stl::uint8_t &errors() noexcept
+		{ return m_values[values_index::errors_]; }
+		stl::uint8_t errors() const noexcept
+		{ return m_values[values_index::errors_]; }
 		
-		void append(exit_status status) {
-			uint8_t code{status.code()};
-			if(code != 0) {
-				set_code(code);
+		bool succeded() const noexcept
+		{ return !wasFatal() && errors() == 0; }
+		bool absolutelySucceded() const noexcept
+		{ return succeded() && warnings() == 0; }
+		bool wasFatal() const noexcept
+		{ return code() == exit_codes_t::fatal; }
+		bool failed() const noexcept
+		{ return wasFatal() || errors() > 0; }
+
+		operator bool() const noexcept
+		{ return succeded(); }
+		bool operator!() const noexcept
+		{ return !succeded(); }
+
+		ExitStatus &setFatal() noexcept
+		{ m_values[values_index::exit_code] = static_cast<stl::uint8_t>(exit_codes_t::fatal); return *this; }
+		ExitStatus &setFailed() noexcept
+		{ setFatal(); return *this; }
+		
+		void append(ExitStatus status) noexcept {
+			stl::uint8_t code{status.code()};
+			if(code != static_cast<stl::uint8_t>(exit_codes_t::success)) {
+				this->code() = code;
 			}
-			add_warning(status.warnings());
-			add_error(status.errors());
+			warnings() += status.warnings();
+			errors() += status.errors();
 		}
 		
-		exit_status &operator+=(exit_status status) {
+		ExitStatus &operator+=(ExitStatus status) noexcept {
 			append(status);
 			return *this;
 		}
 	
-		uint8_t values[4];
+	private:
+		enum /*class*/ values_index : stl::uchar_t
+		{
+			exit_code,
+			warnings_,
+			errors_,
+			reserved1,
+			count,
+		};
+		stl::array<stl::uint8_t, values_index::count> m_values{};
 	};
 	
-	pstring executable_path();
+	MFW_VISIBILITY_LOCAL stl::pstring executablePath() noexcept;
 	
-#if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
-	bool core_load_library(const searchpath &name);
-	exit_status core_update();
+#if MFW_BUILD_FLAGGED(EXECUTABLE)
+	MFW_VISIBILITY_LOCAL bool coreLoadLibrary(const SearchPath &name) noexcept;
+	MFW_VISIBILITY_LOCAL ExitStatus coreUpdate() noexcept;
 #endif
 }
 
-#if MFW_BUILD & MFW_BUILD_SHARED_FLAG
-extern MFW_SHARED_LOCAL ::mfw::core::exit_status application_main(
+#if MFW_BUILD_FLAGGED(SHARED)
+extern MFW_VISIBILITY_LOCAL ::mfw::core::ExitStatus applicationMain(
 	#if MFW_BUILD == MFW_BUILD_SHARED && MFW_OS == MFW_OS_WINDOWS
 bool thread
 	#endif
-);
+) noexcept;
 
-extern MFW_SHARED_LOCAL ::mfw::core::exit_status application_exit(
+extern MFW_VISIBILITY_LOCAL ::mfw::core::ExitStatus applicationExit(
 	#if MFW_BUILD == MFW_BUILD_SHARED && MFW_OS == MFW_OS_WINDOWS
 bool thread
 	#endif
-);
+) noexcept;
 #endif
 
-#if MFW_BUILD & MFW_BUILD_EXECUTABLE_FLAG
-extern bool application_load_libraries();
+#if MFW_BUILD_FLAGGED(EXECUTABLE)
+extern MFW_VISIBILITY_LOCAL bool applicationLoadLibraries() noexcept;
 #endif
 
-#if MFW_OS == MFW_OS_LINUX
+#if MFW_OS_IS(WEB)
+	#define __MFW_OS_TARGET "web"
+#elif MFW_OS_IS(LINUX)
 	#define __MFW_OS_TARGET "linux"
-#elif MFW_OS == MFW_OS_WINDOWS
+#elif MFW_OS_IS(ANDROID)
+	#define __MFW_OS_TARGET "android"
+#elif MFW_OS_IS(WINDOWS)
 	#define __MFW_OS_TARGET "windows"
 #else
 	#error
 #endif
 
-#if MFW_CONFIGURATION == MFW_CONFIGURATION_DEBUG
+#if MFW_CONFIGURATION_IS(DEBUG)
 	#define __MFW_CONFIGURATION_TARGET "debug"
-#else
+#elif MFW_CONFIGURATION_IS(RELEASE)
 	#define __MFW_CONFIGURATION_TARGET "release"
+#else
+	#error
 #endif
 
-#if MFW_PROCESSOR == MFW_PROCESSOR_X86_64
+#if MFW_PROCESSOR_IS(X86_64)
 	#define __MFW_PROCESSOR_TARGET "x86_64"
-#elif MFW_PROCESSOR == MFW_PROCESSOR_X86
+#elif MFW_PROCESSOR_IS(X86)
 	#define __MFW_PROCESSOR_TARGET "x86"
+#elif MFW_PROCESSOR_IS(ARM)
+	#define __MFW_PROCESSOR_TARGET "arm"
+#elif MFW_PROCESSOR_IS(AARCH64)
+	#define __MFW_PROCESSOR_TARGET "aarch64"
+#elif MFW_PROCESSOR_IS(WASM)
+	#define __MFW_PROCESSOR_TARGET "wasm"
 #else
 	#error
 #endif

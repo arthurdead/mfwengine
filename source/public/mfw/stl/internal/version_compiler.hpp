@@ -51,5 +51,5 @@
 	MFW_HAS_FEATURE(pnacl) || \
 	defined __pnacl__ || \
 	defined __asmjs__
-	#define __MFW_BROWSER_DETECTED
+	#define _MFW_WEB_DETECTED
 #endif

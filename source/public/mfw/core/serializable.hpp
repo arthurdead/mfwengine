@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_CORE_SERIALIZABLE_H
-#define __MFW_PUBLIC_CORE_SERIALIZABLE_H
+#ifndef __MFW_PUBLIC_CORE_SERIALIZABLE_HPP
+#define __MFW_PUBLIC_CORE_SERIALIZABLE_HPP
 
 #pragma once
 
@@ -14,200 +14,241 @@
 
 namespace mfw::core
 {
-	class serializable;
+	class Serializable;
 
-	namespace interfaces
+	class MFW_ABSTRACT_CLASS SerializableParserCallbacks
 	{
-		class serializable_parser_callbacks
-		{
-		protected:
-			virtual ~serializable_parser_callbacks() = default;
-			
-		public:
-			virtual const serializable *get_inherit(const ucstring_view &name) const = 0;
-		};
-	}
+	protected:
+		virtual ~SerializableParserCallbacks() noexcept = default;
+		
+	public:
+		virtual const Serializable *getInherit(stl::osstring_view name) const noexcept = 0;
 
-	class MFW_VISIBILITY_DEFAULT serializable //: public use_allocator<serializable>
+	protected:
+		stl::vector<stl::pstring> m_include_dirs{};
+	};
+
+	class MFW_VISIBILITY_PUBLIC Serializable
 	{
 	public:
-		serializable() = default;
-		virtual ~serializable() = default;
+		Serializable() noexcept = default;
+		virtual ~Serializable() noexcept = default;
 
-		serializable &operator=(serializable &&other) = default;
-		serializable(serializable &&other) = default;
+		Serializable &operator=(Serializable &&other) noexcept = default;
+		Serializable(Serializable &&other) noexcept = default;
 
-		MFW_CORE_API serializable & MFW_CORE_CALL operator=(const serializable &other);
-		serializable(const serializable &other) { operator=(other); }
+		MFW_CORE_API Serializable & MFW_CORE_CALL operator=(const Serializable &other) noexcept;
+		Serializable(const Serializable &other) noexcept
+		{ operator=(other); }
 
-		MFW_CORE_API bool MFW_CORE_CALL operator==(const serializable &other);
-		bool operator!=(const serializable &other) { return !operator==(other); }
+		MFW_CORE_API bool MFW_CORE_CALL operator==(const Serializable &other) const noexcept;
+		bool operator!=(const Serializable &other) const noexcept
+		{ return !operator==(other); }
 
-		MFW_CORE_API bool MFW_CORE_CALL from_file(const searchpath &search, const interfaces::serializable_parser_callbacks *callbacks = nullptr);
-		MFW_CORE_API bool MFW_CORE_CALL from_string(const ucstring_view &str, const interfaces::serializable_parser_callbacks *callbacks = nullptr);
+		MFW_CORE_API bool MFW_CORE_CALL fromFileSource(const SearchPath &search, const SerializableParserCallbacks *callbacks = nullptr) noexcept;
+		MFW_CORE_API bool MFW_CORE_CALL fromFileBinary(const SearchPath &search) noexcept;
+		MFW_CORE_API bool MFW_CORE_CALL fromString(const stl::osstring_view &str, const SerializableParserCallbacks *callbacks = nullptr) noexcept;
+		MFW_CORE_API bool MFW_CORE_CALL fromBinary(const stl::vector<stl::byte> &bin) noexcept;
 
-		MFW_CORE_API bool MFW_CORE_CALL to_file(const searchpath &search) const;
-		MFW_CORE_API void MFW_CORE_CALL to_string(ucstring &str) const;
+		MFW_CORE_API bool MFW_CORE_CALL toFileSource(const SearchPath &search) const noexcept;
+		MFW_CORE_API bool MFW_CORE_CALL toFileBinary(const SearchPath &search) const noexcept;
+		MFW_CORE_API Serializable & MFW_CORE_CALL toString(stl::osstring &str) const noexcept;
+		MFW_CORE_API Serializable & MFW_CORE_CALL toBinary(stl::vector<stl::byte> &bin) const noexcept;
 
-		MFW_CORE_API void MFW_CORE_CALL clear();
+		MFW_CORE_API Serializable & MFW_CORE_CALL clear() noexcept;
 
-		void set_name(const ucstring_view &str) { name = str; }
-		const ucstring &get_name() const { return name; }
+		stl::osstring &name() noexcept
+		{ return m_name; }
+		const stl::osstring &name() const noexcept
+		{ return m_name; }
 
-		template <typename T>
-		void set_value(const T &val) { value.set(val); }
-		const univalue &get_value() const { return value; }
-		bool has_value() const { return !value.empty(); }
+		UniValue &value() noexcept
+		{ return m_value; }
+		const UniValue &value() const noexcept
+		{ return m_value; }
+		bool has_value() const noexcept
+		{ return !m_value.empty(); }
 		
-		bool get_value_bool() const {
-			if(value.empty()) {
+		bool getValueBool() const noexcept {
+			if(m_value.empty()) {
 				return true;
+			} else {
+				return m_value.getBool();
 			}
-			return value.get_bool();
 		}
 
-		MFW_CORE_API serializable * MFW_CORE_CALL root();
-		const serializable *root() const { return const_cast<serializable *>(this)->root(); }
+		MFW_CORE_API Serializable * MFW_CORE_CALL root() noexcept;
+		MFW_CORE_API const Serializable * MFW_CORE_CALL root() const noexcept;
 
-		void set_parent(serializable *parent) { parent_ = parent; }
-		serializable *get_parent() { return parent_; }
-		const serializable *get_parent() const { return parent_; }
-		bool has_parent() const { return parent_ != nullptr; }
+		Serializable *&parent() noexcept
+		{ return m_parent; }
+		const Serializable *parent() const noexcept
+		{ return m_parent; }
+		bool hasParent() const noexcept
+		{ return !!m_parent; }
 
-		serializable *parent() { return get_parent(); }
-		const serializable *parent() const { return get_parent(); }
-
-		MFW_CORE_API serializable & MFW_CORE_CALL flags();
-		const serializable &flags() const { return const_cast<serializable *>(this)->flags(); }
-		MFW_CORE_API serializable & MFW_CORE_CALL create_flags();
-		serializable *get_flags() { return flags_.get(); }
-		const serializable *get_flags() const { return flags_.get(); }
-		bool has_flags() const { return static_cast<bool>(flags_); }
+		MFW_CORE_API Serializable & MFW_CORE_CALL flags() noexcept;
+		const Serializable &flags() const noexcept
+		{ return const_cast<Serializable *>(this)->flags(); }
+		MFW_CORE_API Serializable & MFW_CORE_CALL createFlags() noexcept;
+		Serializable *getFlags() noexcept
+		{ return m_flags.get(); }
+		const Serializable *getFlags() const noexcept
+		{ return m_flags.get(); }
+		bool hasFlags() const noexcept
+		{ return static_cast<bool>(m_flags); }
 		
-		serializable *get_flag(const ucstring_view &str) {
-			serializable *flags_ptr{get_flags()};
-			if(!flags_ptr) {
+		Serializable *getFlag(stl::osstring_view name) noexcept {
+			if(!m_flags) {
 				return nullptr;
+			} else {
+				return m_flags->get_child(name);
 			}
-			return flags_ptr->get_child(str);
 		}
-		const serializable *get_flag(const ucstring_view &str) const  {
-			const serializable *flags_ptr{get_flags()};
-			if(!flags_ptr) {
+		const Serializable *getFlag(stl::osstring_view name) const noexcept {
+			if(!m_flags) {
 				return nullptr;
+			} else {
+				return m_flags->get_child(name);
 			}
-			return flags_ptr->get_child(str);
 		}
-		bool get_flag_bool(const ucstring_view &name_) const {
-			const serializable *flags_ptr{get_flags()};
-			if(!flags_ptr) {
+		bool getFlagBool(stl::osstring_view name) const noexcept {
+			if(!m_flags) {
 				return false;
+			} else {
+				return m_flags->getChildBool(name);
 			}
-			return flags_ptr->get_child_bool(name_);
 		}
 
-		bool has_condition() const { return !condition.empty(); }
-		void set_condition(const ucstring &val) { condition = val; }
-		const ucstring &get_condition() const { return condition; }
-		MFW_CORE_API bool MFW_CORE_CALL passes_condition(const interfaces::expression_parser_callbacks *callbacks = nullptr) const;
+		stl::osstring &condition() noexcept
+		{ return m_condition; }
+		const stl::osstring &condition() const noexcept
+		{ return m_condition; }
+		bool hasCondition() const noexcept
+		{ return !m_condition.empty(); }
+		MFW_CORE_API bool MFW_CORE_CALL passesCondition(const ExpressionParserCallbacks *callbacks = nullptr) const noexcept;
 
-		MFW_CORE_API serializable & MFW_CORE_CALL child(const ucstring_view &str);
-		MFW_CORE_API serializable & MFW_CORE_CALL create_child(const ucstring_view &str)
+		MFW_CORE_API Serializable & MFW_CORE_CALL getOrCreateChild(stl::osstring_view name) noexcept;
+		MFW_CORE_API Serializable & MFW_CORE_CALL createChild(stl::osstring_view name) noexcept
 		{ return create_child(str, cend()); }
-		MFW_CORE_API serializable * MFW_CORE_CALL get_child(const ucstring_view &str);
-		MFW_CORE_API const serializable * MFW_CORE_CALL get_child(const ucstring_view &str) const;
-		const serializable &get_child(size_t i) const { return childs[i]; }
-		const serializable &operator[](size_t i) const { return get_child(i); }
-		serializable &operator[](const ucstring_view &str) { return child(str); }
-		bool has_child(const ucstring_view &str) const { return get_child(str) != nullptr; }
+		MFW_CORE_API Serializable * MFW_CORE_CALL getChild(stl::osstring_view name) noexcept;
+		MFW_CORE_API const Serializable * MFW_CORE_CALL getChild(const stl::osstring_view &name) const noexcept;
+		const Serializable &geChild(stl::size_t i) const noexcept
+		{ return m_childs[i]; }
+		const Serializable &operator[](stl::size_t i) const noexcept
+		{ return m_childs[i]; }
+		Serializable &operator[](stl::osstring_view name) noexcept
+		{ return getOrCreateChild(name); }
+		bool hasChild(const stl::osstring_view name) const noexcept
+		{ return getChild(str) != nullptr; }
 
-		bool get_child_bool(const ucstring_view &str) const {
-			const serializable *child{get_child(str)};
+		bool getChildBool(stl::osstring_view str) const noexcept {
+			const Serializable *child{getChild(str)};
 			if(!child) {
 				return false;
 			}
-
-			return child->get_value_bool();
+			return child->getValueBool();
 		}
 
-		bool has_flag(const ucstring_view &name_) const { return (has_flags() && get_flags()->has_child(name_)); }
-		void add_flag(const ucstring_view &name_) { flags().child(name_); }
+		bool hasFlag(const stl::osstring_view &name) const noexcept
+		{ return (hasFlags() && getFlags()->hasChild(name)); }
+		Serializable &addFlag(const stl::osstring_view &name) noexcept
+		{ flags().getOrCreateChild(name); return *this; }
 
-		serializable &copy(const serializable &other) {
-			serializable &child_{child(other.get_name())};
+		Serializable &copy(const Serializable &other) noexcept {
+			Serializable &child_{getOrCreateChild(other.name())};
 			child_ = other;
 			return child_;
 		}
 
-		const univalue *get_value(const ucstring_view &str) const {
-			const serializable *child{get_child(str)};
+		const UniValue *getValue(stl::osstring_view name) const noexcept {
+			const Serializable *child{getChild(name)};
 			if(!child) {
 				return nullptr;
+			} else {
+				return &child->value();
 			}
-			return &child->get_value();
 		}
 
-		MFW_CORE_API size_t MFW_CORE_CALL index() const;
+		MFW_CORE_API stl::size_t MFW_CORE_CALL index() const noexcept;
 
-		void remove_all() { childs.clear(); }
-		MFW_CORE_API bool MFW_CORE_CALL erase(const ucstring_view &str);
+		Serializable &remove_all() noexcept
+		{ m_childs.clear(); return *this; }
+		MFW_CORE_API bool MFW_CORE_CALL erase(const stl::osstring_view &str) noexcept;
 
-		using merge_str_process_t = function<void(ucstring &str)>;
-		MFW_CORE_API void MFW_CORE_CALL merge(const serializable &other, bool replace=true, const merge_str_process_t &func = nullptr);
+		using merge_str_process_t = function<void(stl::osstring &str)>;
+		MFW_CORE_API Serializable & MFW_CORE_CALL merge(const Serializable &other, bool replace=true, const merge_str_process_t &func = nullptr) noexcept;
+		MFW_CORE_API Serializable & MFW_CORE_CALL merge(const Serializable &other, bool replace=true) noexcept;
 
-		MFW_CORE_API void MFW_CORE_CALL follow_xpath(const ucstring_view &xpath, univalue &value_) const;
-		MFW_CORE_API const serializable * MFW_CORE_CALL follow_xpath(const ucstring_view &xpath) const;
+		MFW_CORE_API Serializable & MFW_CORE_CALL followPath(const stl::osstring_view &path, UniValue &value) const noexcept;
+		MFW_CORE_API const Serializable * MFW_CORE_CALL followPath(const stl::osstring_view &path) const noexcept;
 
-		using child_vec_t = ptr_vector<serializable>;
+		using child_vec_t = stl::ptr_vector<Serializable>;
 
 		using iterator = child_vec_t::iterator;
 		using reverse_iterator = child_vec_t::reverse_iterator;
 		using const_iterator = child_vec_t::const_iterator;
 		using const_reverse_iterator = child_vec_t::const_reverse_iterator;
 
-		MFW_CORE_API iterator MFW_CORE_CALL find(const ucstring_view &str);
+		MFW_CORE_API iterator MFW_CORE_CALL find(stl::osstring_view name) noexcept;
 
-		void erase(iterator it) { childs.erase(it); }
-		void erase(const_iterator it) { childs.erase(it); }
+		void erase(iterator it) noexcept
+		{ m_childs.erase(it); }
+		void erase(const_iterator it) noexcept
+		{ m_childs.erase(it); }
 
-		size_t size() const { return childs.size(); }
+		size_t size() const noexcept
+		{ return m_childs.size(); }
 
-		bool empty() const { return childs.empty(); }
+		bool empty() const noexcept
+		{ return m_childs.empty(); }
 
-		const_iterator cbegin() const { return childs.cbegin(); }
-		const_iterator cend() const { return childs.cend(); }
+		const_iterator cbegin() const noexcept
+		{ return m_childs.cbegin(); }
+		const_iterator cend() const noexcept
+		{ return m_childs.cend(); }
 
-		const_reverse_iterator crbegin() const { return childs.crbegin(); }
-		const_reverse_iterator crend() const { return childs.crend(); }
+		const_reverse_iterator crbegin() const noexcept
+		{ return m_childs.crbegin(); }
+		const_reverse_iterator crend() const noexcept
+		{ return m_childs.crend(); }
 
-		iterator begin() { return childs.begin(); }
-		iterator end() { return childs.end(); }
+		iterator begin() noexcept
+		{ return m_childs.begin(); }
+		iterator end() noexcept
+		{ return m_childs.end(); }
 
-		reverse_iterator rbegin() { return childs.rbegin(); }
-		reverse_iterator rend() { return childs.rend(); }
+		reverse_iterator rbegin() noexcept
+		{ return m_childs.rbegin(); }
+		reverse_iterator rend() noexcept
+		{ return m_childs.rend(); }
 
-		const_iterator begin() const { return childs.begin(); }
-		const_iterator end() const { return childs.end(); }
+		const_iterator begin() const noexcept
+		{ return m_childs.begin(); }
+		const_iterator end() const noexcept
+		{ return m_childs.end(); }
 
-		const_reverse_iterator rbegin() const { return childs.rbegin(); }
-		const_reverse_iterator rend() const { return childs.rend(); }
+		const_reverse_iterator rbegin() const noexcept
+		{ return m_childs.rbegin(); }
+		const_reverse_iterator rend() const noexcept
+		{ return m_childs.rend(); }
 
-		MFW_CORE_API serializable & MFW_CORE_CALL find_or_emplace(const ucstring_view &str, const_iterator it);
-		serializable &find_or_emplace(const ucstring_view &str)
-		{ return find_or_emplace(str, cend()); }
+		MFW_CORE_API Serializable & MFW_CORE_CALL find_or_emplace(stl::osstring_view name, const_iterator it) noexcept;
+		Serializable &find_or_emplace(stl::osstring_view name) noexcept
+		{ return find_or_emplace(name, cend()); }
 
 	private:
-		virtual serializable *allocate_child(ssize_t depth, const ucstring_view &name, const core::serializable *parent) const;
-		virtual void merge_child(size_t depth, serializable &child, const serializable &other) const;
-		void to_string(ucstring &str, int32_t ident) const;
-		serializable &create_child(const ucstring_view &str, const_iterator it);
+		virtual Serializable *allocateChild(stl::ssize_t depth, stl::osstring_view name, const Serializable *parent) const noexcept;
+		virtual void merge_child(stl::size_t depth, Serializable &child, const Serializable &other) const noexcept;
+		Serializable &to_string(stl::osstring &str, stl::size_t ident) const noexcept;
+		Serializable &create_child(stl::osstring_view str, const_iterator it) noexcept;
 
-		ucstring name{};
-		univalue value{};
-		unique_ptr<serializable> flags_{};
-		ucstring condition{};
-		serializable *parent_{nullptr};
-		child_vec_t childs{};
+		stl::osstring m_name{};
+		UniValue m_value{};
+		stl::unique_ptr<Serializable> m_flags{};
+		stl::osstring m_condition{};
+		Serializable *m_parent{nullptr};
+		child_vec_t m_childs{};
 	};
 }
 

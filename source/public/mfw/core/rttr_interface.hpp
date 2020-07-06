@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_CORE_RTTR_INTERFACE_H
-#define __MFW_PUBLIC_CORE_RTTR_INTERFACE_H
+#ifndef __MFW_PUBLIC_CORE_RTTR_INTERFACE_HPP
+#define __MFW_PUBLIC_CORE_RTTR_INTERFACE_HPP
 
 #pragma once
 
@@ -11,155 +11,18 @@
 #include <public/mfw/stl/tuple.hpp>
 #include <public/mfw/stl/type_traits.hpp>
 #include <public/mfw/stl/vector.hpp>
+#include <public/mfw/core/univalue.hpp>
+
+#include <public/mfw/core/internal/typeinfo.hpp>
 
 namespace mfw::core
 {
-	class class_info;
-	class func_info;
-	class type_holder;
-	class class_info_finder;
+	class ClassInfo;
+	class FuncInfo;
+	class TypeHolder;
+	class ClassInfoFinder;
 
-	class type_info
-	{
-	public:
-		template <typename T>
-		void deduce(type_identity<T>);
-
-		type_info() = default;
-
-		template <typename T>
-		type_info(type_identity<T>) { deduce(type_identity<T>{}); }
-
-		MFW_CORE_API void MFW_CORE_CALL clear();
-
-		bool valid() const { return !name_.empty() && std_info_; }
-
-		size_t size() const { return size_; }
-		size_t align() const { return align_; }
-		const ::std::type_info &std_info() const { return (std_info_ ? *std_info_ : get_typeid<void>()); }
-
-		bool is_exact(const type_info &info) const { return std_info() == info.std_info(); }
-		bool is_exact(const ::std::type_info &info) const { return std_info() == info; }
-
-		template <typename T>
-		bool is_relaxed() const;
-
-		template <typename T>
-		bool is_exact() const;
-
-	#if MFW_COMPILER == MFW_COMPILER_MSVC
-		bool is_int8() const { return is_relaxed<__int8>() || is_relaxed<char>() || is_exact<bool>() || is_exact<char8_t>(); }
-		bool is_int16() const { return is_relaxed<__int16>() || is_relaxed<short>() || is_exact<wchar_t>() || is_exact<char16_t>(); }
-		bool is_int32() const { return is_relaxed<__int32>() || is_relaxed<int>() || is_relaxed<long>() || is_exact<char32_t>(); }
-		bool is_int64() const { return is_relaxed<__int64>() || is_relaxed<long long>(); }
-		bool is_int128() const { return is_int64(); }
-		bool is_float16() const { return is_int32(); }
-		bool is_float32() const { return is_exact<float>(); }
-		bool is_float64() const { return is_exact<double>() || is_exact<long double>(); }
-		bool is_float80() const { return is_float64(); }
-		bool is_float128() const { return is_float80(); }
-	#elif MFW_COMPILER & MFW_COMPILER_UNIX_FLAG
-		bool is_int8() const { return is_relaxed<char>() || is_exact<bool>() || is_exact<char8_t>(); }
-		bool is_int16() const { return is_relaxed<short>() || is_exact<char16_t>(); }
-		bool is_int32() const { return is_exact<wchar_t>() || is_relaxed<int>() || is_exact<char32_t>(); }
-		bool is_int64() const { return is_relaxed<long>() || is_relaxed<long long>(); }
-		bool is_int128() const { return is_int64(); }
-		bool is_float16() const { return is_float32(); }
-		bool is_float32() const { return is_exact<float>(); }
-		bool is_float64() const { return is_exact<double>() || is_exact<long double>(); }
-		bool is_float80() const { return is_float64(); }
-		bool is_float128() const { return is_float80(); }
-	#else
-		#error
-	#endif
-
-		bool is_exact(const ucstring_view &name) const { return name_ == name; }
-
-		bool is_void() const { return is_exact<void>(); }
-		bool is_primitive() const { return !bool_cast(flags_ & flags::class_) || (is_void() || is_any_int() || is_any_float()); }
-		bool is_class() const { return bool_cast(flags_ & flags::class_) || !is_primitive(); }
-		bool is_rvalue_ref() const { return bool_cast(flags_ & flags::rvalue_ref); }
-		bool is_const() const { return bool_cast(flags_ & flags::const_); }
-		bool is_lvalue_ref() const { return bool_cast(flags_ & flags::lvalue_ref); }
-		bool is_signed() const { return bool_cast(flags_ & flags::signed_); }
-		bool is_unsigned() const { return bool_cast(flags_ & flags::unsigned_); }
-		bool is_array() const { return bool_cast(flags_ & flags::array_) || rank() > 0; }
-		bool is_pointer() const { return bool_cast(flags_ & flags::pointer_) || num_pointers() > 0; }
-		size_t rank() const { return rank_; }
-		size_t extent() const { return extent_; }
-		size_t num_pointers() const { return pointers; }
-		bool is_any_int() const { return is_int8() || is_int16() || is_int32() || is_int64() || is_int128(); }
-		bool is_any_float() const { return is_float16() || is_float32() || is_float64() || is_float80() || is_float128(); }
-		bool is_any_reference() const { return is_rvalue_ref() || is_lvalue_ref(); }
-		bool is_ptr_like() const { return is_pointer() || is_array(); }
-		const ucstring &name() const { return name_; }
-
-		MFW_CORE_API const class_info * MFW_CORE_CALL find_class_info() const;
-
-		MFW_CORE_API void MFW_CORE_CALL make_pointer();
-
-	private:
-		MFW_CORE_API void MFW_CORE_CALL set_name();
-
-		enum class modify_type_flags : int16_t
-		{
-			none,
-			remove_const = MFW_BIT(0),
-			remove_reference = MFW_BIT(1),
-			remove_pointer = MFW_BIT(2),
-			remove_all_extents = MFW_BIT(3),
-
-			add_lvalue_reference = MFW_BIT(4),
-			add_rvalue_reference = MFW_BIT(5),
-			add_pointer = MFW_BIT(6),
-			add_const = MFW_BIT(7),
-			make_signed = MFW_BIT(8),
-			make_unsigned = MFW_BIT(9),
-
-			remove_all = remove_const|remove_reference|remove_pointer|remove_all_extents,
-			remove_all_but_const = remove_all & ~remove_const,
-			remove_all_but_reference = remove_all & ~remove_reference,
-			remove_all_but_pointer = remove_all & ~remove_pointer,
-			remove_all_but_extents = remove_all & ~remove_all_extents,
-		};
-		MFW_CLASS_ENUM_FLAGS_V1(modify_type_flags)
-
-		struct modify_type
-		{
-			template <typename T, modify_type_flags flags>
-			static constexpr decltype(auto) __modify_type_helper();
-
-			template <typename T, modify_type_flags flags>
-			using type = remove_reference_t<decltype(__modify_type_helper<T, flags>())>;
-		};
-
-		template <typename T, modify_type_flags flags>
-		using modify_type_t = typename modify_type::type<T, flags>;
-
-		enum class flags : int16_t
-		{
-			none,
-			const_ = MFW_BIT(0),
-			lvalue_ref = MFW_BIT(1),
-			rvalue_ref = MFW_BIT(2),
-			signed_ = MFW_BIT(3),
-			unsigned_ = MFW_BIT(4),
-			pointer_ = MFW_BIT(5),
-			array_ = MFW_BIT(6),
-			class_ = MFW_BIT(7),
-		};
-		MFW_CLASS_ENUM_FLAGS(flags)
-
-		size_t rank_{0};
-		size_t extent_{0};
-		size_t pointers{0};
-
-		flags flags_{flags::none};
-		size_t size_{0};
-		size_t align_{0};
-		const ::std::type_info *std_info_{nullptr};
-		ucstring name_{};
-	};
+	
 
 	namespace interfaces
 	{
@@ -503,6 +366,33 @@ namespace mfw::core
 			} \
 		}; \
 		MFW_DECLARE_GLOBAL_ALLOCATOR(name, __##name##_rttr_register)
+
+	class univalue_var : public univalue
+	{
+	public:
+		bool is_var() const noexcept
+		{ return (!is_string() && !is_bool()); }
+
+		const type_holder &get_var() const noexcept
+		{ return var; }
+
+		template <typename T>
+		void set(const T &value) noexcept
+		{ set_var(value); }
+
+		void set(const type_holder &value) noexcept
+		{ set_var(value); }
+
+		void set_var(const type_holder &value) noexcept
+		{ var = value; }
+
+		template <typename T>
+		void set_var(const T &value) noexcept
+		{ var.deduce(value); }
+
+	private:
+		type_holder var{};
+	};
 }
 
 #include <public/mfw/core/rttr_interface.inl>

@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_CORE_H
-#define __MFW_PUBLIC_CORE_H
+#ifndef __MFW_PUBLIC_CORE_HPP
+#define __MFW_PUBLIC_CORE_HPP
 
 #pragma once
 
@@ -7,9 +7,11 @@
 #include <public/mfw/stl/defines.hpp>
 #include <public/mfw/stl/string_view.hpp>
 #include <public/mfw/stl/string.hpp>
-#if MFW_OS == MFW_OS_LINUX
+#include <public/mfw/stl/stdint.hpp>
+#if MFW_OS_IS(LINUX)
 	#include <public/mfw/stl/vector.hpp>
 #endif
+#include <public/mfw/core/application.hpp>
 
 #if MFW_CORE_BUILD & MFW_BUILD_SHARED_FLAG
 	#ifdef MFW_BUILDING_CORE
@@ -25,33 +27,46 @@
 
 namespace mfw::core
 {
-	struct exit_status;
+	MFW_CORE_API ExitStatus MFW_CORE_CALL initialize() noexcept;
+	MFW_CORE_API ExitStatus MFW_CORE_CALL update() noexcept;
+	MFW_CORE_API ExitStatus MFW_CORE_CALL shutdown() noexcept;
 
-	MFW_CORE_API exit_status MFW_CORE_CALL initialize();
-	MFW_CORE_API exit_status MFW_CORE_CALL update();
-	MFW_CORE_API exit_status MFW_CORE_CALL shutdown();
+	MFW_CORE_API void MFW_CORE_CALL terminate() noexcept;
 
-	MFW_CORE_API void MFW_CORE_CALL terminate();
+	MFW_CORE_API void MFW_CORE_CALL expandEnvironmentVariables(stl::osstring_view src, stl::osstring &dst) noexcept;
 
-	MFW_CORE_API void MFW_CORE_CALL expand_env_vars(const ucstring_view &src, ucstring &dst);
-
-#if MFW_OS == MFW_OS_LINUX
-	MFW_CORE_API void MFW_CORE_CALL expand_shell(const ucstring_view &src, vector<ucstring> &dst);
+#if MFW_OS_IS(LINUX)
+	MFW_CORE_API void MFW_CORE_CALL expandShell(stl::osstring_view src, stl::vector<stl::osstring> &dst) noexcept;
 #endif
 
-	MFW_CORE_API int32_t MFW_CORE_CALL get_last_error();
-	MFW_CORE_API void MFW_CORE_CALL get_error_string(int32_t code, ucstring &str);
+	MFW_CORE_API stl::int32_t MFW_CORE_CALL getLastError() noexcept;
+	MFW_CORE_API void MFW_CORE_CALL getErrorString(stl::int32_t code, stl::osstring &str) noexcept;
 
-	MFW_CORE_API int64_t MFW_CORE_CALL time_now();
+	MFW_CORE_API stl::int64_t MFW_CORE_CALL timeNow() noexcept;
 
-#if MFW_OS_IS(WINDOWS)
-	MFW_CORE_API bool MFW_CORE_CALL is_running_in_wine();
-#endif
-
-	inline void get_last_error_string(ucstring &str)
+	enum class os_layer_t : stl::uchar_t
 	{
-		int32_t code{get_last_error()};
-		get_error_string(code, str);
+		native,
+	#if MFW_OS_IS(WINDOWS)
+		wine,
+	#endif
+	#if MFW_OS_IS(MACOS)
+		darling,
+	#endif
+	#if MFW_OS_IS(LINUX)
+		wsl,
+		cygwin,
+	#endif
+	#if MFW_OS_IS(ANDROID)
+		anbox,
+		shashlik,
+	#endif
+	};
+	MFW_CORE_API os_layer_t MFW_CORE_CALL get_os_layer() noexcept;
+
+	inline void getLastErrorString(stl::osstring &str) noexcept {
+		stl::int32_t code{getLastError()};
+		getErrorString(code, str);
 	}
 }
 

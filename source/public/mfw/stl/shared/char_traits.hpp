@@ -23,36 +23,51 @@
 #endif
 
 #if MFW_OS_IS(WINDOWS) || defined _GLIBCXX_FILESYSTEM_IS_WINDOWS
-	#define _MFW_STD_FILESYSTEM_WIDE_CHAR
+	#define _MFW_STL_FILESYSTEM_WIDE_CHAR
 #endif
 
 #if defined _GLIBCXX_USE_CHAR8_T || (MFW_LIBCPP_IS(MSVC) && defined MFW_CPP_CHAR8_SUPPORTED)
-	#define _MFW_FILESYSTEM_CHAR8_SUPPORTED
+	#define _MFW_STL_FILESYSTEM_CHAR8_SUPPORTED
 #endif
 
 #if MFW_OS_IS(LINUX)
-	#define _MFW_WCHAR_32
+	#define MFW_WCHAR_SIZE 32
+	#define MFW_WCHAR_SIGNED 1
+#elif MFW_IS_IS(WINDOWS)
+	#define MFW_WCHAR_SIZE 16
+	#define MFW_WCHAR_SIGNED 0
+#else
+	#error
+#endif
+
+#if MFW_OS_IS(WINDOWS) && MFW_CHARACTERSET_IS(UNICODE)
+	#define MFW_OS_WIDE_CHAR
+#endif
+
+#ifdef MFW_OS_WIDE_CHAR
+	#define MFW_T(x) MFW_MACRO_CONCATENATE(L, x)
+#else
+	#define MFW_T(x) x
+#endif
+
+#ifndef MFW_CPP_CHAR8_SUPPORTED
+using char8_t = unsigned char;
 #endif
 
 namespace mfw::stl
 {
 	using ::MFW_STD_NAMESPACE::char_traits;
 
-#if MFW_OS_IS(WINDOWS)
-	#if MFW_CHARACTERSET_IS(UNICODE)
+	using uchar_t = unsigned char;
+	using schar_t = signed char;
+
+#ifdef MFW_OS_WIDE_CHAR
 	using oschar_t = wchar_t;
-	#elif MFW_CHARACTERSET_IS(MULTIBYTE)
-	using oschar_t = char;
-	#else
-		#error
-	#endif
-#elif MFW_OS_IS(LINUX)
-	using oschar_t = char;
 #else
-	#error
+	using oschar_t = char;
 #endif
 
-#ifdef _MFW_STD_FILESYSTEM_WIDE_CHAR
+#ifdef _MFW_STL_FILESYSTEM_WIDE_CHAR
 	using pchar_t = wchar_t;
 #else
 	using pchar_t = char;

@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_CORE_PCH_H
-#define __MFW_PUBLIC_CORE_PCH_H
+#ifndef __MFW_PUBLIC_CORE_PCH_HPP
+#define __MFW_PUBLIC_CORE_PCH_HPP
 
 #pragma once
 

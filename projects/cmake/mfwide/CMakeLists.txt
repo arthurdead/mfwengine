@@ -91,7 +91,7 @@ source_group("${project_name}" FILES ${${project_name}_files})
 
 #list(APPEND files ${${project_name}_files})
 list(APPEND files ${stl_files})
-#list(APPEND files ${core_files})
+list(APPEND files ${core_files})
 #list(APPEND files ${renderer_files})
 #list(APPEND files ${glad_files})
 #list(APPEND files ${pugixml_files})
@@ -141,7 +141,7 @@ add_compile_definitions(
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${base_dir}/build_tools/mfwide")
 
 add_executable(${project_name} ${files})
-target_precompile_headers(${project_name} PRIVATE "${source_dir}/public/mfw/pch.hpp")
+#target_precompile_headers(${project_name} PRIVATE "${source_dir}/public/mfw/pch.hpp")
 
 target_include_directories(${project_name} PUBLIC ${include_dirs})
 

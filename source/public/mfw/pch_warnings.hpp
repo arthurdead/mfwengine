@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_PCH_WARNINGS_H
-#define __MFW_PUBLIC_PCH_WARNINGS_H
+#ifndef __MFW_PUBLIC_PCH_WARNINGS_HPP
+#define __MFW_PUBLIC_PCH_WARNINGS_HPP
 
 #pragma once
 

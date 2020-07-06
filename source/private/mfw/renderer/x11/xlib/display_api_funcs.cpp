@@ -3,14 +3,14 @@
 #include <dirent.h>
 #include <cstring>
 
-#ifdef __MFW_PRIVATE_RENDERER_VULKAN_VULKAN_H
+#ifdef __MFW_PRIVATE_RENDERER_VULKAN_VULKAN_HPP
 	#error
 #endif
 #define VK_USE_PLATFORM_XLIB_KHR
 #include <private/mfw/renderer/vulkan/vulkan.hpp>
 #include <private/mfw/renderer/vulkan/shared.hpp>
 
-#ifdef __MFW_PRIVATE_RENDERER_OPENGL_EGL_EGL_H
+#ifdef __MFW_PRIVATE_RENDERER_OPENGL_EGL_EGL_HPP
 	#error
 #endif
 #define USE_X11

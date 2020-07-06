@@ -2,7 +2,7 @@
 #include <public/mfw/stl/stdint.hpp>
 #include <public/mfw/stl/string.hpp>
 
-#if MFW_STD_FLAGGED(HEADERS_CONFORMING)
+#if MFW_STDC_IS(DEFAULT)
 	#include <cmath>
 #else
 	#error
@@ -10,99 +10,128 @@
 
 namespace mfw::core
 {
-	MFW_CORE_API void MFW_CORE_CALL univalue::clear()
+	MFW_CORE_API void MFW_CORE_CALL univalue::calculate_float() noexcept
 	{
-		string_.clear();
-		float_ = 0.0f;
-		var.clear();
-	}
+		bool was_bool{false};
 
-	MFW_CORE_API void MFW_CORE_CALL univalue::set_string(const string_type &value)
-	{
-		string_ = value;
-		if(string_ == u8"true"_sv) {
-			float_ = 1.0f;
-		} else if(string_ == u8"false"_sv) {
-			float_ = 0.0f;
-		} else {
-			to_float(string_, float_);
+		using char_type = string_type::value_type;
+
+		stl::size_t len{m_string.length()};
+		if(len == 4) {
+			if(m_string[0] == static_cast<char_type>('t') &&
+				m_string[1] == static_cast<char_type>('r') &&
+				m_string[2] == static_cast<char_type>('u') &&
+				m_string[3] == static_cast<char_type>('e')) {
+				m_float = 1.0f;
+				was_bool = true;
+			}
+		} else if(len == 5) {
+			if(m_string[0] == static_cast<char_type>('f') &&
+				m_string[1] == static_cast<char_type>('a') &&
+				m_string[2] == static_cast<char_type>('l') &&
+				m_string[3] == static_cast<char_type>('s') &&
+				m_string[4] == static_cast<char_type>('e')) {
+				m_float = 0.0f;
+				was_bool = true;
+			}
 		}
-		var.clear();
-	}
 
-	MFW_CORE_API void MFW_CORE_CALL univalue::set_bool(bool value)
-	{
-		float_ = (value ? 1.0f : 0.0f);
-		to_string(value, string_);
-		var.clear();
-	}
-
-	MFW_CORE_API void MFW_CORE_CALL univalue::set_int(int_type value)
-	{
-		float_ = static_cast<float_type>(value);
-		to_string(value, string_);
-		var.clear();
-	}
-
-	MFW_CORE_API void MFW_CORE_CALL univalue::set_float(float_type value)
-	{
-		float_ = value;
-		to_string(value, string_);
-		var.clear();
-	}
-
-	MFW_CORE_API bool MFW_CORE_CALL univalue::is_bool() const
-	{
-		const ucstring &str{get_string()};
-		return ((str == u8"true"_sv) || (str == u8"false"_sv));
-	}
-
-	MFW_CORE_API bool MFW_CORE_CALL univalue::is_float() const
-	{
-		float_type f{get_float()};
-		return ((f != numeric_limits<float_type>::max()) && (::MFW_STD_NAMESPACE::ceil(f) != f));
-	}
-
-	MFW_CORE_API bool MFW_CORE_CALL univalue::is_int() const
-	{
-		float_type f{get_float()};
-		return ((f != numeric_limits<float_type>::max()) && (::MFW_STD_NAMESPACE::ceil(f) == f));
-	}
-
-	MFW_CORE_API const univalue::string_type & MFW_CORE_CALL univalue::get_string() const
-	{
-		return string_;
-	}
-
-	MFW_CORE_API univalue::float_type MFW_CORE_CALL univalue::get_float() const
-	{
-		return float_;
-	}
-
-	MFW_CORE_API univalue::string_view_type MFW_CORE_CALL univalue::get_string_view() const
-	{
-		return string_view_type{get_string()};
-	}
-
-	MFW_CORE_API const univalue::char_type * MFW_CORE_CALL univalue::c_str() const
-	{
-		return get_string().c_str();
-	}
-
-	MFW_CORE_API univalue::int_type MFW_CORE_CALL univalue::get_int() const
-	{
-		return static_cast<int_type>(get_float());
-	}
-
-	MFW_CORE_API bool MFW_CORE_CALL univalue::get_bool() const
-	{
-		if(get_float() == numeric_limits<float_type>::max()) {
-			return false;
+		if(!was_bool) {
+			stl::to_float(m_string, m_float);
 		}
-		return bool_cast(get_int());
 	}
 
-	MFW_CORE_API void MFW_CORE_CALL univalue::set_var(const type_holder &value)
+	MFW_CORE_API UniValue & MFW_CORE_CALL UniValue::setString(const string_type &value) noexcept
+	{
+		m_string = value;
+
+		bool was_bool{false};
+
+		size_t len{m_string.length()};
+		if(len == 4) {
+			if(m_string[0] == static_cast<char_type>('t') &&
+				m_string[1] == static_cast<char_type>('r') &&
+				m_string[2] == static_cast<char_type>('u') &&
+				m_string[3] == static_cast<char_type>('e')) {
+				m_float = 1.0f;
+				was_bool = true;
+			}
+		} else if(len == 5) {
+			if(m_string[0] == static_cast<char_type>('f') &&
+				m_string[1] == static_cast<char_type>('a') &&
+				m_string[2] == static_cast<char_type>('l') &&
+				m_string[3] == static_cast<char_type>('s') &&
+				m_string[4] == static_cast<char_type>('e')) {
+				m_float = 0.0f;
+				was_bool = true;
+			}
+		}
+
+		if(!was_bool) {
+			to_float(m_string, m_float);
+		}
+
+		//var.clear();
+		return *this;
+	}
+
+	MFW_CORE_API UniValue & MFW_CORE_CALL UniValue::setBool(bool value) noexcept
+	{
+		m_float = (value ? 1.0f : 0.0f);
+		stl::to_string(value, m_string);
+		//var.clear();
+		return *this;
+	}
+
+	MFW_CORE_API UniValue & MFW_CORE_CALL UniValue::setInt(int_type value) noexcept
+	{
+		m_float = static_cast<float_type>(value);
+		stl::to_string(value, m_string);
+		//var.clear();
+		return *this;
+	}
+
+	MFW_CORE_API UniValue & MFW_CORE_CALL UniValue::setFloat(float_type value) noexcept
+	{
+		m_float = value;
+		stl::to_string(value, m_string);
+		//var.clear();
+		return *this;
+	}
+
+	MFW_CORE_API bool MFW_CORE_CALL UniValue::isBool() const noexcept
+	{
+		size_t len{m_string.length()};
+		if(len == 4) {
+			if(m_string[0] == static_cast<char_type>('t') &&
+				m_string[1] == static_cast<char_type>('r') &&
+				m_string[2] == static_cast<char_type>('u') &&
+				m_string[3] == static_cast<char_type>('e')) {
+				return true;
+			}
+		} else if(len == 5) {
+			if(m_string[0] == static_cast<char_type>('f') &&
+				m_string[1] == static_cast<char_type>('a') &&
+				m_string[2] == static_cast<char_type>('l') &&
+				m_string[3] == static_cast<char_type>('s') &&
+				m_string[4] == static_cast<char_type>('e')) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	MFW_CORE_API bool MFW_CORE_CALL UniValue::isFloat() const noexcept
+	{
+		return ((m_float != stl::numeric_limits<float_type>::max()) && (::MFW_STD_NAMESPACE::ceil(m_float) != m_float));
+	}
+
+	MFW_CORE_API bool MFW_CORE_CALL UniValue::isInt() const noexcept
+	{
+		return ((m_float != stl::numeric_limits<float_type>::max()) && (::MFW_STD_NAMESPACE::ceil(m_float) == m_float));
+	}
+
+	/*MFW_CORE_API void MFW_CORE_CALL UniValue::set_var(const type_holder &value)
 	{
 		const type_info &info{value.info()};
 		if(info.is_any_int()) {
@@ -120,5 +149,5 @@ namespace mfw::core
 			float_ = numeric_limits<float_type>::max();
 			string_.clear();
 		}
-	}
+	}*/
 }

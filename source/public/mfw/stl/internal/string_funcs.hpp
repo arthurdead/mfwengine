@@ -1,5 +1,6 @@
 #include <public/mfw/stl/stl.hpp>
 #include <public/mfw/stl/string_view.hpp>
+#include <public/mfw/stl/stdint.hpp>
 
 namespace mfw::stl
 {
@@ -13,12 +14,10 @@ namespace mfw::stl
 	MFW_STL_API size_t MFW_STL_CALL replace_all(wstring &__str, wchar_t __from, wstring_view __to) noexcept;
 	MFW_STL_API size_t MFW_STL_CALL replace_all(wstring &__str, wstring_view __from, wchar_t __to) noexcept;
 
-#ifdef MFW_CPP_CHAR8_SUPPORTED
 	MFW_STL_API size_t MFW_STL_CALL replace_all(u8string &__str, u8string_view __from, u8string_view __to) noexcept;
 	MFW_STL_API size_t MFW_STL_CALL replace_all(u8string &__str, char8_t __from, char8_t __to) noexcept;
 	MFW_STL_API size_t MFW_STL_CALL replace_all(u8string &__str, char8_t __from, u8string_view __to) noexcept;
 	MFW_STL_API size_t MFW_STL_CALL replace_all(u8string &__str, u8string_view __from, char8_t __to) noexcept;
-#endif
 
 	MFW_STL_API size_t MFW_STL_CALL replace_all(u16string &__str, u16string_view __from, u16string_view __to) noexcept;
 	MFW_STL_API size_t MFW_STL_CALL replace_all(u16string &__str, char16_t __from, char16_t __to) noexcept;
@@ -30,15 +29,12 @@ namespace mfw::stl
 	MFW_STL_API size_t MFW_STL_CALL replace_all(u32string &__str, char32_t __from, u32string_view __to) noexcept;
 	MFW_STL_API size_t MFW_STL_CALL replace_all(u32string &__str, u32string_view __from, char32_t __to) noexcept;
 
-#ifdef __MFW_STD_FILESYSTEM_WIDE_CHAR
+#ifdef _MFW_STL_FILESYSTEM_WIDE_CHAR
 	void to_string(const pstring &__src, string &__dst) noexcept;
 #else
 	void to_string(const pstring &__src, wstring &__dst) noexcept;
 #endif
-
-#ifdef MFW_CPP_CHAR8_SUPPORTED
 	void to_string(const pstring &__src, u8string &__dst) noexcept;
-#endif
 	void to_string(const pstring &__src, u16string &__dst) noexcept;
 	void to_string(const pstring &__src, u32string &__dst) noexcept;
 }

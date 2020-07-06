@@ -1,53 +1,38 @@
-#ifndef __MFW_PUBLIC_CORE_SEARCHPATH_H
-#define __MFW_PUBLIC_CORE_SEARCHPATH_H
+#ifndef __MFW_PUBLIC_CORE_SEARCHPATH_HPP
+#define __MFW_PUBLIC_CORE_SEARCHPATH_HPP
 
 #pragma once
 
 #include <public/mfw/stl/string.hpp>
-#include <public/mfw/stl/filesystem.hpp>
 
 namespace mfw::core
 {
-	struct searchpath
+	struct SearchPath final
 	{
-		searchpath() = default;
+		SearchPath() noexcept = default;
+		SearchPath(const SearchPath &) noexcept = default;
+		SearchPath(SearchPath &&) noexcept = default;
 
-		searchpath(const pstring &path_)
-			: path{path_} {}
-
-		searchpath(const ucstring &name) {
-			to_string(name, path);
-		}
-
-		searchpath(const ucstring_view &name) {
-			to_string(name, path);
+		SearchPath(const stl::pstring &path) noexcept
+			: m_path{path} {}
+		SearchPath(const stl::osstring &name) noexcept
+		{ m_path.assign(name); }
+		SearchPath(stl::osstring_view name) noexcept {
+			const stl::oschar_t *ptr{name.data()};
+			m_path.assign(ptr, ptr+name.length());
 		}
 					
-		searchpath(const pstring &path_, const ucstring_view &name)
-			: path{path_}, name_{name} {}
+		SearchPath(const stl::pstring &path, stl::osstring_view name) noexcept
+			: m_path{path}, m_name{name} {}
 
-		bool empty() const { return (name_.empty() && path.empty()); }
+		bool empty() const noexcept
+		{ return (m_path.empty() && m_name.empty()); }
 
-		const ucstring &name() const { return name_; }
-		const pstring &dir() const { return path; }
-
-		pstring path{};
-		ucstring name_{};
+		stl::pstring m_path{};
+		stl::osstring m_name{};
 	};
-
-	namespace literals
-	{
-		inline searchpath operator""_sp(const upchar_t *ptr, size_t len)
-		{
-		#ifdef __MFW_STD_FILESYSTEM_WIDE_CHAR
-			#error
-		#else
-			const char *c_ptr{c_str(ptr)};
-		#endif
-			pstring path{c_ptr, c_ptr+len};
-			return searchpath{move(path)};
-		}
-	}
 }
+
+::mfw::core::SearchPath operator""_sp(const ::mfw::stl::pchar_t *ptr, ::mfw::stl::size_t len) noexcept;
 
 #endif

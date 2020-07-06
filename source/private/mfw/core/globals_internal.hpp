@@ -1,5 +1,5 @@
-#ifndef __MFW_PRIVATE_CORE_GLOBALS_INTERNAL_H
-#define __MFW_PRIVATE_CORE_GLOBALS_INTERNAL_H
+#ifndef __MFW_PRIVATE_CORE_GLOBALS_INTERNAL_HPP
+#define __MFW_PRIVATE_CORE_GLOBALS_INTERNAL_HPP
 
 #pragma once
 
@@ -7,13 +7,13 @@
 
 namespace mfw::core
 {
-	extern void sort_initializers();
-	extern exit_status initialize_all_globals();
-	extern exit_status update_all_globals();
-	extern exit_status shutdown_all_globals();
+	MFW_VISIBILITY_LOCAL void sortInitializers() noexcept;
+	MFW_VISIBILITY_LOCAL ExitStatus initializeAllGlobals() noexcept;
+	MFW_VISIBILITY_LOCAL ExitStatus updateAllGlobals() noexcept;
+	MFW_VISIBILITY_LOCAL ExitStatus shutdownAllGlobals() noexcept;
 
-	extern void allocate_all_globals();
-	extern void deallocate_all_globals();
+	MFW_VISIBILITY_LOCAL void allocateAllGlobals() noexcept;
+	MFW_VISIBILITY_LOCAL void deallocateAllGlobals() noexcept;
 }
 
 #endif

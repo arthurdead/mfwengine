@@ -41,13 +41,11 @@ namespace mfw::stl
 
 	inline bool to_bool(string_view __src, bool &__dst) noexcept
 	{ return __public_impl_string_view_funcs_ipp_internal::_to_bool_impl(__src, __src.length(), __dst); }
-	/*
 	inline bool to_bool(wstring_view __src, bool &__dst) noexcept
 	{ return  __public_impl_string_view_funcs_ipp_internal::_to_bool_impl(__src, __src.length(), __dst); }
-#ifdef MFW_CPP_CHAR8_SUPPORTED
 	inline bool to_bool(u8string_view __src, bool &__dst) noexcept
 	{ return  __public_impl_string_view_funcs_ipp_internal::_to_bool_impl(__src, __src.length(), __dst); }
-#endif
+	/*
 	inline bool to_bool(u16string_view __src, bool &__dst) noexcept
 	{ return  __public_impl_string_view_funcs_ipp_internal::_to_bool_impl(__src, __src.length(), __dst); }
 	inline bool to_bool(u32string_view __src, bool &__dst) noexcept

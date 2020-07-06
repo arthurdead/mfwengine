@@ -3,59 +3,6 @@
 
 #pragma once
 
-#ifdef __has_feature
-	#define MFW_HAS_FEATURE(x) __has_feature(x)
-#else
-	#define MFW_HAS_FEATURE(x) 0
-#endif
-
-#ifdef __has_extension
-	#define MFW_HAS_EXTENSION(x) __has_extension(x)
-#else
-	#define MFW_HAS_EXTENSION(x) 0
-#endif
-
-#ifdef __has_builtin
-	#define MFW_HAS_BUILTIN(x) __has_builtin(x)
-#else
-	#define MFW_HAS_BUILTIN(x) 0
-#endif
-
-#ifdef __has_include
-	#define MFW_HAS_INCLUDE(x) __has_include(x)
-#else
-	#define MFW_HAS_INCLUDE(x) 0
-#endif
-
-#if defined __cplusplus || \
-	defined _MSVC_LANG
-	#define MFW_CPP
-	#define MFW_C
-#elif defined __ASSEMBLER__
-	#define MFW_ASM
-#elif defined __STDC__ || \
-		defined __STDC_VERSION__ || \
-		defined __STDC_HOSTED__
-	#define MFW_C
-#endif
-
-#if defined __INTELLISENSE__ || \
-	defined __cpp_check
-	#define MFW_INTELLISENSE
-#endif
-
-#ifdef MFW_CPP
-	#include <version>
-#endif
-
-#include <public/mfw/stl/internal/version_os.hpp>
-
-#ifdef MFW_C
-	#if MFW_OS_IS(LINUX)
-		#include <features.h>
-	#endif
-#endif
-
 #define _MFW_BIT(i) (1 << (i))
 
 #define _MFW_STRINGFY_IMPL(x) #x
@@ -89,11 +36,62 @@
 	#error
 #endif
 
-#define _MFW_DISABLE_COMPILE_MESSAGES
-#ifndef _MFW_DISABLE_COMPILE_MESSAGES
-	#define _MFW_MESSAGE(text) _MFW_PRAGMA(message(_MFW_FILE_LINE_STRING text))
+#define _MFW_MESSAGE(text) _MFW_PRAGMA(message(_MFW_FILE_LINE_STRING text))
+
+#include <public/mfw/stl/internal/version_config.hpp>
+#include <public/mfw/stl/internal/version_os.hpp>
+
+#if defined __cplusplus || \
+	defined _MSVC_LANG
+	#define MFW_CPP
+	#define MFW_C
+#elif defined __ASSEMBLER__
+	#define MFW_ASM
+#elif defined __STDC__ || \
+		defined __STDC_VERSION__ || \
+		defined __STDC_HOSTED__
+	#define MFW_C
+#endif
+
+#if defined __INTELLISENSE__ || \
+	defined __cpp_check
+	#define MFW_INTELLISENSE
+#endif
+
+#include <public/mfw/stl/internal/pre_std.hpp>
+
+#ifdef MFW_CPP
+	#include <version>
+#endif
+
+#ifdef MFW_C
+	#if MFW_OS_IS(LINUX)
+		#include <features.h>
+	#endif
+#endif
+
+#ifdef __has_feature
+	#define MFW_HAS_FEATURE(x) __has_feature(x)
 #else
-	#define _MFW_MESSAGE(x)
+	#define MFW_HAS_FEATURE(x) 0
+#endif
+
+#ifdef __has_extension
+	#define MFW_HAS_EXTENSION(x) __has_extension(x)
+#else
+	#define MFW_HAS_EXTENSION(x) 0
+#endif
+
+#ifdef __has_builtin
+	#define MFW_HAS_BUILTIN(x) __has_builtin(x)
+#else
+	#define MFW_HAS_BUILTIN(x) 0
+#endif
+
+#ifdef __has_include
+	#define MFW_HAS_INCLUDE(x) __has_include(x)
+#else
+	#define MFW_HAS_INCLUDE(x) 0
 #endif
 
 #ifdef MFW_CPP
@@ -102,7 +100,6 @@
 #ifdef MFW_C
 	#include <public/mfw/stl/internal/version_c.hpp>
 #endif
-#include <public/mfw/stl/internal/version_config.hpp>
 #include <public/mfw/stl/internal/version_processor.hpp>
 #include <public/mfw/stl/internal/version_build.hpp>
 

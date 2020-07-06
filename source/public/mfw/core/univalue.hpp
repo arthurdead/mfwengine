@@ -1,339 +1,179 @@
-#ifndef __MFW_PUBLIC_CORE_UNIVALUE_H
-#define __MFW_PUBLIC_CORE_UNIVALUE_H
+#ifndef __MFW_PUBLIC_CORE_UNIVALUE_HPP
+#define __MFW_PUBLIC_CORE_UNIVALUE_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
-#include <public/mfw/core/core.hpp>
 #include <public/mfw/stl/string.hpp>
+#include <public/mfw/stl/string_view.hpp>
 #include <public/mfw/stl/defines.hpp>
 #include <public/mfw/stl/limits.hpp>
-#include <public/mfw/core/rttr_interface.hpp>
+#include <public/mfw/stl/stdint.hpp>
+#include <public/mfw/stl/float.hpp>
+#include <public/mfw/core/core.hpp>
 
-namespace mfw
+namespace mfw::core
 {
-	#define __MFW_UNIVALUE_OPERATORS_UNIVALUE() \
-		univalue &operator+=(const univalue &value) { \
-			if(value.is_string()) { \
-				set(get_string() + value.get_string()); \
-			} else { \
-				set(get_float() + value.get_float()); \
-			} \
-			return *this; \
-		} \
-		univalue operator+(const univalue &value) const { \
-			if(value.is_string()) { \
-				return univalue{get_string() + value.get_string()}; \
-			} else { \
-				return univalue{get_float() + value.get_float()}; \
-			} \
-		} \
-		univalue &operator/=(const univalue &value) { set(get_float() / value.get_float()); return *this; } \
-		univalue operator/(const univalue &value) const { return univalue{get_float() / value.get_float()}; } \
-		univalue &operator-=(const univalue &value) { set(get_float() - value.get_float()); return *this; } \
-		univalue operator-(const univalue &value) const { return univalue{get_float() - value.get_float()}; } \
-		univalue &operator*=(const univalue &value) { set(get_float() * value.get_float()); return *this; } \
-		univalue operator*(const univalue &value) const { return univalue{get_float() * value.get_float()}; } \
-		bool operator&&(const univalue &value) const { return (get_bool() && value.get_bool()); } \
-		bool operator||(const univalue &value) const { return (get_bool() || value.get_bool()); } \
-		bool operator>(const univalue &value) const { return (get_float() > value.get_float()); } \
-		bool operator>=(const univalue &value) const { return (get_float() >= value.get_float()); } \
-		bool operator<(const univalue &value) const { return (get_float() < value.get_float()); } \
-		bool operator<=(const univalue &value) const { return (get_float() <= value.get_float()); } \
-		bool operator==(const univalue &value) const { \
-			if(value.is_string()) { \
-				return (get_string() == value.get_string()); \
-			} else { \
-				return (get_float() == value.get_float()); \
-			} \
-		} \
-		bool operator!=(const univalue &value) const { return !operator==(value); } \
-		univalue operator^(const univalue &value) const { return univalue{get_int() ^ value.get_int()}; } \
-		univalue operator|(const univalue &value) const { return univalue{get_int() | value.get_int()}; } \
-		univalue operator&(const univalue &value) const { return univalue{get_int() & value.get_int()}; } \
-		univalue operator<<(const univalue &value) const { return univalue{get_int() << value.get_int()}; } \
-		univalue operator>>(const univalue &value) const { return univalue{get_int() >> value.get_int()}; } \
-		univalue operator%(const univalue &value) const { return univalue{get_int() % value.get_int()}; }
+	#define __MFW_UNIVALUE_OP(op) \
+		univalue operator op (const univalue &) const noexcept; \
+		univalue operator op (univalue &&) const noexcept;
 
-	#define __MFW_UNIVALUE_OPERATORS_STRING(realtype, faketype) \
-		explicit univalue(const faketype &value) { set(value); } \
-		void set(const faketype &value) { set_string(as_string<realtype>(value)); } \
-		univalue &operator=(const faketype &value) { set(value); return *this; } \
-		bool operator==(const faketype &value) const { return (get_string() == as_string<realtype>(value)); } \
-		bool operator!=(const faketype &value) const { return !operator==(value); } \
-		faketype operator+(const faketype &value) const { return (as_string<faketype>(get_string()) + value); } \
-		univalue &operator+=(const faketype &value) { set(get_string() + as_string<realtype>(value)); return *this; }
+	#define __MFW_UNIVALUE_OP_CMP(op) \
+		bool operator op (const univalue &) const noexcept;
 
-	#define __MFW_UNIVALUE_OPERATORS_STRINGVIEW(realtype, faketype, fakestringtype) \
-		explicit univalue(const faketype &value) { set(value); } \
-		void set(const faketype &value) { set_string(as_string<realtype>(value)); } \
-		univalue &operator=(const faketype &value) { set(value); return *this; } \
-		bool operator==(const faketype &value) const { return (get_string() == as_string<realtype>(value)); } \
-		bool operator!=(const faketype &value) const { return !operator==(value); } \
-		fakestringtype operator+(const faketype &value) const { return (as_string<fakestringtype>(get_string()) + value.data()); } \
-		univalue &operator+=(const faketype &value) { set(get_string() + as_string<realtype>(value)); return *this; }
+	#define __MFW_UNIVALUE_OP_EQUAL(op) \
+		__MFW_UNIVALUE_OP(op) \
+		univalue &operator op =(const univalue &) noexcept; \
+		univalue &operator op =(univalue &&) noexcept;
 
-	#define __MFW_UNIVALUE_OPERATORS_CSTRING(realtype, faketype, fakestringtype) \
-		explicit univalue(const faketype *value) { set(value); } \
-		void set(const faketype *value) { set_string(as_string<realtype>(fakestringtype##_view{value})); } \
-		univalue &operator=(const faketype *value) { set(value); return *this; } \
-		bool operator==(const faketype *value) const { return (get_string() == as_string<realtype>(fakestringtype##_view{value})); } \
-		bool operator!=(const faketype *value) const { return !operator==(value); } \
-		fakestringtype operator+(const faketype *value) const { return (as_string<fakestringtype>(get_string()) + value); } \
-		univalue &operator+=(const faketype *value) { set(get_string() + as_string<realtype>(fakestringtype##_view{value})); return *this; }
+	#define __MFW_UNIVALUE_OP_EQUAL_CMP(op) \
+		__MFW_UNIVALUE_OP_CMP(op) \
+		bool operator op =(const univalue &) noexcept;
 
-	#define __MFW_UNIVALUE_OPERATORS_ARRSTRING(realtype, faketype, fakestringtype) \
-		template <size_t size_> \
-		explicit univalue(const faketype (&value)[size_]) { set(value); } \
-		template <size_t size_> \
-		void set(const faketype (&value)[size_]) { set_string(as_string<realtype>(fakestringtype##_view{value})); } \
-		template <size_t size_> \
-		univalue &operator=(const faketype (&value)[size_]) { set(value); return *this; } \
-		template <size_t size_> \
-		bool operator==(const faketype (&value)[size_]) const { return (get_string() == as_string<realtype>(fakestringtype##_view{value})); } \
-		template <size_t size_> \
-		bool operator!=(const faketype (&value)[size_]) const { return !operator==(value); } \
-		template <size_t size_> \
-		fakestringtype operator+(const faketype (&value)[size_]) const { return (as_string<fakestringtype>(get_string()) + value); } \
-		template <size_t size_> \
-		univalue &operator+=(const faketype (&value)[size_]) { set(get_string() + as_string<realtype>(fakestringtype##_view{value})); return *this; }
+	#define __MFW_UNIVALUE_OP_SCALAR(op, type) \
+		type operator op (type value) const noexcept;
 
-	#define __MFW_UNIVALUE_OPERATORS_CHAR(realtype, faketype, fakestringtype) \
-		explicit univalue(faketype value) { set(static_cast<realtype>(value)); } \
-		void set(faketype value) { set_char(static_cast<realtype>(value)); } \
-		univalue &operator=(faketype value) { set(static_cast<realtype>(value)); return *this; } \
-		fakestringtype operator+(faketype value) const { return (as_string<fakestringtype>(get_string()) + value); } \
-		univalue &operator+=(faketype value) { set(get_string() + static_cast<realtype>(value)); return *this; }
+	#define __MFW_UNIVALUE_OP_COMPLEX(op, type) \
+		type operator op (const type &value) const noexcept; \
+		type operator op (type &&value) const noexcept;
 
-	#define __MFW_UNIVALUE_OPERATORS_FLOAT(realtype, faketype) \
-		explicit univalue(faketype value) { set(static_cast<realtype>(value)); } \
-		void set(faketype value) { set_float(static_cast<realtype>(value)); } \
-		univalue &operator=(faketype value) { set(static_cast<realtype>(value)); return *this; } \
-		bool operator==(faketype value) const { return (static_cast<faketype>(get_float()) == value); } \
-		bool operator&&(faketype value) const { return (static_cast<faketype>(get_float()) && value); } \
-		bool operator||(faketype value) const { return (static_cast<faketype>(get_float()) || value); } \
-		bool operator!=(faketype value) const { return (static_cast<faketype>(get_float()) != value); } \
-		bool operator>(faketype value) const { return (static_cast<faketype>(get_float()) > value); } \
-		bool operator>=(faketype value) const { return (static_cast<faketype>(get_float()) >= value); } \
-		bool operator<(faketype value) const { return (static_cast<faketype>(get_float()) < value); } \
-		bool operator<=(faketype value) const { return (static_cast<faketype>(get_float()) <= value); } \
-		faketype operator+(faketype value) const { return (static_cast<faketype>(get_float()) + value); } \
-		univalue &operator+=(faketype value) { set(get_float() + static_cast<realtype>(value)); return *this; } \
-		faketype operator-(faketype value) const { return (static_cast<faketype>(get_float()) - value); } \
-		univalue &operator-=(faketype value) { set(get_float() - static_cast<realtype>(value)); return *this; } \
-		faketype operator*(faketype value) const { return (static_cast<faketype>(get_float()) * value); } \
-		univalue &operator*=(faketype value) { set(get_float() * static_cast<realtype>(value)); return *this; } \
-		faketype operator/(faketype value) const { return (static_cast<faketype>(get_float()) / value); } \
-		univalue &operator/=(faketype value) { set(get_float() / static_cast<realtype>(value)); return *this; } \
-		explicit operator faketype() const { return static_cast<faketype>(get_float()); }
+	#define __MFW_UNIVALUE_OP_SCALAR_CMP(op, type) \
+		bool operator op (type value) const noexcept;
 
-	#define __MFW_UNIVALUE_OPERATORS_INT(realtype, faketype) \
-		explicit univalue(faketype value) { set(static_cast<realtype>(value)); } \
-		void set(faketype value) { set_int(static_cast<realtype>(value)); } \
-		univalue &operator=(faketype value) { set(static_cast<realtype>(value)); return *this; } \
-		bool operator==(faketype value) const { return (static_cast<faketype>(get_int()) == value); } \
-		bool operator&&(faketype value) const { return (static_cast<faketype>(get_int()) && value); } \
-		bool operator||(faketype value) const { return (static_cast<faketype>(get_int()) || value); } \
-		bool operator!=(faketype value) const { return (static_cast<faketype>(get_int()) != value); } \
-		bool operator>(faketype value) const { return (static_cast<faketype>(get_int()) > value); } \
-		bool operator>=(faketype value) const { return (static_cast<faketype>(get_int()) >= value); } \
-		bool operator<(faketype value) const { return (static_cast<faketype>(get_int()) < value); } \
-		bool operator<=(faketype value) const { return (static_cast<faketype>(get_int()) <= value); } \
-		faketype operator+(faketype value) const { return (static_cast<faketype>(get_int()) + value); } \
-		univalue &operator+=(faketype value) { set(get_int() + static_cast<realtype>(value)); return *this; } \
-		faketype operator-(faketype value) const { return (static_cast<faketype>(get_int()) - value); } \
-		univalue &operator-=(faketype value) { set(get_int() - static_cast<realtype>(value)); return *this; } \
-		faketype operator*(faketype value) const { return (static_cast<faketype>(get_int()) * value); } \
-		univalue &operator*=(faketype value) { set(get_int() * static_cast<realtype>(value)); return *this; } \
-		faketype operator/(faketype value) const { return (static_cast<faketype>(get_int()) / value); } \
-		univalue &operator/=(faketype value) { set(get_int() / static_cast<realtype>(value)); return *this; } \
-		faketype operator|(faketype value) const { return (static_cast<faketype>(get_int()) | value); } \
-		univalue &operator|=(faketype value) { set(get_int() | static_cast<realtype>(value)); return *this; } \
-		faketype operator^(faketype value) const { return (static_cast<faketype>(get_int()) ^ value); } \
-		univalue &operator^=(faketype value) { set(get_int() ^ static_cast<realtype>(value)); return *this; } \
-		faketype operator%(faketype value) const { return (static_cast<faketype>(get_int()) % value); } \
-		univalue &operator%=(faketype value) { set(get_int() % static_cast<realtype>(value)); return *this; } \
-		faketype operator<<(faketype value) const { return (static_cast<faketype>(get_int()) << value); } \
-		univalue &operator<<=(faketype value) { set(get_int() << static_cast<realtype>(value)); return *this; } \
-		faketype operator>>(faketype value) const { return (static_cast<faketype>(get_int()) >> value); } \
-		univalue &operator>>=(faketype value) { set(get_int() >> static_cast<realtype>(value)); return *this; } \
-		faketype operator&(faketype value) const { return (static_cast<faketype>(get_int()) & value); } \
-		univalue &operator&=(faketype value) { set(get_int() & static_cast<realtype>(value)); return *this; } \
-		explicit operator faketype() const { return static_cast<faketype>(get_int()); }
+	#define __MFW_UNIVALUE_OP_EQUAL_SCALAR(op, type) \
+		__MFW_UNIVALUE_OP_SCALAR(op, type) \
+		type operator op =(type value) noexcept;
 
-	#define __MFW_UNIVALUE_OPERATORS_BOOL() \
-		explicit univalue(bool value) { set(value); } \
-		void set(bool value) { set_bool(value); } \
-		univalue &operator=(bool value) { set(value); return *this; } \
-		bool operator==(bool value) const { return (get_bool() == value); } \
-		bool operator&&(bool value) const { return (get_bool() && value); } \
-		bool operator||(bool value) const { return (get_bool() || value); } \
-		bool operator!=(bool value) const { return (get_bool() != value); } \
-		explicit operator bool() const { return get_bool(); }
+	#define __MFW_UNIVALUE_OP_EQUAL_COMPLEX(op, type) \
+		__MFW_UNIVALUE_OP_COMPLEX(op, type) \
+		type operator op =(const type &value) noexcept; \
+		type operator op =(type &&value) noexcept;
 
-	namespace core
+	#define __MFW_UNIVALUE_OP_EQUAL_SCALAR_CMP(op, type) \
+		__MFW_UNIVALUE_OP_SCALAR_CMP(op, type) \
+		bool operator op =(type value) const noexcept;
+
+	#define __MFW_UNIVALUE_OP_EQUAL_EQUAL_SCALAR(op, type) \
+		explicit univalue(type value) noexcept; \
+		univalue &operator=(type value) noexcept; \
+		bool operator==(type value) const noexcept; \
+		bool operator!=(type value) const noexcept; \
+		explicit operator type() const noexcept;
+
+	#define __MFW_UNIVALUE_OP_EQUAL_EQUAL_COMPLEX(op, type) \
+		explicit univalue(const type &value) noexcept; \
+		explicit univalue(type &&value) noexcept; \
+		univalue &operator=(const type &value) noexcept; \
+		univalue &operator=(type &&value) noexcept; \
+		bool operator==(const type &value) const noexcept; \
+		bool operator!=(const type &value) const noexcept; \
+		explicit operator const type &() const noexcept;
+
+	class MFW_VISIBILITY_LOCAL univalue final
 	{
-		class univalue
-		{
-		public:
-			using float_type = float80_t;
-			using int_type = uint64_t;
-			using char_type = ucchar_t;
-			using string_type = ucstring;
-			using string_view_type = ucstring_view;
+	public:
+		using float_type = stl::float80_t;
+		using int_type = stl::uint64_t;
+		using string_type = stl::osstring;
 
-			univalue &operator=(const univalue &other) = default;
-			univalue(const univalue &other) = default;
-			univalue &operator=(univalue &&other) = default;
-			univalue(univalue &&other) = default;
+		univalue() noexcept = default;
+		univalue &operator=(const univalue &other) noexcept = default;
+		univalue(const univalue &other) noexcept = default;
+		univalue &operator=(univalue &&other) noexcept = default;
+		univalue(univalue &&other) noexcept = default;
+		~univalue() noexcept = default;
 
-			void set(const univalue &other) { *this = other; }
+		__MFW_UNIVALUE_OP_EQUAL(+)
+		__MFW_UNIVALUE_OP_EQUAL(-)
+		__MFW_UNIVALUE_OP_EQUAL(*)
+		__MFW_UNIVALUE_OP_EQUAL(&)
+		__MFW_UNIVALUE_OP_EQUAL(|)
+		__MFW_UNIVALUE_OP_EQUAL(/)
+		__MFW_UNIVALUE_OP_EQUAL(<<)
+		__MFW_UNIVALUE_OP_EQUAL(>>)
+		__MFW_UNIVALUE_OP_EQUAL(%)
+		__MFW_UNIVALUE_OP_EQUAL(^)
+		__MFW_UNIVALUE_OP_EQUAL_CMP(<)
+		__MFW_UNIVALUE_OP_EQUAL_CMP(>)
 
-			template <typename T, size_t s>
-			univalue(T (&ptr)[s]) = delete;
-			template <typename T, size_t s>
-			void set(T (&ptr)[s]) = delete;
-			template <typename T>
-			univalue(T *ptr) = delete;
-			template <typename T>
-			void set(T *ptr) = delete;
+		__MFW_UNIVALUE_OP_CMP(&&)
+		__MFW_UNIVALUE_OP_CMP(||)
+		__MFW_UNIVALUE_OP_CMP(~=)
 
-			univalue() = default;
-			~univalue() = default;
+		__MFW_UNIVALUE_OP_EQUAL_EQUAL_SCALAR(float_type)
+		__MFW_UNIVALUE_OP_EQUAL_EQUAL_SCALAR(int_type)
+		__MFW_UNIVALUE_OP_EQUAL_EQUAL_SCALAR(bool)
+		__MFW_UNIVALUE_OP_EQUAL_EQUAL_COMPLEX(string_type)
 
-			MFW_CORE_API const string_type & MFW_CORE_CALL get_string() const;
-			MFW_CORE_API string_view_type MFW_CORE_CALL get_string_view() const;
-			MFW_CORE_API const char_type * MFW_CORE_CALL c_str() const;
-			MFW_CORE_API float_type MFW_CORE_CALL get_float() const;
-			MFW_CORE_API int_type MFW_CORE_CALL get_int() const;
-			MFW_CORE_API bool MFW_CORE_CALL get_bool() const;
-			const type_holder &get_var() const { return var; }
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(+, float_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(-, float_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(/, float_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(*, float_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR_CMP(<, float_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR_CMP(>, float_type)
+		__MFW_UNIVALUE_OP_SCALAR_CMP(&&, float_type)
+		__MFW_UNIVALUE_OP_SCALAR_CMP(||, float_type)
 
-			MFW_CORE_API bool MFW_CORE_CALL is_bool() const;
-			MFW_CORE_API bool MFW_CORE_CALL is_float() const;
-			MFW_CORE_API bool MFW_CORE_CALL is_int() const;
-			bool is_string() const { return (get_float() == numeric_limits<float_type>::max()); }
-			bool is_var() const { return (!is_string() && !is_bool()); }
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(+, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(-, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(*, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(/, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(<<, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(>>, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(|, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(&, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR_CMP(<, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR_CMP(>, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(^, int_type)
+		__MFW_UNIVALUE_OP_EQUAL_SCALAR(%, int_type)
+		__MFW_UNIVALUE_OP_SCALAR_CMP(&&, int_type)
+		__MFW_UNIVALUE_OP_SCALAR_CMP(||, int_type)
 
-			explicit operator const string_type &() const { return get_string(); }
-			explicit operator string_view_type() const { return get_string_view(); }
-			//explicit operator const char_type *() const { return c_str(); }
+		__MFW_UNIVALUE_OP_SCALAR_CMP(&&, bool)
+		__MFW_UNIVALUE_OP_SCALAR_CMP(||, bool)
 
-			const string_type *operator->() const { return &get_string(); }
+		__MFW_UNIVALUE_OP_EQUAL_COMPLEX(+, string_type)
 
-			__MFW_UNIVALUE_OPERATORS_STRING(string_type, ucstring)
-			__MFW_UNIVALUE_OPERATORS_STRINGVIEW(string_type, ucstring_view, ucstring)
-			__MFW_UNIVALUE_OPERATORS_CSTRING(string_type, ucchar_t, ucstring)
-			__MFW_UNIVALUE_OPERATORS_ARRSTRING(string_type, ucchar_t, ucstring)
-			__MFW_UNIVALUE_OPERATORS_CHAR(char_type, ucchar_t, ucstring)
+		explicit univalue(const string_type &value) noexcept;
+		explicit univalue(string_type &&value) noexcept;
 
-			__MFW_UNIVALUE_OPERATORS_FLOAT(float_type, float32_t)
-			__MFW_UNIVALUE_OPERATORS_FLOAT(float_type, float64_t)
-			__MFW_UNIVALUE_OPERATORS_FLOAT(float_type, float80_t)
+		univalue operator-() const noexcept;
+		univalue operator+() const noexcept;
+		univalue &operator--(int) noexcept;
+		univalue &operator--() noexcept;
+		univalue &operator++(int) noexcept;
+		univalue &operator++() noexcept;
+		int_type operator~() const noexcept;
+		bool operator!() const noexcept;
+		const string_type *operator->() const noexcept;
 
-		#if MFW_COMPILER == MFW_COMPILER_MSVC
-			MFW_WARNING_PUSH()
-			MFW_WARNING_DISABLE(4365)
-		#endif
-			//__MFW_UNIVALUE_OPERATORS_INT(int_type, int8_t)
-			//__MFW_UNIVALUE_OPERATORS_INT(int_type, uint8_t)
-			__MFW_UNIVALUE_OPERATORS_INT(int_type, int16_t)
-			__MFW_UNIVALUE_OPERATORS_INT(int_type, uint16_t)
-			__MFW_UNIVALUE_OPERATORS_INT(int_type, int32_t)
-			__MFW_UNIVALUE_OPERATORS_INT(int_type, uint32_t)
-			__MFW_UNIVALUE_OPERATORS_INT(int_type, int64_t)
-			__MFW_UNIVALUE_OPERATORS_INT(int_type, uint64_t)
-		#if MFW_COMPILER == MFW_COMPILER_MSVC
-			MFW_WARNING_POP()
-		#endif
-			int_type operator~() const { return ~get_int(); }
+		explicit operator const string_type &() const noexcept;
 
-			__MFW_UNIVALUE_OPERATORS_BOOL()
-			bool operator!() const { return !get_bool(); }
+		const string_type &get_string() const noexcept;
+		float_type get_float() const noexcept;
+		int_type get_int() const noexcept;
+		bool get_bool() const noexcept;
 
-			__MFW_UNIVALUE_OPERATORS_UNIVALUE()
-			univalue operator-() const { return univalue{-get_float()}; }
-			univalue operator+() const { return univalue{+get_float()}; }
-			univalue &operator--(int) { set(get_float() - 1.0f); return *this; }
-			univalue &operator--() { set(get_float() - 1.0f); return *this; }
-			univalue &operator++(int) { set(get_float() + 1.0f); return *this; }
-			univalue &operator++() { set(get_float() + 1.0f); return *this; }
+		bool is_bool() const noexcept;
+		bool is_float() const noexcept;
+		bool is_int() const noexcept;
+		bool is_string() const noexcept;
 
-			template <typename T>
-			void set(const T &value) { set_var(value); }
+		univalue &clear() noexcept;
 
-			void set(const type_holder &value) { set_var(value); }
+		bool empty() const noexcept;
 
-			MFW_CORE_API void MFW_CORE_CALL clear();
+	private:
+		void calculate_float() noexcept;
+		void calculate_string() noexcept;
 
-			bool empty() const { return string_.empty(); }
-
-			void set_strview(const string_view_type &value) { set(string_type{value}); }
-			template <size_t size_>
-			void set_arrstr(const char_type (&value)[size_]) { set(string_type{value}); }
-			void set_char(char_type value) { set(string_type{value}); }
-			void set_cstr(const char_type *value) { set(string_type{value}); }
-
-			MFW_CORE_API void MFW_CORE_CALL set_string(const string_type &value);
-			MFW_CORE_API void MFW_CORE_CALL set_float(float_type value);
-			MFW_CORE_API void MFW_CORE_CALL set_int(int_type value);
-			MFW_CORE_API void MFW_CORE_CALL set_bool(bool value);
-			MFW_CORE_API void MFW_CORE_CALL set_var(const type_holder &value);
-
-			template <typename T>
-			void set_var(const T &value);
-
-		private:
-			string_type string_{};
-			float_type float_{0.0f};
-			type_holder var{};
-		};
-
-		template <typename T>
-		void univalue::set_var(const T &value)
-		{
-			type_holder tmp{};
-			tmp.deduce(value);
-			set_var(tmp);
-		}
-
-		namespace literals
-		{
-			inline univalue operator""_uv(ullong_t n) { return univalue{static_cast<univalue::int_type>(n)}; }
-			inline univalue operator""_uv(ldouble_t f) { return univalue{static_cast<univalue::float_type>(f)}; }
-
-			inline univalue operator""_uv(const univalue::char_type *ptr, size_t len)
-			{
-				univalue::string_view_type str{ptr, len};
-				return univalue{move(str)};
-			}
-		}
-	}
-
-	namespace stl
-	{
-		/*inline const char *c_str(const univalue &src)
-		{
-			const ucstring &str{src.get_string()};
-			return c_str(str);
-		}*/
-
-		inline void to_string(const core::univalue &src, ucstring &dst) { dst = src.get_string(); }
-		inline void to_string(const core::univalue &src, pstring &dst)
-		{
-		#ifndef __MFW_STD_FILESYSTEM_WIDE_CHAR
-			const ucstring &str{src.get_string()};
-			const pchar_t *begin{c_str(str)};
-			const pchar_t *end{begin+src->length()};
-			dst.assign(begin, end);
-		#else
-			MFW_MESSAGE("fix this")
-			MFW_DEBUGBREAK();
-		#endif
-		}
-	}
+		string_type m_string{};
+		float_type m_float{0.0f};
+	};
 }
 
-#include <public/mfw/stl/impl/string_funcs_core.ipp>
+MFW_VISIBILITY_LOCAL ::mfw::core::univalue operator""_uv(::mfw::stl::ullong_t n) noexcept;
+MFW_VISIBILITY_LOCAL ::mfw::core::univalue operator""_uv(::mfw::stl::ldouble_t f) noexcept;
+MFW_VISIBILITY_LOCAL ::mfw::core::univalue operator""_uv(const ::mfw::core::univalue::string_type::value_type *ptr, ::mfw::stl::size_t len) noexcept;
 
 #endif

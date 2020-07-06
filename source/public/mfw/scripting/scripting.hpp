@@ -1,5 +1,5 @@
-#ifndef __MFW_SCRIPTING_H
-#define __MFW_SCRIPTING_H
+#ifndef __MFW_SCRIPTING_HPP
+#define __MFW_SCRIPTING_HPP
 
 #pragma once
 

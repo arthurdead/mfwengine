@@ -12,6 +12,9 @@
 #define MFW_MESSAGE _MFW_MESSAGE
 #define MFW_MACRO_CONCATENATE _MFW_MACRO_CONCATENATE
 
+#define _MFW_MACRO_EXPAND_IMPL(x) x
+#define MFW_MACRO_EXPAND(x) _MFW_MACRO_EXPAND_IMPL(x)
+
 #define MFW_NOTHING
 
 #ifdef MFW_CPP_CHAR8_SUPPORTED
@@ -25,94 +28,28 @@
 #define _MFW_WSTRINGFY_IMPL(x) MFW_MACRO_CONCATENATE(L, #x)
 #define MFW_WSTRINGFY(x) _MFW_WSTRINGFY_IMPL(x)
 
-#if MFW_COMPILER_FLAGGED(MSVC)
-	#define MFW_DECLSPEC(x) __declspec(x)
-	#define MFW_ATTRIBUTE(x)
-	#define MFW_SHARED_EXPORT MFW_DECLSPEC(dllexport)
-	#define MFW_SHARED_IMPORT MFW_DECLSPEC(dllimport)
-	#define MFW_SHARED_LOCAL 
-	#define MFW_VISIBILITY_PUSH(x) 
-	#define MFW_VISIBILITY_POP() 
-	#define MFW_VISIBILITY_PUBLIC 
-	#define MFW_VISIBILITY_LOCAL 
-	#define MFW_CALL_STDCALL __stdcall
-	#define MFW_CALL_CDECL __cdecl
-	#define MFW_OPTIMIZE_PRAGMA(x) MFW_PRAGMA(optimize(x))
-	#define MFW_OPTIMIZE_ATTRIBUTE(x) 
-	#define MFW_RESET_OPTIONS() 
-	#define MFW_PUSH_OPTIONS() 
-	#define MFW_POP_OPTIONS() 
-	#define MFW_WARNING_DISABLE(...) MFW_PRAGMA(warning(disable: __VA_ARGS__))
-	#define MFW_WARNING_SUPPRESS(...) MFW_PRAGMA(warning(suppress: __VA_ARGS__))
-	#define _MFW_WARNING_PUSH_MSVC() MFW_PRAGMA(warning(push))
-	#define _MFW_WARNING_POP_MSVC() MFW_PRAGMA(warning(pop))
-	#if MFW_COMPILER_FLAGGED(CLANG)
-		#define MFW_WARNING_DISABLE_UNIX(x) MFW_PRAGMA_UNIX(clang diagnostic ignored x)
-		#define _MFW_WARNING_PUSH_UNIX() MFW_PRAGMA_UNIX(clang diagnostic push)
-		#define _MFW_WARNING_POP_UNIX() MFW_PRAGMA_UNIX(clang diagnostic pop)
-		#define MFW_WARNING_PUSH() _MFW_WARNING_PUSH_UNIX() _MFW_WARNING_PUSH_MSVC()
-		#define MFW_WARNING_POP() _MFW_WARNING_POP_UNIX() _MFW_WARNING_POP_MSVC()
-	#else
-		#define MFW_WARNING_PUSH _MFW_WARNING_PUSH_MSVC
-		#define MFW_WARNING_POP _MFW_WARNING_POP_MSVC
-	#endif
-	#define MFW_EXTENSION
-#elif MFW_COMPILER_FLAGGED(UNIX)
-	#define MFW_DECLSPEC(x)
-	#ifdef MFW_VA_MACROS_SUPPORTED
-		#define MFW_ATTRIBUTE(...) __attribute__((__VA_ARGS__))
-	#else
-		#define MFW_ATTRIBUTE(x) __attribute__((x))
-	#endif
-	#define MFW_VISIBILITY_PUBLIC MFW_ATTRIBUTE(__visibility__("default"))
-	#define MFW_VISIBILITY_LOCAL MFW_ATTRIBUTE(__visibility__("internal"))
-	#if MFW_OS_IS(WINDOWS)
-		#define MFW_SHARED_EXPORT MFW_ATTRIBUTE(__dllexport__) MFW_VISIBILITY_PUBLIC
-		#define MFW_SHARED_IMPORT MFW_ATTRIBUTE(__dllimport__) MFW_VISIBILITY_PUBLIC
-		#define _MFW_SYSTEM_ABI MFW_ATTRIBUTE(__ms_abi__)
-	#elif MFW_OS_IS(LINUX)
-		#define MFW_SHARED_EXPORT MFW_VISIBILITY_PUBLIC
-		#define MFW_SHARED_IMPORT MFW_VISIBILITY_PUBLIC
-		#define _MFW_SYSTEM_ABI MFW_ATTRIBUTE(__sysv_abi__)
-	#else
-		#error
-	#endif
-	#define MFW_SHARED_LOCAL MFW_VISIBILITY_LOCAL
-	#define MFW_CALL_STDCALL MFW_ATTRIBUTE(__stdcall__, __ms_abi__)
-	#if MFW_COMPILER_FLAGGED(CLANG)
-		#define MFW_CALL_CDECL _MFW_SYSTEM_ABI MFW_ATTRIBUTE(__cdecl__)
-		#define _MFW_PRAGMA_ID clang
-		#define MFW_OPTIMIZE_PRAGMA(x) 
-		#define MFW_OPTIMIZE_ATTRIBUTE(x) 
-		#define MFW_RESET_OPTIONS() 
-		#define MFW_PUSH_OPTIONS() 
-		#define MFW_POP_OPTIONS() 
-	#elif MFW_COMPILER_IS(GCC)
-		#define MFW_CALL_CDECL __MFW_SYSTEM_ABI
-		#define _MFW_PRAGMA_ID GCC
-		#ifdef MFW_VA_MACROS_SUPPORTED
-			#define MFW_OPTIMIZE_PRAGMA(...) MFW_PRAGMA(_MFW_PRAGMA_ID optimize(__VA_ARGS__))
-			#define MFW_OPTIMIZE_ATTRIBUTE(...) MFW_ATTRIBUTE(__optimize__(__VA_ARGS__))
-		#else
-			#define MFW_OPTIMIZE_PRAGMA(x) MFW_PRAGMA(_MFW_PRAGMA_ID optimize(x))
-			#define MFW_OPTIMIZE_ATTRIBUTE(x) MFW_ATTRIBUTE(__optimize__(x))
-		#endif
-		#define MFW_RESET_OPTIONS() MFW_PRAGMA(_MFW_PRAGMA_ID reset_options)
-		#define MFW_PUSH_OPTIONS() MFW_PRAGMA(_MFW_PRAGMA_ID push_options)
-		#define MFW_POP_OPTIONS() MFW_PRAGMA(_MFW_PRAGMA_ID pop_options)
-	#else
-		#error
-	#endif
-	#define MFW_VISIBILITY_PUSH(x) MFW_PRAGMA(_MFW_PRAGMA_ID visibility push(x))
-	#define MFW_VISIBILITY_POP() MFW_PRAGMA(_MFW_PRAGMA_ID visibility pop)
-	#define MFW_WARNING_PUSH() MFW_PRAGMA(_MFW_PRAGMA_ID diagnostic push)
-	#define MFW_WARNING_POP() MFW_PRAGMA(_MFW_PRAGMA_ID diagnostic pop)
-	#define MFW_WARNING_DISABLE(x) MFW_PRAGMA(_MFW_PRAGMA_ID diagnostic ignored x)
-	#define MFW_WARNING_SUPPRESS MFW_WARNING_DISABLE
-	#define MFW_WARNING_DISABLE_UNIX MFW_WARNING_DISABLE
-	#define MFW_EXTENSION __extension__
-#else
-	#error
+#include <public/mfw/stl/internal/compiler_defines.hpp>
+
+#define _MFW_DEBUGBREAK MFW_MACRO_EXPAND(MFW_DEBUGBREAK)
+#define _MFW_WARNING_PUSH MFW_MACRO_EXPAND(MFW_WARNING_PUSH)
+#define _MFW_WARNING_POP MFW_MACRO_EXPAND(MFW_WARNING_POP)
+#define _MFW_WARNING_DISABLE MFW_MACRO_EXPAND(MFW_WARNING_DISABLE)
+#define _MFW_WARNING_SUPPRESS MFW_MACRO_EXPAND(MFW_WARNING_SUPPRESS)
+#define _MFW_WARNING_DISABLE_UNIX MFW_MACRO_EXPAND(MFW_WARNING_DISABLE_UNIX)
+
+#if MFW_CONFIGURATION_IS(RELEASE)
+	#undef MFW_DEBUGBREAK
+	#define MFW_DEBUGBREAK please remove the debugbreak
+	#undef MFW_WARNING_PUSH
+	#undef MFW_WARNING_POP
+	#undef MFW_WARNING_DISABLE
+	#undef MFW_WARNING_SUPPRESS
+	#undef MFW_WARNING_DISABLE_UNIX
+	#define MFW_WARNING_PUSH please fix the warning
+	#define MFW_WARNING_POP please fix the warning
+	#define MFW_WARNING_DISABLE please fix the warning
+	#define MFW_WARNING_SUPPRESS please fix the warning
+	#define MFW_WARNING_DISABLE_UNIX please fix the warning
 #endif
 
 #if MFW_OS_IS(WINDOWS)
@@ -123,55 +60,54 @@
 	#error
 #endif
 
-#define _MFW_ENABLE_DEBUGBREAK
-#if MFW_CONFIGURATION_IS(DEBUG) || defined _MFW_ENABLE_DEBUGBREAK
-	#if MFW_COMPILER_FLAGGED(MSVC)
-		#define MFW_DEBUGBREAK() __debugbreak()
-	#elif MFW_COMPILER_FLAGGED(CLANG)
-		#define MFW_DEBUGBREAK() __builtin_debugtrap()
-	#elif MFW_COMPILER_IS(GCC)
-		#if MFW_PROCESSOR_FLAGGED(X86)
-			#define MFW_DEBUGBREAK() __asm__("int3")
-		#else
-			#define MFW_DEBUGBREAK() __builtin_trap()
-		#endif
-	#else
-		#error
-	#endif
-#else
-	#define MFW_DEBUGBREAK()
-#endif
-
 #ifdef MFW_CPP
 	#define _MFW_ENUM_SHARED_EQUAL_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline bool operator==(arg rhs, name lhs) { return static_cast<type>(rhs) == static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator!=(arg rhs, name lhs) { return static_cast<type>(rhs) != static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator>(arg rhs, name lhs) { return static_cast<type>(rhs) > static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator<(arg rhs, name lhs) { return static_cast<type>(rhs) < static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator>=(arg rhs, name lhs) { return static_cast<type>(rhs) >= static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator<=(arg rhs, name lhs) { return static_cast<type>(rhs) <= static_cast<type>(lhs); }
+		acessor constexpr inline bool operator==(arg rhs, name lhs) noexcept \
+		{ return static_cast<type>(rhs) == static_cast<type>(lhs); } \
+		acessor constexpr inline bool operator!=(arg rhs, name lhs) noexcept \
+		{ return static_cast<type>(rhs) != static_cast<type>(lhs); } \
+		acessor constexpr inline bool operator>(arg rhs, name lhs) noexcept \
+		{ return static_cast<type>(rhs) > static_cast<type>(lhs); } \
+		acessor constexpr inline bool operator<(arg rhs, name lhs) noexcept \
+		{ return static_cast<type>(rhs) < static_cast<type>(lhs); } \
+		acessor constexpr inline bool operator>=(arg rhs, name lhs) noexcept \
+		{ return static_cast<type>(rhs) >= static_cast<type>(lhs); } \
+		acessor constexpr inline bool operator<=(arg rhs, name lhs) noexcept \
+		{ return static_cast<type>(rhs) <= static_cast<type>(lhs); }
 
 	#define _MFW_ENUM_SHARED_EQUAL_ADDS_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline name operator+=(name &rhs, arg lhs) { rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(lhs)); return rhs; } \
-		acessor constexpr inline name operator-=(name &rhs, arg lhs) { rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(lhs)); return rhs; }
+		acessor constexpr inline name operator+=(name &rhs, arg lhs) noexcept \
+		{ rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(lhs)); return rhs; } \
+		acessor constexpr inline name operator-=(name &rhs, arg lhs) noexcept \
+		{ rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(lhs)); return rhs; }
 
 	#define _MFW_ENUM_SHARED_AND_BIT_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline name operator&(name rhs, arg lhs) { return static_cast<name>(static_cast<type>(rhs) & static_cast<type>(lhs)); }
+		acessor constexpr inline name operator&(name rhs, arg lhs) noexcept \
+		{ return static_cast<name>(static_cast<type>(rhs) & static_cast<type>(lhs)); }
 
 	#define _MFW_ENUM_SHARED_AND_FLAG_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline bool operator&(name rhs, arg lhs) { return ((static_cast<type>(rhs) & static_cast<type>(lhs)) == (static_cast<type>(lhs))); }
+		acessor constexpr inline bool operator&(name rhs, arg lhs) noexcept \
+		{ return ((static_cast<type>(rhs) & static_cast<type>(lhs)) == (static_cast<type>(lhs))); }
 
 	#define _MFW_ENUM_SHARED_FLAGS_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline name operator|(name rhs, arg lhs) { return static_cast<name>(static_cast<type>(rhs) | static_cast<type>(lhs)); } \
-		acessor constexpr inline name operator^(name rhs, arg lhs) { return static_cast<name>(static_cast<type>(rhs) ^ static_cast<type>(lhs)); } \
-		acessor constexpr inline name &operator&=(name &rhs, arg lhs) { rhs = static_cast<name>(static_cast<type>(rhs) & static_cast<type>(lhs)); return rhs; } \
-		acessor constexpr inline name &operator|=(name &rhs, arg lhs) { rhs = static_cast<name>(static_cast<type>(rhs) | static_cast<type>(lhs)); return rhs; } \
+		acessor constexpr inline name operator|(name rhs, arg lhs) noexcept \
+		{ return static_cast<name>(static_cast<type>(rhs) | static_cast<type>(lhs)); } \
+		acessor constexpr inline name operator^(name rhs, arg lhs) noexcept \
+		{ return static_cast<name>(static_cast<type>(rhs) ^ static_cast<type>(lhs)); } \
+		acessor constexpr inline name &operator&=(name &rhs, arg lhs) noexcept \
+		{ rhs = static_cast<name>(static_cast<type>(rhs) & static_cast<type>(lhs)); return rhs; } \
+		acessor constexpr inline name &operator|=(name &rhs, arg lhs) noexcept \
+		{ rhs = static_cast<name>(static_cast<type>(rhs) | static_cast<type>(lhs)); return rhs; } \
 
 	#define _MFW_ENUM_SHARED_UNARY_ADD_IMPL(acessor, name, type) \
-		acessor constexpr inline name &operator++(name &rhs) { rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(1)); return rhs; } \
-		acessor constexpr inline name &operator--(name &rhs) { rhs = static_cast<name>(static_cast<type>(rhs) - static_cast<type>(1)); return rhs; } \
-		acessor constexpr inline name &operator++(name &rhs,int) { rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(1)); return rhs; } \
-		acessor constexpr inline name &operator--(name &rhs,int) { rhs = static_cast<name>(static_cast<type>(rhs) - static_cast<type>(1)); return rhs; }
+		acessor constexpr inline name &operator++(name &rhs) noexcept \
+		{ rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(1)); return rhs; } \
+		acessor constexpr inline name &operator--(name &rhs) noexcept \
+		{ rhs = static_cast<name>(static_cast<type>(rhs) - static_cast<type>(1)); return rhs; } \
+		acessor constexpr inline name &operator++(name &rhs,int) noexcept \
+		{ rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(1)); return rhs; } \
+		acessor constexpr inline name &operator--(name &rhs,int) noexcept \
+		{ rhs = static_cast<name>(static_cast<type>(rhs) - static_cast<type>(1)); return rhs; }
 
 	#define _MFW_ENUM_SHARED_UNARY_FLAGS_IMPL(acessor, name, type) \
 		acessor constexpr inline name operator~(name rhs) { return static_cast<name>(~static_cast<type>(rhs)); }
@@ -250,24 +186,24 @@
 		} \
 
 	#define _MFW_TO_STRING_HELPER(var, vartype, dst, dsttype) \
-		if constexpr(test_funcs_string<dsttype>::member::template has_to_v<vartype>) { \
+		if constexpr(::mfw::stl::test_funcs_string<dsttype>::member::template has_to_v<vartype>) { \
 			dsttype __tmp{}; \
 			var.to_string(var, __tmp); \
-			dst.append(move(__tmp)); \
-		} else if constexpr(test_funcs_string<dsttype>::template global<vartype>::has_to_v) { \
+			dst.append(::mfw::stl::move(__tmp)); \
+		} else if constexpr(::mfw::stl::test_funcs_string<dsttype>::template global<vartype>::has_to_v) { \
 			dsttype __tmp{}; \
-			to_string(var, __tmp); \
-			dst.append(move(__tmp)); \
-		} else if constexpr(is_same_v<vartype, dsttype>) { \
+			::mfw::stl::to_string(var, __tmp); \
+			dst.append(::mfw::stl::move(__tmp)); \
+		} else if constexpr(::mfw::stl::is_same_v<vartype, dsttype>) { \
 			dst.append(var); \
-		} else if constexpr(is_constructible_v<dsttype, vartype>) { \
+		} else if constexpr(::mfw::stl::is_constructible_v<dsttype, vartype>) { \
 			dst.append(dsttype{var}); \
-		} else if constexpr(is_convertible_v<vartype, dsttype>) { \
+		} else if constexpr(::mfw::stl::is_convertible_v<vartype, dsttype>) { \
 			dst.append(static_cast<dsttype>(var)); \
-		} else if constexpr(is_assignable_v<dsttype, vartype>) { \
+		} else if constexpr(::mfw::stl::is_assignable_v<dsttype, vartype>) { \
 			dsttype __tmp{}; \
 			__tmp = var; \
-			dst.append(move(__tmp)); \
+			dst.append(::mfw::stl::move(__tmp)); \
 		} else { \
 			static_assert(false); \
 		}
@@ -280,51 +216,51 @@
 	MFW_MESSAGE("TODO!!! below does not work with templates")
 	#define MFW_DECLARE_FUNC_CHECK_MEMBER(name, ret, func, cnst, ...) \
 		template <typename _Tp> \
-		class name \
+		class name final \
 		{ \
 			template <typename _Rp, typename _Cp, typename... _Args> \
-			static constexpr auto check(::mfw::stl::nullptr_t) -> decltype(::mfw::stl::declval<_Cp>().func(::mfw::stl::declval<_Args>()...)); \
+			static constexpr auto check(::mfw::stl::nullptr_t) noexcept -> decltype(::mfw::stl::declval<_Cp>().func(::mfw::stl::declval<_Args>()...)); \
 			template <typename _Rp, typename _Cp, typename... _Args> \
-			static constexpr ::mfw::stl::false_type check(...); \
+			static constexpr ::mfw::stl::false_type check(...) noexcept; \
 		public: \
 			static constexpr bool value{::mfw::stl::is_same_v<decltype(check<ret, cnst _Tp, ##__VA_ARGS__>(nullptr)), ret>}; \
 			template <typename _Rp, typename... _Args> \
 			static constexpr bool value_overload{::mfw::stl::is_same_v<decltype(check<_Rp, cnst _Tp, _Args...>(nullptr)), _Rp>}; \
 		}; \
 		template <typename _Tp> \
-		static constexpr bool name##_v = name<_Tp>::value; \
+		static constexpr bool name##_v{name<_Tp>::value}; \
 		template <typename _Tp, typename _Rp, typename... _Args> \
-		static constexpr bool name##_overload_v = name<_Tp>::template value_overload<_Rp, _Args...>;
+		static constexpr bool name##_overload_v{name<_Tp>::template value_overload<_Rp, _Args...>};
 
 	MFW_MESSAGE("TODO!!! below does not work with templates")
 	#define MFW_DECLARE_FUNC_CHECK_GLOBAL(name, ret, func, ...) \
-		class name \
+		class name final \
 		{ \
 			template <typename _Rp, typename... _Args> \
-			static constexpr auto check(::mfw::stl::nullptr_t) -> decltype(func(::mfw::stl::declval<_Args>()...)); \
+			static constexpr auto check(::mfw::stl::nullptr_t) noexcept -> decltype(func(::mfw::stl::declval<_Args>()...)); \
 			template <typename _Rp, typename... _Args> \
-			static constexpr ::mfw::stl::false_type check(...); \
+			static constexpr ::mfw::stl::false_type check(...) noexcept; \
 		public: \
 			static constexpr bool value{::mfw::stl::is_same_v<decltype(check<ret, ##__VA_ARGS__>(nullptr)), ret>}; \
 			template <typename _Rp, typename... _Args> \
 			static constexpr bool value_overload{::mfw::stl::is_same_v<decltype(check<_Rp, _Args...>(nullptr)), _Rp>}; \
 		}; \
-		static constexpr bool name##_v = name::value; \
+		static constexpr bool name##_v{name::value}; \
 		template <typename _Rp, typename... _Args> \
-		static constexpr bool name##_overload_v = name::template value_overload<_Rp, _Args...>;
+		static constexpr bool name##_overload_v{name::template value_overload<_Rp, _Args...>};
 
 	#define MFW_DECLARE_AS_TO_CHECK_FUNCS_BEGIN(name) \
 		template <typename _Vp> \
-		struct test_funcs_##name \
+		struct test_funcs_##name final \
 		{ \
-			struct member \
+			struct member final \
 			{
 				
 	#define MFW_DECLARE_AS_TO_CHECK_FUNCS_END(name) \
 				MFW_DECLARE_FUNC_CHECK_MEMBER(has_to, void, to_##name, const, _Vp &) \
 			}; \
 			template <typename _Tp> \
-			struct global \
+			struct global final \
 			{ \
 				MFW_DECLARE_FUNC_CHECK_GLOBAL(has_as, _Vp, as_##name, const _Tp &) \
 				MFW_DECLARE_FUNC_CHECK_GLOBAL(has_to, void, to_##name, const _Tp &, _Vp &) \
@@ -347,14 +283,14 @@
 
 	#define MFW_DECLARE_AS_FUNC_GLOBAL(name) \
 		template <typename _Dp, typename _Sp> \
-		_Dp as_##name(const _Sp &__src);
+		_Dp as_##name(const _Sp &__src) noexcept;
 
 	MFW_MESSAGE("TODO!! remake both below once MFW_DECLARE_FUNC_CHECK_MEMBER/GLOBAL supports templates")
 	#define MFW_IMPLEMENT_TO_FUNC_GLOBAL(name)
 
 	#define _MFW_IMPLEMENT_AS_FUNC_GLOBAL_START(name) \
 		template <typename _Dp, typename _Sp> \
-		_Dp as_##name(const _Sp &__src) \
+		_Dp as_##name(const _Sp &__src) noexcept \
 		{ \
 			using __D = ::mfw::stl::remove_cvref_t<_Dp>; \
 			using __S = ::mfw::stl::remove_cvref_t<_Sp>; \
@@ -374,21 +310,21 @@
 	#define MFW_IMPLEMENT_AS_FUNC_GLOBAL_V1(name) \
 		_MFW_IMPLEMENT_AS_FUNC_GLOBAL_START(name) \
 		_MFW_IMPLEMENT_AS_FUNC_GLOBAL_END(name) \
-			else if constexpr(test_funcs_##name<__D>::member::template has_to_v<__S>) { \
+			else if constexpr(::mfw::stl::test_funcs_##name<__D>::member::template has_to_v<__S>) { \
 				__src.to_##name(__tmp); \
-			} else if constexpr(test_funcs_##name<__D>::template global<__S>::has_to_v) { \
-				to_##name(__src, __tmp); \
+			} else if constexpr(::mfw::stl::test_funcs_##name<__D>::template global<__S>::has_to_v) { \
+				::mfw::stl::to_##name(__src, __tmp); \
 			} else { \
-				MFW_DEBUGBREAK(); \
+				static_assert(false); \
 			} \
 			return __tmp; \
 		}
 
 	#define MFW_IMPLEMENT_AS_FUNC_GLOBAL_V2(name) \
 		_MFW_IMPLEMENT_AS_FUNC_GLOBAL_START(name) \
-			if constexpr(test_funcs_##name<__D>::member::template has_to_v<__S>) { \
+			if constexpr(::mfw::stl::test_funcs_##name<__D>::member::template has_to_v<__S>) { \
 				__src.to_##name(__tmp); \
-			} else if constexpr(test_funcs_##name<__D>::template global<__S>::has_to_v) { \
+			} else if constexpr(::mfw::stl::test_funcs_##name<__D>::template global<__S>::has_to_v) { \
 				to_##name(__src, __tmp); \
 			} else \
 		_MFW_IMPLEMENT_AS_FUNC_GLOBAL_END(name) \
@@ -409,8 +345,8 @@
 		MFW_IMPLEMENT_AS_FUNC_GLOBAL(name)
 
 	#define MFW_DISABLE_COPY(name) \
-		name &operator=(const name &other) = delete; \
-		name(const name &other) = delete;
+		name &operator=(const name &other) noexcept = delete; \
+		name(const name &other) noexcept = delete;
 
 	#ifdef MFW_CPP_IF_CONSTEXPR_SUPPORTED
 		#define MFW_IF_CONSTEXPR if constexpr

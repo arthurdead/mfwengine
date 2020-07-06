@@ -19,12 +19,20 @@
 	#include <EAStdC/Int128_t.h>
 #endif
 
-#if MFW_OS_IS(LINUX)
+#if MFW_LIBC_FLAGGED(UNIX)
 	#include <sys/types.h>
 #endif
 
-#if MFW_COMPILER_FLAGGED(UNIX) || defined __STDC_WANT_IEC_60559_TYPES_EXT__ || MFW_STDC_IS(EA)
-	#define __MFW_INT128_UNIQUE
+#if MFW_COMPILER_FLAGGED(UNIX) || MFW_STDC_IS(EA)
+	#define MFW_INT128_SUPPORTED
+#endif
+
+#if MFW_OS_IS(LINUX)
+	#define MFW_LONG_SIZE 64
+#elif MFW_OS_IS(WINDOWS)
+	#define MFW_LONG_SIZE 32
+#else
+	#error
 #endif
 
 #define MFW_INT8_MIN INT8_MIN
@@ -43,22 +51,23 @@
 #define MFW_INT64_MAX INT64_MAX
 #define MFW_UINT64_MAX UINT64_MAX
 
-#ifdef __STDC_WANT_IEC_60559_TYPES_EXT__
-	#define MFW_INT128_MIN INT128_MIN
-	#define MFW_INT128_MAX INT128_MAX
-	#define MFW_UINT128_MAX UINT128_MAX
-#else
-	#define MFW_INT128_MIN INT64_MIN
-	#define MFW_INT128_MAX INT64_MAX
-	#define MFW_UINT128_MAX UINT64_MAX
-#endif
+#define MFW_INT128_MIN INT128_MIN
+#define MFW_INT128_MAX INT128_MAX
+#define MFW_UINT128_MAX UINT128_MAX
 
 namespace mfw::stl
 {
 	using ldouble_t = long double;
-	using ullong_t = unsigned long long;
 	using uchar_t = unsigned char;
 	using schar_t = signed char;
+	using ushort_t = unsigned short;
+	using sshort_t = signed short;
+	using uint_t = unsigned int;
+	using sint_t = signed int;
+	using ulong_t = unsigned long;
+	using slong_t = signed long;
+	using ullong_t = unsigned long long;
+	using sllong_t = signed long long;
 
 	enum class radix_t : uchar_t
 	{
@@ -89,14 +98,12 @@ namespace mfw::stl
 #if MFW_STDC_IS(EA)
 	using ::EA::StdC::int128_t;
 	using ::EA::StdC::uint128_t;
-#else
-	#ifdef __MFW_INT128_UNIQUE
+#elif MFW_COMPILER_FLAGGED(UNIX)
 	MFW_EXTENSION using int128_t = __int128;
 	MFW_EXTENSION using uint128_t = unsigned __int128;
-	#else
+#else
 	using int128_t = int64_t;
-	using uint128_t = uint64_t;
-	#endif
+	using int128_t = uint64_t;
 #endif
 	enum int8_t : schar_t {};
 	enum uint8_t : uchar_t {};

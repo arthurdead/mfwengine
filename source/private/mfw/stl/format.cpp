@@ -10,20 +10,20 @@ namespace mfw::stl
 {
 	namespace __private_format_cpp MFW_VISIBILITY_LOCAL
 	{
-		template <typename _Sp, typename _SVp, typename _Fp>
+		template <typename _Rp, typename _Sp, typename _SVp, typename _Fp>
 		static void _format_impl_3(_Sp &__buffer, _SVp __fmtstr, _Fp __func, va_list __args) noexcept
 		{
-			int32_t __size{__func(nullptr, __fmtstr.data(), __args)};
+			int32_t __size{__func(nullptr, reinterpret_cast<const _Rp *>(__fmtstr.data()), __args)};
 			__buffer.resize(static_cast<size_t>(__size));
-			__func(__buffer.data(), __fmtstr.data(), __args);
+			__func(reinterpret_cast<_Rp *>(__buffer.data()), reinterpret_cast<const _Rp *>(__fmtstr.data()), __args);
 		}
 
-		template <typename _Sp, typename _SVp, typename _Fp>
+		template <typename _Rp, typename _Sp, typename _SVp, typename _Fp>
 		static void _format_impl_4(_Sp &__buffer, _SVp __fmtstr, _Fp __func, va_list __args) noexcept
 		{
-			int32_t __size{__func(nullptr, 0, __fmtstr.data(), __args)};
+			int32_t __size{__func(nullptr, 0, reinterpret_cast<const _Rp *>(__fmtstr.data()), __args)};
 			__buffer.resize(static_cast<size_t>(__size));
-			__func(__buffer.data(), __size+1, __fmtstr.data(), __args);
+			__func(reinterpret_cast<_Rp *>(__buffer.data()), __size+1, reinterpret_cast<const _Rp *>(__fmtstr.data()), __args);
 		}
 
 		template <typename _Sp, typename _SVp>
@@ -70,24 +70,61 @@ namespace mfw::stl
 
 	MFW_STL_API void MFW_STL_CALL format(string &__buffer, string_view __fmtstr, va_list __args) noexcept
 	{
-	#if MFW_LIBC_FLAGGED(UNIX)
-		__private_format_cpp::_format_impl_3(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vsprintf, __args);
+	#if MFW_LIBC_IS(MS)
+		__private_format_cpp::_format_impl_4<char>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vsprintf_s, __args);
 	#else
-		//__private_format_cpp::_format_impl_4(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vsprintf_s, __args);
-		MFW_DEBUGBREAK();
+		__private_format_cpp::_format_impl_3<char>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vsprintf, __args);
+	#endif
+	}
+
+	MFW_STL_API void MFW_STL_CALL format(u8string &__buffer, u8string_view __fmtstr, va_list __args) noexcept
+	{
+	#if MFW_LIBC_IS(MS)
+		__private_format_cpp::_format_impl_4<char>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vsprintf_s, __args);
+	#else
+		__private_format_cpp::_format_impl_3<char>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vsprintf, __args);
 	#endif
 	}
 
 	MFW_STL_API void MFW_STL_CALL format(wstring &__buffer, wstring_view __fmtstr, va_list __args) noexcept
 	{
-	#if MFW_LIBC_FLAGGED(UNIX)
-		__private_format_cpp::_format_impl_4(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vswprintf, __args);
+	#if MFW_LIBC_IS(MS)
+		__private_format_cpp::_format_impl_4<wchar_t>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vswprintf_s, __args);
 	#else
-		//__private_format_cpp::_format_impl_4(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vswprintf_s, __args);
-		MFW_DEBUGBREAK();
+		__private_format_cpp::_format_impl_4<wchar_t>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vswprintf, __args);
 	#endif
 	}
 
+#if MFW_WCHAR_SIZE == 16
+	MFW_STL_API void MFW_STL_CALL format(u16string &__buffer, u16string_view __fmtstr, va_list __args) noexcept
+	{
+	#if MFW_LIBC_IS(MS)
+		__private_format_cpp::_format_impl_4<wchar_t>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vswprintf_s, __args);
+	#else
+		__private_format_cpp::_format_impl_4<wchar_t>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vswprintf, __args);
+	#endif
+	}
+#elif MFW_WCHAR_SIZE == 32
+	MFW_STL_API void MFW_STL_CALL format(u32string &__buffer, u32string_view __fmtstr, va_list __args) noexcept
+	{
+	#if MFW_LIBC_IS(MS)
+		__private_format_cpp::_format_impl_4<wchar_t>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vswprintf_s, __args);
+	#else
+		__private_format_cpp::_format_impl_4<wchar_t>(__buffer, __fmtstr, ::MFW_STD_NAMESPACE::vswprintf, __args);
+	#endif
+	}
+#else
+	#error
+#endif
+
 	MFW_STL_API bool MFW_STL_CALL format(string &__str, string_view __fmtstr, const vector<string> &__args) noexcept
+	{ return __private_format_cpp::_format_impl(__str, __fmtstr, __args); }
+	MFW_STL_API bool MFW_STL_CALL format(wstring &__str, wstring_view __fmtstr, const vector<wstring> &__args) noexcept
+	{ return __private_format_cpp::_format_impl(__str, __fmtstr, __args); }
+	MFW_STL_API bool MFW_STL_CALL format(u8string &__str, u8string_view __fmtstr, const vector<u8string> &__args) noexcept
+	{ return __private_format_cpp::_format_impl(__str, __fmtstr, __args); }
+	MFW_STL_API bool MFW_STL_CALL format(u16string &__str, u16string_view __fmtstr, const vector<u16string> &__args) noexcept
+	{ return __private_format_cpp::_format_impl(__str, __fmtstr, __args); }
+	MFW_STL_API bool MFW_STL_CALL format(u32string &__str, u32string_view __fmtstr, const vector<u32string> &__args) noexcept
 	{ return __private_format_cpp::_format_impl(__str, __fmtstr, __args); }
 }

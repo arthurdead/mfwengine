@@ -1,9 +1,9 @@
-#include <public/mfw/stl/info.hpp>
+#include <public/mfw/stl/version.hpp>
 
 #if MFW_OS == MFW_OS_WINDOWS
 
-#ifndef __MFW_PUBLIC_CORE_REGISTRY_H
-#define __MFW_PUBLIC_CORE_REGISTRY_H
+#ifndef __MFW_PUBLIC_CORE_REGISTRY_HPP
+#define __MFW_PUBLIC_CORE_REGISTRY_HPP
 
 #pragma once
 

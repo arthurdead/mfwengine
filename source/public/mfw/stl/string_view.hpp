@@ -21,11 +21,7 @@ namespace mfw::stl
 
 	using string_view = basic_string_view<char, char_traits<char>>;
 	using wstring_view = basic_string_view<wchar_t, char_traits<wchar_t>>;
-#ifdef MFW_CPP_CHAR8_SUPPORTED
 	using u8string_view = basic_string_view<char8_t, char_traits<char8_t>>;
-#else
-	using u8string_view = basic_string_view<char, char_traits<char>>;
-#endif
 	using u16string_view = basic_string_view<char16_t, char_traits<char16_t>>;
 	using u32string_view = basic_string_view<char32_t, char_traits<char32_t>>;
 

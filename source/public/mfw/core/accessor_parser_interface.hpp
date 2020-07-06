@@ -1,31 +1,34 @@
-#ifndef __MFW_PUBLIC_CORE_ACCESSOR_PARSER_INTERFACE_H
-#define __MFW_PUBLIC_CORE_ACCESSOR_PARSER_INTERFACE_H
+#ifndef __MFW_PUBLIC_CORE_ACCESSOR_PARSER_INTERFACE_HPP
+#define __MFW_PUBLIC_CORE_ACCESSOR_PARSER_INTERFACE_HPP
 
 #pragma once
 
 #include <public/mfw/core/core.hpp>
 #include <public/mfw/core/rttr_interface.hpp>
-#include <public/mfw/stl/string.hpp>
+#include <public/mfw/stl/string_view.hpp>
+#include <public/mfw/stl/vector.hpp>
 #include <public/mfw/core/univalue.hpp>
 
 namespace mfw::core
 {
-	namespace interfaces
+	class MFW_ABSTRACT_CLASS AccessorParserCallbacks
 	{
-		class accessor_parser_callbacks
-		{
-		protected:
-			virtual ~accessor_parser_callbacks() = default;
-			
-		public:
-			virtual bool get_variable(const ucstring_view &, type_holder &) const { return false; }
-			virtual bool get_function(const ucstring_view &, const vector<univalue> &, type_holder &) const { return false; }
-			virtual const func_info *get_function(const ucstring_view &) const { return nullptr; }
+	protected:
+		virtual ~AccessorParserCallbacks() noexcept = default;
+		
+	public:
+		virtual bool getVariable(stl::osstring_view, TypeHolder &) const noexcept
+		{ return false; }
+		virtual bool getFunction(stl::osstring_view, const stl::vector<UniValue> &, TypeHolder &) const noexcept
+		{ return false; }
+		virtual const FuncInfo *get_function(stl::osstring_view) const noexcept
+		{ return nullptr; }
 
-			virtual bool get_member_variable(const type_holder &, const ucstring_view &, type_holder &) const { return false; }
-			virtual bool get_member_function(const type_holder &, const ucstring_view &, const vector<univalue> &, type_holder &) const { return false; }
-		};
-	}
+		virtual bool get_member_variable(const TypeHolder &, stl::osstring_view, TypeHolder &) const noexcept
+		{ return false; }
+		virtual bool get_member_function(const TypeHolder &, stl::osstring_view, const stl::vector<UniValue> &, TypeHolder &) const noexcept
+		{ return false; }
+	};
 }
 
 #endif

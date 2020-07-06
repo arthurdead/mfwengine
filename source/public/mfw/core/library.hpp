@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_CORE_LIBRARY_H
-#define __MFW_PUBLIC_CORE_LIBRARY_H
+#ifndef __MFW_PUBLIC_CORE_LIBRARY_HPP
+#define __MFW_PUBLIC_CORE_LIBRARY_HPP
 
 #pragma once
 

@@ -32,7 +32,9 @@
 #elif defined __GLIBCPP__ || \
 		defined __GLIBCXX__
 	#define MFW_LIBCPP MFW_LIBCPP_GNU
-#elif defined _CPPLIB_VER
+#elif defined _CPPLIB_VER || \
+		defined _MSVC_STL_VERSION || \
+		defined _MSVC_STL_UPDATE
 	#define MFW_LIBCPP MFW_LIBCPP_MS
 #else
 	#error
@@ -41,7 +43,7 @@
 #if MFW_LIBCPP_IS(LLVM)
 	#include <__config>
 
-	#if !defined _LIBCPP_HAS_MUSL_LIBC && defined _MFW_BROWSER_DETECTED
+	#if !defined _LIBCPP_HAS_MUSL_LIBC && defined _MFW_WEB_DETECTED
 		#define _LIBCPP_HAS_MUSL_LIBC
 	#endif
 	#if defined _LIBCPP_HAS_MUSL_LIBC && !defined __MUSL__

@@ -19,6 +19,7 @@ namespace mfw::stl
 	using ::MFW_STD_NAMESPACE::forward;
 	using ::MFW_STD_NAMESPACE::move;
 	using ::MFW_STD_NAMESPACE::swap;
+	using ::MFW_STD_NAMESPACE::get;
 }
 
 #endif

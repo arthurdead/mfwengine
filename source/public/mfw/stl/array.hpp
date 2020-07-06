@@ -15,8 +15,8 @@
 
 namespace mfw::stl
 {
-	template <typename _Tp, size_t _Sp>
-	using array = ::MFW_STD_NAMESPACE::array<_Tp, _Sp>;
+	using ::MFW_STD_NAMESPACE::array;
+	using ::MFW_STD_NAMESPACE::get;
 }
 
 #endif
