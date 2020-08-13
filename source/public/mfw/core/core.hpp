@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_CORE_HPP
-#define __MFW_PUBLIC_CORE_HPP
+#ifndef MFW_PUBLIC_CORE_HPP
+#define MFW_PUBLIC_CORE_HPP
 
 #pragma once
 
@@ -27,28 +27,29 @@
 
 namespace mfw::core
 {
-	MFW_CORE_API ExitStatus MFW_CORE_CALL initialize() noexcept;
-	MFW_CORE_API ExitStatus MFW_CORE_CALL update() noexcept;
-	MFW_CORE_API ExitStatus MFW_CORE_CALL shutdown() noexcept;
+	extern MFW_CORE_API exit_status MFW_CORE_CALL initialize() noexcept;
+	extern MFW_CORE_API exit_status MFW_CORE_CALL update() noexcept;
+	extern MFW_CORE_API exit_status MFW_CORE_CALL shutdown() noexcept;
 
-	MFW_CORE_API void MFW_CORE_CALL terminate() noexcept;
+	extern MFW_CORE_API void MFW_CORE_CALL terminate() noexcept;
 
-	MFW_CORE_API void MFW_CORE_CALL expandEnvironmentVariables(stl::osstring_view src, stl::osstring &dst) noexcept;
+	extern MFW_CORE_API void MFW_CORE_CALL expand_environment_variables(stl::osstring_view src, stl::osstring &dst) noexcept;
 
 #if MFW_OS_IS(LINUX)
-	MFW_CORE_API void MFW_CORE_CALL expandShell(stl::osstring_view src, stl::vector<stl::osstring> &dst) noexcept;
+	extern MFW_CORE_API void MFW_CORE_CALL expand_shell(stl::osstring_view src, stl::vector<stl::osstring> &dst) noexcept;
 #endif
 
-	MFW_CORE_API stl::int32_t MFW_CORE_CALL getLastError() noexcept;
-	MFW_CORE_API void MFW_CORE_CALL getErrorString(stl::int32_t code, stl::osstring &str) noexcept;
+	extern MFW_CORE_API stl::int32_t MFW_CORE_CALL get_last_error() noexcept;
+	extern MFW_CORE_API void MFW_CORE_CALL get_error_string(stl::int32_t code, stl::osstring &str) noexcept;
 
-	MFW_CORE_API stl::int64_t MFW_CORE_CALL timeNow() noexcept;
+	extern MFW_CORE_API stl::int64_t MFW_CORE_CALL time_now() noexcept;
 
 	enum class os_layer_t : stl::uchar_t
 	{
-		native,
+		none,
 	#if MFW_OS_IS(WINDOWS)
 		wine,
+		reactos,
 	#endif
 	#if MFW_OS_IS(MACOS)
 		darling,
@@ -62,11 +63,13 @@ namespace mfw::core
 		shashlik,
 	#endif
 	};
-	MFW_CORE_API os_layer_t MFW_CORE_CALL get_os_layer() noexcept;
+	extern MFW_CORE_API os_layer_t MFW_CORE_CALL get_os_layer() noexcept;
 
-	inline void getLastErrorString(stl::osstring &str) noexcept {
-		stl::int32_t code{getLastError()};
-		getErrorString(code, str);
+	extern void get_last_error_string(stl::osstring &str) noexcept;
+
+	inline void get_last_error_string(stl::osstring &str) noexcept {
+		stl::int32_t code{get_last_error()};
+		get_error_string(code, str);
 	}
 }
 

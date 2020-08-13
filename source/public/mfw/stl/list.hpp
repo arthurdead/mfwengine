@@ -1,5 +1,5 @@
-#ifndef _MFW_PUBLIC_STL_LIST_HPP
-#define _MFW_PUBLIC_STL_LIST_HPP
+#ifndef MFW_PUBLIC_STL_LIST_HPP
+#define MFW_PUBLIC_STL_LIST_HPP
 
 #pragma once
 
@@ -21,11 +21,11 @@ namespace mfw::stl
 	template <typename _Tp, typename _Alloc = allocator<T>>
 	using list = ::MFW_STD_NAMESPACE::list<T, _Alloc>;
 
-	template <typename _Tp, typename _Alloc = allocator<unique_ptr<_Tp>>>
-	class ptr_list : public ptr_vector_like<list<unique_ptr<_Tp>, _Alloc>>
+	template <typename _Tp, typename _Alloc = ptr_allocator<_Tp>>
+	class MFW_VISIBILITY_LOCAL ptr_list : public __ptr_vector_like<list<unique_ptr<_Tp>, _Alloc>>
 	{
 	public:
-		using super = ptr_vector_like<list<unique_ptr<_Tp>, _Alloc>>;
+		using super = __ptr_vector_like<list<unique_ptr<_Tp>, _Alloc>>;
 
 		using value_type = typename super::value_type;
 		using reference = typename super::reference;
@@ -45,7 +45,7 @@ namespace mfw::stl
 	};
 }
 
-#include <public/mfw/stl/impl/list.ipp>
+#include <public/mfw/stl/impl/list.tpp>
 
 #define __MFW_VECTOR_LIKE_CONTAINER list
 #include <public/mfw/stl/detail/vector_like_funcs.hpp>

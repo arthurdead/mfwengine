@@ -1,5 +1,5 @@
-#ifndef _MFW_PUBLIC_STL_LIMITS_HPP
-#define _MFW_PUBLIC_STL_LIMITS_HPP
+#ifndef MFW_PUBLIC_STL_LIMITS_HPP
+#define MFW_PUBLIC_STL_LIMITS_HPP
 
 #pragma once
 

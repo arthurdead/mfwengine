@@ -1,9 +1,9 @@
-#ifndef _MFW_PUBLIC_STL_WINDOWS_WINDOWS_HPP
-#define _MFW_PUBLIC_STL_WINDOWS_WINDOWS_HPP
+#ifndef MFW_PUBLIC_STL_WINDOWS_WINDOWS_HPP
+#define MFW_PUBLIC_STL_WINDOWS_WINDOWS_HPP
 
 #pragma once
 
-#ifdef _MFW_PUBLIC_STL_VERSION_HPP
+#ifdef MFW_PUBLIC_STL_VERSION_HPP
 	#error please include windows before version
 #endif
 

@@ -1,5 +1,5 @@
-#ifndef __MFW_PRIVATE_RENDERER_OPENGL_CONTEXT_API_HPP
-#define __MFW_PRIVATE_RENDERER_OPENGL_CONTEXT_API_HPP
+#ifndef MFW_PRIVATE_RENDERER_OPENGL_CONTEXT_API_HPP
+#define MFW_PRIVATE_RENDERER_OPENGL_CONTEXT_API_HPP
 
 #pragma once
 
@@ -7,7 +7,7 @@
 
 namespace mfw::renderer
 {
-	enum class context_api
+	enum class context_api : stl::uchar_t
 	{
 		unknown,
 		egl,
@@ -16,6 +16,8 @@ namespace mfw::renderer
 	#elif MFW_OS_IS(LINUX)
 		glx,
 		xcb_glx,
+	#elif MFW_OS_IS(MACOS)
+		cgl,
 	#endif
 	};
 

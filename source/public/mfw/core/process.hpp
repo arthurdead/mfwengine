@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_CORE_PROCESS_HPP
-#define __MFW_PUBLIC_CORE_PROCESS_HPP
+#ifndef MFW_PUBLIC_CORE_PROCESS_HPP
+#define MFW_PUBLIC_CORE_PROCESS_HPP
 
 #pragma once
 
@@ -11,77 +11,80 @@
 
 namespace mfw::core
 {
-	class process
+	class MFW_VISIBILITY_LOCAL process final
 	{
 	public:
-	#if MFW_OS == MFW_OS_WINDOWS
+	#if MFW_OS_IS(WINDOWS)
 		using handle_t = HANDLE;
-		static inline constexpr handle_t invalid_handle{INVALID_HANDLE};
-	#elif MFW_OS == MFW_OS_LINUX
-		using handle_t = int32_t;
-		static inline constexpr handle_t invalid_handle{-1};
+		static constexpr handle_t invalid_handle{INVALID_HANDLE};
+	#elif MFW_OS_IS(LINUX)
+		using handle_t = stl::int32_t;
+		static constexpr handle_t invalid_handle{-1};
 	#else
 		#error
 	#endif
 
-		using stdout_handle_t = interfaces::file *;
-		static inline constexpr stdout_handle_t invalid_stdout_handle{nullptr};
+		using stdout_handle_t = file *;
+		static constexpr stdout_handle_t invalid_stdout_handle{nullptr};
 
-		process() = default;
+		using string_type = stl::osstring;
+		using string_view_type = stl::osstring_view;
+		using searchpath_view_type = searchpath_view;
 
-		MFW_CORE_API process & MFW_CORE_CALL operator=(const process &other);
-		process(const process &other) { operator=(other); }
+		process() noexcept = default;
+		process &operator=(process &&) noexcept = default;
+		process(process &&) noexcept = default;
+		MFW_CORE_API process & MFW_CORE_CALL operator=(const process &other) noexcept;
+		process(const process &other) noexcept;
 
-		MFW_CORE_API MFW_CORE_CALL ~process();
+		MFW_CORE_API MFW_CORE_CALL ~process() noexcept;
 		
-		//static MFW_CORE_API bool MFW_CORE_CALL find(const searchpath &search, process &proc);
-		static MFW_CORE_API bool MFW_CORE_CALL find(ucstring_view name, process &proc);
-		static MFW_CORE_API bool MFW_CORE_CALL find(ucstring_view name, vector<process> &procs);
-		static MFW_CORE_API pstring MFW_CORE_CALL get_path(const ucstring &cmd);
+		//static MFW_CORE_API bool MFW_CORE_CALL find(const searchpath &search, process &proc) noexcept;
+		static MFW_CORE_API bool MFW_CORE_CALL find(string_view_type name, process &proc) noexcept;
+		static MFW_CORE_API bool MFW_CORE_CALL find(string_view_type name, stl::vector<process> &procs) noexcept;
+		static MFW_CORE_API stl::pstring MFW_CORE_CALL get_path(string_view_type cmd) noexcept;
 
-		MFW_CORE_API void MFW_CORE_CALL set_workingdir(const searchpath &search);
-		const pstring &workingdir() const { return workingdir_; }
-		MFW_CORE_API void MFW_CORE_CALL set_args(const ucstring &args);
-		void append_args(const ucstring &args) { args_ += args; }
-		const ucstring &args() const { return args_; }
-		MFW_CORE_API void MFW_CORE_CALL set_shell();
-		MFW_CORE_API void MFW_CORE_CALL set_shell(const ucstring &cmd);
-		MFW_CORE_API void MFW_CORE_CALL set_path(const searchpath &search);
-		const pstring &path() const { return path_; }
-		bool shell_command() const { return shell_command_; }
-		void set_cmd(const ucstring &cmd) { cmd_ = cmd; }
-		const ucstring &cmd() const { return cmd_; }
-		MFW_CORE_API ucstring MFW_CORE_CALL args_absolute() const;
+		MFW_CORE_API process & MFW_CORE_CALL set_workingdir(searchpath_view_type search) noexcept;
+		const stl::pstring &workingdir() const noexcept;
+		string_type &args() noexcept;
+		const string_type &args() const noexcept;
+		MFW_CORE_API process & MFW_CORE_CALL set_shell() noexcept;
+		MFW_CORE_API process & MFW_CORE_CALL set_shell(string_view_type cmd) noexcept;
+		MFW_CORE_API process & MFW_CORE_CALL set_shell(string_type &&cmd) noexcept;
+		MFW_CORE_API process & MFW_CORE_CALL set_path(searchpath_view_type search) noexcept;
+		const stl::pstring &path() const noexcept;
+		bool shell_command() const noexcept;
+		const string_type &cmd() const noexcept;
+		string_type &cmd() noexcept;
+		MFW_CORE_API ucstring MFW_CORE_CALL args_absolute() const noexcept;
 
-		MFW_CORE_API bool MFW_CORE_CALL start(bool wait=false);
-		MFW_CORE_API bool MFW_CORE_CALL running();
-		MFW_CORE_API void MFW_CORE_CALL wait();
-		MFW_CORE_API void MFW_CORE_CALL close(bool kill=false);
-		void kill() { close(true); }
+		MFW_CORE_API bool MFW_CORE_CALL start(bool wait=false) noexcept;
+		MFW_CORE_API bool MFW_CORE_CALL running() noexcept;
+		MFW_CORE_API process & MFW_CORE_CALL wait() noexcept;
+		MFW_CORE_API process & MFW_CORE_CALL close(bool kill=false) noexcept;
+		process &kill() noexcept;
 
-		MFW_CORE_API int32_t MFW_CORE_CALL exit_code();
-		int32_t exit_code() const
-		{ return const_cast<process *>(this)->exit_code(); }
+		MFW_CORE_API int32_t MFW_CORE_CALL exit_code() noexcept;
+		MFW_CORE_API stl::int32_t MFW_CORE_CALL exit_code() const noexcept;
 
-		MFW_CORE_API const ucstring & MFW_CORE_CALL output(size_t max = 0);
-		const ucstring &output(size_t max = 0) const
-		{ return const_cast<process *>(this)->output(max); }
+		MFW_CORE_API const string_type & MFW_CORE_CALL output(stl::size_t max = 0) noexcept;
+		const string_type &output() const noexcept;
 
 	private:
-		void capture_vars(size_t max = 0);
+		void capture_vars(stl::size_t max = 0) noexcept;
 
-		pstring workingdir_{};
-		ucstring args_{};
-		ucstring cmd_{};
-		pstring path_{};
-		ucstring output_{};
-	#if MFW_OS == MFW_OS_LINUX
-		int32_t status_{0};
+		stl::pstring m_workingdir{};
+		string_type m_args{};
+		string_type m_cmd{};
+		stl::pstring m_path{};
+		string_type m_output{};
+	#if MFW_OS_IS(LINUX)
+		stl::int32_t m_status{0};
 	#endif
-		bool shell_command_{false};
-		bool can_kill_{true};
-		handle_t handle{invalid_handle};
-		stdout_handle_t stdout_handle{invalid_stdout_handle};
+		bool m_shell_command{false};
+		bool m_can_kill{true};
+		handle_t m_handle{invalid_handle};
+		stdout_handle_t m_stdout_handle{invalid_stdout_handle};
 	};
 }
 

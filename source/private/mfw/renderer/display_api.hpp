@@ -1,5 +1,5 @@
-#ifndef __MFW_PRIVATE_RENDERER_DISPLAY_API_HPP
-#define __MFW_PRIVATE_RENDERER_DISPLAY_API_HPP
+#ifndef MFW_PRIVATE_RENDERER_DISPLAY_API_HPP
+#define MFW_PRIVATE_RENDERER_DISPLAY_API_HPP
 
 #pragma once
 
@@ -7,15 +7,17 @@
 
 namespace mfw::renderer
 {
-	enum class display_api
+	enum class display_api : stl::uchar_t
 	{
 		unknown,
-	#if MFW_OS_IS(LINUX)
 		xlib,
 		xcb,
+	#if MFW_OS_IS(LINUX)
 		wayland,
 	#elif MFW_OS_IS(WINDOWS)
 		winapi,
+	#elif MFW_OS_IS(MACOS)
+		quartz,
 	#endif
 	};
 

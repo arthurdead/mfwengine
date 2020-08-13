@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_RENDERER_HPP
-#define __MFW_PUBLIC_RENDERER_HPP
+#ifndef MFW_PUBLIC_RENDERER_HPP
+#define MFW_PUBLIC_RENDERER_HPP
 
 #pragma once
 

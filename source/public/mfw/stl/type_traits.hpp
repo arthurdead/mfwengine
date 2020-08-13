@@ -1,10 +1,11 @@
-#ifndef _MFW_PUBLIC_STL_TYPE_TRAITS_HPP
-#define _MFW_PUBLIC_STL_TYPE_TRAITS_HPP
+#ifndef MFW_PUBLIC_STL_TYPE_TRAITS_HPP
+#define MFW_PUBLIC_STL_TYPE_TRAITS_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 //#include <public/mfw/stl/tuple.hpp>
+#include <public/mfw/stl/functional.hpp>
 
 #if MFW_STDCPP_IS(DEFAULT)
 	#include <type_traits>
@@ -138,22 +139,24 @@ namespace mfw::stl
 #else
 	template <typename _Tp>
 	struct type_identity final
-	{
-		using type = _Tp;
-	};
+	{ using type = _Tp; };
 	template <typename _Tp>
 	using type_identity_t = typename type_identity<_Tp>::type;
-	#if MFW_STDCPP_IS(DEFAULT) && MFW_LIBCPP_FLAGGED(UNIX)
+	#if MFW_STDCPP_IS(DEFAULT)
+		#if MFW_LIBCPP_FLAGGED(UNIX)
 	template <typename _Tp>
 	using remove_cvref_t = ::MFW_STD_NAMESPACE::__remove_cvref_t<_Tp>;
-	#else
+		#elif MFW_LIBCPP_FLAGGED(MS)
 	template <typename _Tp>
 	struct remove_cvref final
-	{
-		using type = remove_cv_t<remove_reference_t<_Tp>>;
-	};
+	{ using type = remove_cv_t<remove_reference_t<_Tp>>; };
 	template <typename _Tp>
 	using remove_cvref_t = typename remove_cvref<_Tp>::type;
+		#else
+			#error
+		#endif
+	#else
+		#error
 	#endif
 #endif
 
@@ -163,9 +166,14 @@ namespace mfw::stl
 		//using type = tuple<_Args...>;
 		using type = void_t<>;
 	};
-
 	template <typename _Tp>
 	using type_identity_multiple_t = typename type_identity_multiple<_Tp>::type;
+
+	template <typename _Tp>
+	struct type_view final
+	{ using type = reference_wrapper<const _Tp>; };
+	template <typename _Tp>
+	using type_view_t = typename type_view<_Tp>::type;
 }
 
 #endif

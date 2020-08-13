@@ -1,6 +1,8 @@
 namespace mfw::stl
 {
 #ifdef _MFW_ENABLE_CUSTOM_ALLOCATORS
+	MFW_VISIBILITY_LOCAL_PUSH()
+
 	template <typename _Tp>
 	class default_delete final
 	{
@@ -19,9 +21,11 @@ namespace mfw::stl
 		template <size_t _Sp>
 		void operator()(_Tp (&__array)[S]) const noexcept;
 	};
+
+	MFW_VISIBILITY_LOCAL_POP()
 #else
 	using ::MFW_STD_NAMESPACE::default_delete;
 #endif
 }
 
-#include <public/mfw/stl/impl/default_delete.ipp>
+#include <public/mfw/stl/impl/default_delete.tpp>

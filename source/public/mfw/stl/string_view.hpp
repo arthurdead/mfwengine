@@ -1,10 +1,12 @@
-#ifndef _MFW_PUBLIC_STL_STRING_VIEW_HPP
-#define _MFW_PUBLIC_STL_STRING_VIEW_HPP
+#ifndef MFW_PUBLIC_STL_STRING_VIEW_HPP
+#define MFW_PUBLIC_STL_STRING_VIEW_HPP
 
 #pragma once
 
 #include <public/mfw/stl/version.hpp>
 #include <public/mfw/stl/shared/char_traits.hpp>
+#include <public/mfw/stl/functional.hpp>
+#include <public/mfw/stl/filesystem.hpp>
 
 #if MFW_STDCPP_IS(DEFAULT)
 	#include <string_view>
@@ -16,8 +18,8 @@
 
 namespace mfw::stl
 {
-	template <typename C, typename T = char_traits<C>>
-	using basic_string_view = ::MFW_STD_NAMESPACE::basic_string_view<C, T>;
+	template <typename _Cp, typename _Tp = char_traits<_Cp>>
+	using basic_string_view = ::MFW_STD_NAMESPACE::basic_string_view<_Cp, _Tp>;
 
 	using string_view = basic_string_view<char, char_traits<char>>;
 	using wstring_view = basic_string_view<wchar_t, char_traits<wchar_t>>;
@@ -26,6 +28,8 @@ namespace mfw::stl
 	using u32string_view = basic_string_view<char32_t, char_traits<char32_t>>;
 
 	using osstring_view = basic_string_view<oschar_t, char_traits<oschar_t>>;
+
+	using pstring_view = type_view_t<filesystem::path>;
 }
 
 #include <public/mfw/stl/internal/string_view_funcs.hpp>

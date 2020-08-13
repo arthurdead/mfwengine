@@ -29,22 +29,25 @@ namespace mfw::stl
 
 		template <typename _Up>
 		constexpr allocator(const allocator<_Up> &) noexcept
-			{}
+		{}
 
 		template <typename _Up>
 		constexpr bool operator==(const allocator<_Up> &) const noexcept
-			{ return true; }
+		{ return true; }
 
 		template <typename _Up>
 		constexpr bool operator!=(const allocator<_Up> &) const noexcept
-			{ return true; }
+		{ return true; }
 
 	private:
-		static MFW_VISIBILITY_LOCAL void _deallocate_impl(value_type *&__ptr, size_t __size) noexcept;
+		static void _deallocate_impl(value_type *&__ptr, size_t __size) noexcept;
 	};
 #else
 	using ::MFW_STD_NAMESPACE::allocator;
 #endif
+
+	template <typename _Tp>
+	using ptr_allocator = allocator<unique_ptr<_Tp>>;
 }
 
-#include <public/mfw/stl/impl/allocator.ipp>
+#include <public/mfw/stl/impl/allocator.tpp>

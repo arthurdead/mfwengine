@@ -1,9 +1,11 @@
 namespace mfw::stl
 {
+	MFW_VISIBILITY_LOCAL_PUSH()
+
+#ifdef _MFW_ENABLE_CUSTOM_ALLOCATORS
 	template <typename _Tp>
 	class use_allocator
 	{
-#ifdef _MFW_ENABLE_CUSTOM_ALLOCATORS
 	public:
 		#pragma push_macro("new")
 		#undef new
@@ -93,8 +95,10 @@ namespace mfw::stl
 			,const char *file, int32_t line
 		#endif
 		) noexcept;
-#endif
 	};
+#endif
+
+	MFW_VISIBILITY_LOCAL_POP()
 }
 
-#include <public/mfw/stl/impl/use_allocator.ipp>
+#include <public/mfw/stl/impl/use_allocator.tpp>

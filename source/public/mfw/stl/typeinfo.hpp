@@ -1,5 +1,5 @@
-#ifndef _MFW_PUBLIC_STL_TYPEINFO_HPP
-#define _MFW_PUBLIC_STL_TYPEINFO_HPP
+#ifndef MFW_PUBLIC_STL_TYPEINFO_HPP
+#define MFW_PUBLIC_STL_TYPEINFO_HPP
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include <public/mfw/stl/defines.hpp>
 
 #include <typeinfo>
+#include <typeindex>
 
 #if MFW_HAS_FEATURE(cxx_rtti) || \
 	defined __cpp_rtti || \
@@ -18,27 +19,43 @@
 namespace mfw::stl
 {
 	using ::std::type_info;
+	using ::std::type_index;
 
 #if MFW_COMPILER_FLAGGED(UNIX)
 	MFW_PUSH_OPTIONS()
 	MFW_OPTIMIZE_PRAGMA("rtti")
 #endif
 	
-	template <typename T>
-	inline const type_info &get_typeid(T) noexcept
-		{ return typeid(T); }
+	#pragma push_macro("typeid")
+	#undef typeid
 
 	template <typename T>
-	inline const type_info &get_typeid() noexcept
-		{ return typeid(T); }
+	constexpr const type_info &get_typeid(const T &) noexcept
+	{ return typeid(const T &); }
+	template <typename T>
+	constexpr const type_info &get_typeid(type_identity<T>) noexcept
+	{ return typeid(T); }
+	template <typename T>
+	constexpr const type_info &get_typeid() noexcept
+	{ return typeid(T); }
+
+	#pragma pop_macro("typeid")
+
+	#pragma push_macro("dynamic_cast")
+	#undef dynamic_cast
 		
 	template <typename D, typename S>
-	inline D runtime_cast(S src) noexcept(false)
-		{ return dynamic_cast<D>(src); }
+	MFW_VISIBILITY_LOCAL inline D runtime_cast(S src) noexcept(false)
+	{ return dynamic_cast<D>(src); }
+
+	#pragma pop_macro("typeid")
 	
 #if MFW_COMPILER_FLAGGED(UNIX)
 	MFW_POP_OPTIONS()
 #endif
 }
+
+#define dynamic_cast ::mfw::stl::runtime_cast
+#define typeid ::mfw::stl::get_typeid
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_ENGINE_HPP
-#define __MFW_PUBLIC_ENGINE_HPP
+#ifndef MFW_PUBLIC_ENGINE_HPP
+#define MFW_PUBLIC_ENGINE_HPP
 
 #pragma once
 

@@ -1,5 +1,5 @@
-#ifndef _MFW_PUBLIC_STL_OPTIONAL_HPP
-#define _MFW_PUBLIC_STL_OPTIONAL_HPP
+#ifndef MFW_PUBLIC_STL_OPTIONAL_HPP
+#define MFW_PUBLIC_STL_OPTIONAL_HPP
 
 #pragma once
 
@@ -16,6 +16,8 @@
 namespace mfw::stl
 {
 	using ::MFW_STD_NAMESPACE::optional;
+	using ::MFW_STD_NAMESPACE::nullopt_t;
+	using ::MFW_STD_NAMESPACE::nullopt;
 }
 
 #endif

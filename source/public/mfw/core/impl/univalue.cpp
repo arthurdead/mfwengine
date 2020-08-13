@@ -29,27 +29,31 @@ namespace mfw::core
 		bool univalue::operator op =(const univalue &value) const noexcept \
 		{ return (var op = value.var); }
 
-	#define __MFW_UNIVALUE_OP_EQUAL(op, var, calc) \
+	#define __MFW_UNIVALUE_OP_EQUAL_FLOAT(op) \
 		univalue &univalue::operator op =(const univalue &value) noexcept { \
-			var op = value.var; \
-			calc(); \
+			m_float op = value.m_float; \
+			stl::to_string(m_float, m_string); \
 			return *this; \
 		} \
 		univalue &univalue::operator op =(univalue &&value) noexcept { \
-			var op = value.var; \
-			calc(); \
+			m_float op = value.m_float; \
+			value.clear(); \
+			stl::to_string(m_float, m_string); \
 			return *this; \
 		}
 
 	#define __MFW_UNIVALUE_OP_EQUAL_INT(op) \
 		univalue &univalue::operator op =(const univalue &value) noexcept { \
-			m_float = static_cast<float_type>(static_cast<int_type>(m_float) op static_cast<int_type>(value.m_float)); \
-			calculate_string(); \
+			int_type tmp{static_cast<int_type>(m_float) op static_cast<int_type>(value.m_float)}; \
+			m_float = static_cast<float_type>(tmp); \
+			stl::to_string(tmp, m_string); \
 			return *this; \
 		} \
 		univalue &univalue::operator op =(univalue &&value) noexcept { \
-			m_float = static_cast<float_type>(static_cast<int_type>(m_float) op static_cast<int_type>(value.m_float)); \
-			calculate_string(); \
+			int_type tmp{static_cast<int_type>(m_float) op static_cast<int_type>(value.m_float)}; \
+			value.clear(); \
+			m_float = static_cast<float_type>(tmp); \
+			stl::to_string(tmp, m_string); \
 			return *this; \
 		}
 
@@ -70,9 +74,9 @@ namespace mfw::core
 	__MFW_UNIVALUE_OP_CMP_IMPL(&&, get_bool())
 	__MFW_UNIVALUE_OP_CMP_IMPL(||, get_bool())
 
-	__MFW_UNIVALUE_OP_EQUAL(/, m_float, calculate_string)
-	__MFW_UNIVALUE_OP_EQUAL(*, m_float, calculate_string)
-	__MFW_UNIVALUE_OP_EQUAL(-, m_float, calculate_string)
+	__MFW_UNIVALUE_OP_EQUAL_FLOAT(/)
+	__MFW_UNIVALUE_OP_EQUAL_FLOAT(*)
+	__MFW_UNIVALUE_OP_EQUAL_FLOAT(-)
 
 	__MFW_UNIVALUE_OP_EQUAL_INT(^)
 	__MFW_UNIVALUE_OP_EQUAL_INT(|)
@@ -84,31 +88,26 @@ namespace mfw::core
 
 	univalue &univalue::operator+=(const univalue &value) noexcept {
 		if(value.is_string()) {
-			m_string.append(value.m_string);
-			calculate_float();
+			m_string += value.m_string;
+			stl::to_float(m_string, m_float);
 		} else {
 			m_float += value.m_float;
-			calculate_string();
+			stl::to_string(m_float, m_string);
 		}
 		return *this;
 	}
 
 	univalue &univalue::operator+=(univalue &&value) noexcept {
 		if(value.is_string()) {
-			m_string.append(value.m_string);
-			calculate_float();
+			m_string += stl::move(value.m_string);
+			stl::to_float(m_string, m_float);
 		} else {
 			m_float += value.m_float;
-			calculate_string();
+			stl::to_string(m_float, m_string);
 		}
+		value.clear();
 		return *this;
 	}
-
-	void univalue::calculate_float() noexcept
-	{ stl::to_string(m_float, m_string); }
-
-	void univalue::calculate_string() noexcept
-	{ stl::to_float(m_string, m_float); }
 
 	bool univalue::empty() const noexcept {
 		return (m_string.empty() && (m_float == 0.0f || m_float == stl::numeric_limits<float_type>::max()));
@@ -122,39 +121,39 @@ namespace mfw::core
 
 	univalue &univalue::operator++() noexcept {
 		m_float++;
-		calculate_string();
+		stl::to_string(m_float, m_string);
 		return *this;
 	}
 
 	univalue &univalue::operator++(int) noexcept {
 		++m_float;
-		calculate_string();
+		stl::to_string(m_float, m_string);
 		return *this;
 	}
 
 	univalue &univalue::operator--() noexcept {
 		m_float--;
-		calculate_string();
+		stl::to_string(m_float, m_string);
 		return *this;
 	}
 
 	univalue &univalue::operator--(int) noexcept {
 		--m_float;
-		calculate_string();
+		stl::to_string(m_float, m_string);
 		return *this;
 	}
 
 	univalue univalue::operator+() const noexcept {
 		univalue tmp{};
 		tmp.m_float = +m_float;
-		tmp.calculate_string();
+		stl::to_string(tmp.m_float, tmp.m_string);
 		return tmp;
 	}
 
 	univalue univalue::operator-() const noexcept {
 		univalue tmp{};
 		tmp.m_float = -m_float;
-		tmp.calculate_string();
+		stl::to_string(tmp.m_float, tmp.m_string);
 		return tmp;
 	}
 
@@ -199,44 +198,44 @@ namespace mfw::core
 		}
 	}
 
-	explicit univalue::univalue(const string_type &value) noexcept
-	{ operator=(value); }
+	explicit univalue::univalue(string_view_type value) noexcept
+		: m_string{value} { stl::to_float(value, m_float); }
 	explicit univalue::univalue(string_type &&value) noexcept
-	{ operator=(value); }
+		: m_string{stl::move(value)} { stl::to_float(m_string, m_float); }
 	explicit univalue::univalue(float_type value) noexcept
-	{ operator=(value); }
+		: m_float{value} { stl::to_string(value, m_string); }
 	explicit univalue::univalue(int_type value) noexcept
-	{ operator=(value); }
+		: m_float{static_cast<float_type>(value)} { stl::to_string(value, m_string); }
 	explicit univalue::univalue(bool value) noexcept
-	{ operator=(value); }
+		: m_float{static_cast<float_type>(value)} { stl::to_string(value, m_string); }
 
-	explicit univalue &univalue::operator=(const string_type &value) noexcept {
+	explicit univalue &univalue::operator=(string_view_type value) noexcept {
 		m_string = value;
-		calculate_float();
+		stl::to_float(value, m_float);
 		return *this;
 	}
 
 	explicit univalue &univalue::operator=(string_type &&value) noexcept {
-		m_string = value;
-		calculate_float();
+		m_string = stl::move(value);
+		stl::to_float(m_string, m_float);
 		return *this;
 	}
 
 	explicit univalue &univalue::operator=(float_type value) noexcept {
 		m_float = value;
-		calculate_string();
+		stl::to_string(value, m_string);
 		return *this;
 	}
 
 	explicit univalue &univalue::operator=(int_type value) noexcept {
 		m_float = static_cast<float_type>(value);
-		calculate_string();
+		stl::to_string(value, m_string);
 		return *this;
 	}
 
 	explicit univalue &univalue::operator=(bool value) noexcept {
 		m_float = static_cast<float_type>(value);
-		calculate_string();
+		stl::to_string(value, m_string);
 		return *this;
 	}
 

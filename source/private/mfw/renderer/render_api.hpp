@@ -1,5 +1,5 @@
-#ifndef __MFW_PRIVATE_RENDERER_RENDER_API_HPP
-#define __MFW_PRIVATE_RENDERER_RENDER_API_HPP
+#ifndef MFW_PRIVATE_RENDERER_RENDER_API_HPP
+#define MFW_PRIVATE_RENDERER_RENDER_API_HPP
 
 #pragma once
 
@@ -7,14 +7,18 @@
 
 namespace mfw::renderer
 {
-	enum class render_api
+	enum class render_api : stl::uchar_t
 	{
 		unknown,
 	#if MFW_OS_IS(WINDOWS)
 		directx,
 	#endif
-		opengl,
 		vulkan,
+	#if MFW_OS_IS(MACOS)
+		metal,
+	#else
+		opengl,
+	#endif
 	};
 
 	render_api get_render_api();

@@ -10,7 +10,9 @@
 	#pragma push_macro("new")
 	#undef new
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size) _MFW_NEW_NOEXCEPT //_MFW_NEW_POST
+	MFW_VISIBILITY_LOCAL_PUSH()
+
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_NEW_POST void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size) _MFW_NEW_NOEXCEPT
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -26,7 +28,7 @@
 	);
 }
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment) _MFW_NEW_NOEXCEPT //_MFW_ALIGN_NEW_POST
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_ALIGN_NEW_POST void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment) _MFW_NEW_NOEXCEPT
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -42,7 +44,7 @@
 	);
 }
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size, const ::mfw::stl::nothrow_t &) noexcept //_MFW_NEW_POST
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_NEW_POST void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size, const ::mfw::stl::nothrow_t &) noexcept
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -58,7 +60,7 @@
 	);
 }
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment, const ::mfw::stl::nothrow_t &) noexcept //_MFW_ALIGN_NEW_POST
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_ALIGN_NEW_POST void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment, const ::mfw::stl::nothrow_t &) noexcept
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -74,7 +76,7 @@
 	);
 }
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size) _MFW_NEW_NOEXCEPT //_MFW_NEW_POST
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_NEW_POST void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size) _MFW_NEW_NOEXCEPT
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -90,7 +92,7 @@
 	);
 }
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment) _MFW_NEW_NOEXCEPT //_MFW_ALIGN_NEW_POST
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_ALIGN_NEW_POST void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment) _MFW_NEW_NOEXCEPT
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -106,7 +108,7 @@
 	);
 }
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, const ::mfw::stl::nothrow_t &) noexcept //_MFW_NEW_POST
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_NEW_POST void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, const ::mfw::stl::nothrow_t &) noexcept
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -122,7 +124,7 @@
 	);
 }
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment, const ::mfw::stl::nothrow_t &) noexcept //_MFW_ALIGN_NEW_POST
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_ALIGN_NEW_POST void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment, const ::mfw::stl::nothrow_t &) noexcept
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -139,11 +141,11 @@
 }
 
 	#if MFW_CONFIGURATION_IS(DEBUG)
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_NEW_POST void * MFW_CALL_CDECL operator new(::mfw::stl::size_t __size
 		#if MFW_OS_IS(WINDOWS)
 ,::mfw::stl::int32_t __block
 		#endif
-,const char *__file, ::mfw::stl::int32_t __line) noexcept //_MFW_NEW_POST
+,const char *__file, ::mfw::stl::int32_t __line) noexcept
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -157,11 +159,11 @@
 	);
 }
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_NEW_POST void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size
 		#if MFW_OS_IS(WINDOWS)
 ,::mfw::stl::int32_t __block
 		#endif
-,const char *__file, ::mfw::stl::int32_t __line) noexcept //_MFW_NEW_POST
+,const char *__file, ::mfw::stl::int32_t __line) noexcept
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -177,7 +179,8 @@
 	#endif
 
 	#if MFW_STDCPP_IS(EA)
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, const char *, ::mfw::stl::int32_t, ::mfw::stl::uint32_t, const char *__file, ::mfw::stl::int32_t __line) noexcept _MFW_NEW_POST {
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_NEW_POST void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, const char *, ::mfw::stl::int32_t, ::mfw::stl::uint32_t, const char *__file, ::mfw::stl::int32_t __line) noexcept
+{
 	return ::mfw::stl::allocate(
 		__size,
 		_MFW_MEM_ALIGN, 0,
@@ -192,7 +195,7 @@
 	);
 }
 
-[[nodiscard]] __MFW_ALIGN_ALLOC_PRE void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, ::mfw::stl::size_t __alignment, ::mfw::stl::size_t __offset, const char *, ::mfw::stl::int32_t, ::mfw::stl::uint32_t, const char *__file, ::mfw::stl::int32_t __line) noexcept //_MFW_ALIGN_NEW_POST MFW_ATTRIBUTE(__alloc_align__(2))
+[[nodiscard]] __MFW_ALIGN_ALLOC_PRE _MFW_ALIGN_NEW_POST MFW_ATTRIBUTE(__alloc_align__(2)) void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t __size, ::mfw::stl::size_t __alignment, ::mfw::stl::size_t __offset, const char *, ::mfw::stl::int32_t, ::mfw::stl::uint32_t, const char *__file, ::mfw::stl::int32_t __line) noexcept
 {
 	return ::mfw::stl::allocate(
 		__size,
@@ -210,12 +213,12 @@
 	#endif
 
 //#if MFW_COMPILER_FLAGGED(MSVC)
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new(::mfw::stl::size_t, void *__ptr) noexcept //_MFW_NEW_POST
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_NEW_POST void * MFW_CALL_CDECL operator new(::mfw::stl::size_t, void *__ptr) noexcept
 {
 	return __ptr;
 }
 
-[[nodiscard]] _MFW_ALLOC_PRE void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t, void *__ptr) noexcept //_MFW_NEW_POST
+[[nodiscard]] _MFW_ALLOC_PRE _MFW_NEW_POST void * MFW_CALL_CDECL operator new[](::mfw::stl::size_t, void *__ptr) noexcept
 {
 	return __ptr;
 }
@@ -230,7 +233,7 @@
 	#pragma push_macro("delete")
 	#undef delete
 
-void MFW_CALL_CDECL operator delete(void *__ptr) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete(void *__ptr) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -246,7 +249,7 @@ void MFW_CALL_CDECL operator delete(void *__ptr) noexcept //_MFW_EXTERNALLY_VISI
 	);
 }
 
-void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::align_val_t __alignment) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::align_val_t __alignment) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -262,7 +265,7 @@ void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::align_val_t __align
 	);
 }
 
-void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::size_t __size) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::size_t __size) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, __size,
@@ -278,7 +281,7 @@ void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::size_t __size) noex
 	);
 }
 
-void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, __size,
@@ -294,7 +297,7 @@ void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::size_t __size, ::mf
 	);
 }
 
-void MFW_CALL_CDECL operator delete(void *__ptr, const ::mfw::stl::nothrow_t &) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete(void *__ptr, const ::mfw::stl::nothrow_t &) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -310,7 +313,7 @@ void MFW_CALL_CDECL operator delete(void *__ptr, const ::mfw::stl::nothrow_t &) 
 	);
 }
 
-void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::align_val_t __alignment, const ::mfw::stl::nothrow_t &) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::align_val_t __alignment, const ::mfw::stl::nothrow_t &) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -326,7 +329,7 @@ void MFW_CALL_CDECL operator delete(void *__ptr, ::mfw::stl::align_val_t __align
 	);
 }
 
-void MFW_CALL_CDECL operator delete[](void *__ptr) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete[](void *__ptr) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -342,7 +345,7 @@ void MFW_CALL_CDECL operator delete[](void *__ptr) noexcept //_MFW_EXTERNALLY_VI
 	);
 }
 
-void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::align_val_t __alignment) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::align_val_t __alignment) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -358,7 +361,7 @@ void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::align_val_t __ali
 	);
 }
 
-void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::size_t __size) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::size_t __size) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, __size,
@@ -374,7 +377,7 @@ void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::size_t __size) no
 	);
 }
 
-void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::size_t __size, ::mfw::stl::align_val_t __alignment) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, __size,
@@ -390,7 +393,7 @@ void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::size_t __size, ::
 	);
 }
 
-void MFW_CALL_CDECL operator delete[](void *__ptr, const ::mfw::stl::nothrow_t &) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete[](void *__ptr, const ::mfw::stl::nothrow_t &) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -406,7 +409,7 @@ void MFW_CALL_CDECL operator delete[](void *__ptr, const ::mfw::stl::nothrow_t &
 	);
 }
 
-void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::align_val_t __alignment, const ::mfw::stl::nothrow_t &) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::align_val_t __alignment, const ::mfw::stl::nothrow_t &) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -423,11 +426,11 @@ void MFW_CALL_CDECL operator delete[](void *__ptr, ::mfw::stl::align_val_t __ali
 }
 
 	#if MFW_CONFIGURATION_IS(DEBUG)
-void MFW_CALL_CDECL operator delete(void *__ptr
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete(void *__ptr
 		#if MFW_OS_IS(WINDOWS)
 ,::mfw::stl::int32_t __block
 		#endif
-,const char *__file, ::mfw::stl::int32_t __line) noexcept //_MFW_EXTERNALLY_VISIBLE
+,const char *__file, ::mfw::stl::int32_t __line) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -441,11 +444,11 @@ void MFW_CALL_CDECL operator delete(void *__ptr
 	);
 }
 
-void MFW_CALL_CDECL operator delete[](void *__ptr
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete[](void *__ptr
 		#if MFW_OS_IS(WINDOWS)
 ,::mfw::stl::int32_t __block
 		#endif
-,const char *__file, ::mfw::stl::int32_t __line) noexcept //_MFW_EXTERNALLY_VISIBLE
+,const char *__file, ::mfw::stl::int32_t __line) noexcept
 {
 	::mfw::stl::deallocate(
 		__ptr, 0,
@@ -461,15 +464,17 @@ void MFW_CALL_CDECL operator delete[](void *__ptr
 	#endif
 
 	//#if MFW_COMPILER_FLAGGED(MSVC)
-void MFW_CALL_CDECL operator delete(void *, void *) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete(void *, void *) noexcept
 {
 
 }
-void MFW_CALL_CDECL operator delete[](void *, void *) noexcept //_MFW_EXTERNALLY_VISIBLE
+_MFW_EXTERNALLY_VISIBLE void MFW_CALL_CDECL operator delete[](void *, void *) noexcept
 {
 
 }
 	//#endif
+
+	MFW_VISIBILITY_LOCAL_POP()
 
 	#pragma pop_macro("delete")
 #endif

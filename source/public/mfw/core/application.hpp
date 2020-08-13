@@ -1,5 +1,5 @@
-#ifndef __MFW_PUBLIC_CORE_APPLICATION_HPP
-#define __MFW_PUBLIC_CORE_APPLICATION_HPP
+#ifndef MFW_PUBLIC_CORE_APPLICATION_HPP
+#define MFW_PUBLIC_CORE_APPLICATION_HPP
 
 #pragma once
 
@@ -11,72 +11,48 @@
 
 namespace mfw::core
 {
-	struct MFW_VISIBILITY_LOCAL ExitStatus
+	MFW_VISIBILITY_LOCAL_PUSH()
+
+	struct exit_status final
 	{
 	public:
-		enum class exit_codes_t : stl::uchar_t
+		enum class exit_codes : stl::uchar_t
 		{
 			success = 0,
 			fatal = 1,
 		};
-		MFW_CLASS_ENUM(exit_codes_t)
+		MFW_CLASS_ENUM(exit_codes)
 		
-		ExitStatus() noexcept = default;
-		ExitStatus(stl::uint8_t code) noexcept
-		{ this->code() = code; }
-		ExitStatus(exit_codes_t code) noexcept
-		{ this->code() = static_cast<stl::uint8_t>(code); }
+		exit_status() noexcept = default;
+		exit_status(stl::uint8_t code, stl::uint8_t warnings = {}, stl::uint8_t errors = {}) noexcept;
+		exit_status(exit_codes code, stl::uint8_t warnings = {}, stl::uint8_t errors = {}) noexcept;
 		
-		static const ExitStatus success;
-		static const ExitStatus fatal;
+		static const exit_status success;
+		static const exit_status fatal;
 	
-		stl::uint8_t &code() noexcept
-		{ return m_values[values_index::exit_code]; }
-		stl::uint8_t code() const noexcept
-		{ return m_values[values_index::exit_code]; }
+		stl::uint8_t &code() noexcept;
+		stl::uint8_t code() const noexcept;
 
-		stl::uint8_t &warnings() noexcept
-		{ return m_values[values_index::warnings_]; }
-		stl::uint8_t warnings() const noexcept
-		{ return m_values[values_index::warnings_]; }
+		stl::uint8_t &warnings() noexcept;
+		stl::uint8_t warnings() const noexcept;
 
-		stl::uint8_t &errors() noexcept
-		{ return m_values[values_index::errors_]; }
-		stl::uint8_t errors() const noexcept
-		{ return m_values[values_index::errors_]; }
+		stl::uint8_t &errors() noexcept;
+		stl::uint8_t errors() const noexcept;
 		
-		bool succeded() const noexcept
-		{ return !wasFatal() && errors() == 0; }
-		bool absolutelySucceded() const noexcept
-		{ return succeded() && warnings() == 0; }
-		bool wasFatal() const noexcept
-		{ return code() == exit_codes_t::fatal; }
-		bool failed() const noexcept
-		{ return wasFatal() || errors() > 0; }
+		bool succeded() const noexcept;
+		bool absolutelySucceded() const noexcept;
+		bool wasFatal() const noexcept;
+		bool failed() const noexcept;
 
-		operator bool() const noexcept
-		{ return succeded(); }
-		bool operator!() const noexcept
-		{ return !succeded(); }
+		operator bool() const noexcept;
+		bool operator!() const noexcept;
 
-		ExitStatus &setFatal() noexcept
-		{ m_values[values_index::exit_code] = static_cast<stl::uint8_t>(exit_codes_t::fatal); return *this; }
-		ExitStatus &setFailed() noexcept
-		{ setFatal(); return *this; }
+		exit_status &set_fatal() noexcept;
+		exit_status &set_failed() noexcept;
 		
-		void append(ExitStatus status) noexcept {
-			stl::uint8_t code{status.code()};
-			if(code != static_cast<stl::uint8_t>(exit_codes_t::success)) {
-				this->code() = code;
-			}
-			warnings() += status.warnings();
-			errors() += status.errors();
-		}
+		exit_status &append(exit_status status) noexcept;
 		
-		ExitStatus &operator+=(ExitStatus status) noexcept {
-			append(status);
-			return *this;
-		}
+		exit_status &operator+=(exit_status status) noexcept;
 	
 	private:
 		enum /*class*/ values_index : stl::uchar_t
@@ -90,22 +66,26 @@ namespace mfw::core
 		stl::array<stl::uint8_t, values_index::count> m_values{};
 	};
 	
-	MFW_VISIBILITY_LOCAL stl::pstring executablePath() noexcept;
+	extern stl::pstring executable_path() noexcept;
 	
 #if MFW_BUILD_FLAGGED(EXECUTABLE)
-	MFW_VISIBILITY_LOCAL bool coreLoadLibrary(const SearchPath &name) noexcept;
-	MFW_VISIBILITY_LOCAL ExitStatus coreUpdate() noexcept;
+	extern bool core_load_library(const searchpath &name) noexcept;
+	extern exit_status core_update() noexcept;
 #endif
+
+	MFW_VISIBILITY_LOCAL_POP()
 }
 
+MFW_VISIBILITY_LOCAL_PUSH()
+
 #if MFW_BUILD_FLAGGED(SHARED)
-extern MFW_VISIBILITY_LOCAL ::mfw::core::ExitStatus applicationMain(
+extern ::mfw::core::exit_status application_main(
 	#if MFW_BUILD == MFW_BUILD_SHARED && MFW_OS == MFW_OS_WINDOWS
 bool thread
 	#endif
 ) noexcept;
 
-extern MFW_VISIBILITY_LOCAL ::mfw::core::ExitStatus applicationExit(
+extern ::mfw::core::exit_status application_exit(
 	#if MFW_BUILD == MFW_BUILD_SHARED && MFW_OS == MFW_OS_WINDOWS
 bool thread
 	#endif
@@ -113,17 +93,21 @@ bool thread
 #endif
 
 #if MFW_BUILD_FLAGGED(EXECUTABLE)
-extern MFW_VISIBILITY_LOCAL bool applicationLoadLibraries() noexcept;
+extern bool application_load_libraries() noexcept;
 #endif
 
-#if MFW_OS_IS(WEB)
-	#define __MFW_OS_TARGET "web"
+MFW_VISIBILITY_LOCAL_POP()
+
+#if MFW_OS_IS(WASI)
+	#define __MFW_OS_TARGET "wasi"
 #elif MFW_OS_IS(LINUX)
 	#define __MFW_OS_TARGET "linux"
 #elif MFW_OS_IS(ANDROID)
 	#define __MFW_OS_TARGET "android"
 #elif MFW_OS_IS(WINDOWS)
 	#define __MFW_OS_TARGET "windows"
+#elif MFW_OS_IS(MACOS)
+	#define __MFW_OS_TARGET "macos"
 #else
 	#error
 #endif
@@ -144,8 +128,12 @@ extern MFW_VISIBILITY_LOCAL bool applicationLoadLibraries() noexcept;
 	#define __MFW_PROCESSOR_TARGET "arm"
 #elif MFW_PROCESSOR_IS(AARCH64)
 	#define __MFW_PROCESSOR_TARGET "aarch64"
-#elif MFW_PROCESSOR_IS(WASM)
-	#define __MFW_PROCESSOR_TARGET "wasm"
+#elif MFW_PROCESSOR_IS(WASM64)
+	#define __MFW_PROCESSOR_TARGET "wasm64"
+#elif MFW_PROCESSOR_IS(WASM64)
+	#define __MFW_PROCESSOR_TARGET "wasm32"
+#elif MFW_PROCESSOR_IS(ASMJS)
+	#define __MFW_PROCESSOR_TARGET "asmjs"
 #else
 	#error
 #endif

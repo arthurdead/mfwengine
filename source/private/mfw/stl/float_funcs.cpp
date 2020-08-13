@@ -12,10 +12,10 @@
 
 namespace mfw::stl
 {
-	namespace __private_float_funcs_cpp MFW_VISIBILITY_LOCAL
+	namespace __private_float_funcs_cpp
 	{
 		template <typename _Rp, typename _Tp, typename _Sp, typename _Cp, typename _Fp>
-		static void _to_string_impl_printf(_Tp __src, _Sp &__dst, const _Cp *__fmt, _Fp __func) noexcept
+		static MFW_VISIBILITY_LOCAL void _to_string_impl_printf(_Tp __src, _Sp &__dst, const _Cp *__fmt, _Fp __func) noexcept
 		{
 			__dst.clear();
 		#if MFW_COMPILER_FLAGGED(MSVC)

@@ -1,5 +1,5 @@
-#ifndef _MFW_PUBLIC_STL_SHARED_CHAR_TRAITS_HPP
-#define _MFW_PUBLIC_STL_SHARED_CHAR_TRAITS_HPP
+#ifndef MFW_PUBLIC_STL_SHARED_CHAR_TRAITS_HPP
+#define MFW_PUBLIC_STL_SHARED_CHAR_TRAITS_HPP
 
 #pragma once
 
@@ -18,7 +18,8 @@
 #endif
 #pragma pop_macro("new")
 
-#ifdef __cpp_char8_t
+#if defined __cpp_char8_t || \
+	defined __CHAR8_TYPE__
 	#define MFW_CPP_CHAR8_SUPPORTED 1
 #endif
 

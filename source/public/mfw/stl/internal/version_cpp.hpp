@@ -40,17 +40,6 @@
 	#error
 #endif
 
-#if MFW_LIBCPP_IS(LLVM)
-	#include <__config>
-
-	#if !defined _LIBCPP_HAS_MUSL_LIBC && defined _MFW_WEB_DETECTED
-		#define _LIBCPP_HAS_MUSL_LIBC
-	#endif
-	#if defined _LIBCPP_HAS_MUSL_LIBC && !defined __MUSL__
-		#define __MUSL__
-	#endif
-#endif
-
 #define MFW_STDCPP_DEFAULT 0
 #define MFW_STDCPP_EA 1
 

@@ -1,38 +1,25 @@
-#ifndef __MFW_PUBLIC_CORE_SEARCHPATH_HPP
-#define __MFW_PUBLIC_CORE_SEARCHPATH_HPP
+#ifndef MFW_PUBLIC_CORE_SEARCHPATH_HPP
+#define MFW_PUBLIC_CORE_SEARCHPATH_HPP
 
 #pragma once
 
 #include <public/mfw/stl/string.hpp>
+#include <public/mfw/stl/type_traits.hpp>
 
-namespace mfw::core
+#include <public/mfw/core/internal/searchpath_view.hpp>
+#include <public/mfw/core/internal/searchpath.hpp>
+
+namespace mfw::stl
 {
-	struct SearchPath final
-	{
-		SearchPath() noexcept = default;
-		SearchPath(const SearchPath &) noexcept = default;
-		SearchPath(SearchPath &&) noexcept = default;
-
-		SearchPath(const stl::pstring &path) noexcept
-			: m_path{path} {}
-		SearchPath(const stl::osstring &name) noexcept
-		{ m_path.assign(name); }
-		SearchPath(stl::osstring_view name) noexcept {
-			const stl::oschar_t *ptr{name.data()};
-			m_path.assign(ptr, ptr+name.length());
-		}
-					
-		SearchPath(const stl::pstring &path, stl::osstring_view name) noexcept
-			: m_path{path}, m_name{name} {}
-
-		bool empty() const noexcept
-		{ return (m_path.empty() && m_name.empty()); }
-
-		stl::pstring m_path{};
-		stl::osstring m_name{};
-	};
+	struct type_view<searchpath> final
+	{ using type = searchpath_view; };
 }
 
-::mfw::core::SearchPath operator""_sp(const ::mfw::stl::pchar_t *ptr, ::mfw::stl::size_t len) noexcept;
+MFW_VISIBILITY_LOCAL_PUSH()
+
+extern ::mfw::core::searchpath operator""_sp(const ::mfw::stl::pchar_t *ptr, ::mfw::stl::size_t len) noexcept;
+extern ::mfw::core::searchpath_view operator""_spv(const ::mfw::stl::pchar_t *ptr, ::mfw::stl::size_t len) noexcept;
+
+MFW_VISIBILITY_LOCAL_POP()
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef _MFW_PUBLIC_STL_VECTOR_HPP
-#define _MFW_PUBLIC_STL_VECTOR_HPP
+#ifndef MFW_PUBLIC_STL_VECTOR_HPP
+#define MFW_PUBLIC_STL_VECTOR_HPP
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include <public/mfw/stl/memory.hpp>
 #include <public/mfw/stl/iterator.hpp>
 #include <public/mfw/stl/initializer_list.hpp>
+#include <public/mfw/stl/type_traits.hpp>
 
 #if MFW_STDCPP_IS(DEFAULT)
 	#include <vector>
@@ -23,11 +24,14 @@ namespace mfw::stl
 	template <typename _Tp, typename _Alloc = allocator<_Tp>>
 	using vector = ::MFW_STD_NAMESPACE::vector<_Tp, _Alloc>;
 
-	template <typename _Tp, typename _Alloc = allocator<unique_ptr<_Tp>>>
-	class ptr_vector final : public ptr_vector_like<vector<unique_ptr<_Tp>, _Alloc>>
+	template <typename _Tp, typename _Alloc = allocator<_Tp>>
+	using vector_view = type_view_t<vector<_Tp, _Alloc>>;
+
+	template <typename _Tp, typename _Alloc = ptr_allocator<_Tp>>
+	class MFW_VISIBILITY_LOCAL ptr_vector final : public __ptr_vector_like<vector<unique_ptr<_Tp>, _Alloc>>
 	{
 	public:
-		using super = ptr_vector_like<vector<unique_ptr<_Tp>, _Alloc>>;
+		using super = __ptr_vector_like<vector<unique_ptr<_Tp>, _Alloc>>;
 
 		using reference = typename super::reference;
 		using const_reference = typename super::const_reference;
@@ -40,9 +44,12 @@ namespace mfw::stl
 		reference operator[](size_type __pos) noexcept;
 		const_reference operator[](size_type __pos) const noexcept;
 	};
+
+	template <typename _Tp, typename _Alloc = ptr_allocator<_Tp>>
+	using ptr_vector_view = type_view_t<ptr_vector<_Tp, _Alloc>>;
 }
 
-#include <public/mfw/stl/impl/vector.ipp>
+#include <public/mfw/stl/impl/vector.tpp>
 
 #define _MFW_VECTOR_LIKE_CONTAINER vector
 #include <public/mfw/stl/internal/vector_like_funcs.hpp>

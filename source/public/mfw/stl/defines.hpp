@@ -1,5 +1,5 @@
-#ifndef _MFW_PUBLIC_STL_DEFINES_HPP
-#define _MFW_PUBLIC_STL_DEFINES_HPP
+#ifndef MFW_PUBLIC_STL_DEFINES_HPP
+#define MFW_PUBLIC_STL_DEFINES_HPP
 
 #pragma once
 
@@ -62,55 +62,55 @@
 
 #ifdef MFW_CPP
 	#define _MFW_ENUM_SHARED_EQUAL_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline bool operator==(arg rhs, name lhs) noexcept \
+		acessor constexpr bool operator==(arg rhs, name lhs) noexcept \
 		{ return static_cast<type>(rhs) == static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator!=(arg rhs, name lhs) noexcept \
+		acessor constexpr bool operator!=(arg rhs, name lhs) noexcept \
 		{ return static_cast<type>(rhs) != static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator>(arg rhs, name lhs) noexcept \
+		acessor constexpr bool operator>(arg rhs, name lhs) noexcept \
 		{ return static_cast<type>(rhs) > static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator<(arg rhs, name lhs) noexcept \
+		acessor constexpr bool operator<(arg rhs, name lhs) noexcept \
 		{ return static_cast<type>(rhs) < static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator>=(arg rhs, name lhs) noexcept \
+		acessor constexpr bool operator>=(arg rhs, name lhs) noexcept \
 		{ return static_cast<type>(rhs) >= static_cast<type>(lhs); } \
-		acessor constexpr inline bool operator<=(arg rhs, name lhs) noexcept \
+		acessor constexpr bool operator<=(arg rhs, name lhs) noexcept \
 		{ return static_cast<type>(rhs) <= static_cast<type>(lhs); }
 
 	#define _MFW_ENUM_SHARED_EQUAL_ADDS_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline name operator+=(name &rhs, arg lhs) noexcept \
+		acessor constexpr name operator+=(name &rhs, arg lhs) noexcept \
 		{ rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(lhs)); return rhs; } \
-		acessor constexpr inline name operator-=(name &rhs, arg lhs) noexcept \
+		acessor constexpr name operator-=(name &rhs, arg lhs) noexcept \
 		{ rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(lhs)); return rhs; }
 
 	#define _MFW_ENUM_SHARED_AND_BIT_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline name operator&(name rhs, arg lhs) noexcept \
+		acessor constexpr name operator&(name rhs, arg lhs) noexcept \
 		{ return static_cast<name>(static_cast<type>(rhs) & static_cast<type>(lhs)); }
 
 	#define _MFW_ENUM_SHARED_AND_FLAG_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline bool operator&(name rhs, arg lhs) noexcept \
+		acessor constexpr bool operator&(name rhs, arg lhs) noexcept \
 		{ return ((static_cast<type>(rhs) & static_cast<type>(lhs)) == (static_cast<type>(lhs))); }
 
 	#define _MFW_ENUM_SHARED_FLAGS_IMPL(acessor, name, arg, type) \
-		acessor constexpr inline name operator|(name rhs, arg lhs) noexcept \
+		acessor constexpr name operator|(name rhs, arg lhs) noexcept \
 		{ return static_cast<name>(static_cast<type>(rhs) | static_cast<type>(lhs)); } \
-		acessor constexpr inline name operator^(name rhs, arg lhs) noexcept \
+		acessor constexpr name operator^(name rhs, arg lhs) noexcept \
 		{ return static_cast<name>(static_cast<type>(rhs) ^ static_cast<type>(lhs)); } \
-		acessor constexpr inline name &operator&=(name &rhs, arg lhs) noexcept \
+		acessor constexpr name &operator&=(name &rhs, arg lhs) noexcept \
 		{ rhs = static_cast<name>(static_cast<type>(rhs) & static_cast<type>(lhs)); return rhs; } \
-		acessor constexpr inline name &operator|=(name &rhs, arg lhs) noexcept \
+		acessor constexpr name &operator|=(name &rhs, arg lhs) noexcept \
 		{ rhs = static_cast<name>(static_cast<type>(rhs) | static_cast<type>(lhs)); return rhs; } \
 
 	#define _MFW_ENUM_SHARED_UNARY_ADD_IMPL(acessor, name, type) \
-		acessor constexpr inline name &operator++(name &rhs) noexcept \
+		acessor constexpr name &operator++(name &rhs) noexcept \
 		{ rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(1)); return rhs; } \
-		acessor constexpr inline name &operator--(name &rhs) noexcept \
+		acessor constexpr name &operator--(name &rhs) noexcept \
 		{ rhs = static_cast<name>(static_cast<type>(rhs) - static_cast<type>(1)); return rhs; } \
-		acessor constexpr inline name &operator++(name &rhs,int) noexcept \
+		acessor constexpr name &operator++(name &rhs,int) noexcept \
 		{ rhs = static_cast<name>(static_cast<type>(rhs) + static_cast<type>(1)); return rhs; } \
-		acessor constexpr inline name &operator--(name &rhs,int) noexcept \
+		acessor constexpr name &operator--(name &rhs,int) noexcept \
 		{ rhs = static_cast<name>(static_cast<type>(rhs) - static_cast<type>(1)); return rhs; }
 
 	#define _MFW_ENUM_SHARED_UNARY_FLAGS_IMPL(acessor, name, type) \
-		acessor constexpr inline name operator~(name rhs) { return static_cast<name>(~static_cast<type>(rhs)); }
+		acessor constexpr name operator~(name rhs) { return static_cast<name>(~static_cast<type>(rhs)); }
 
 	#define _MFW_ENUM_SHARED_UNARY_FLAGS(acessor, name) \
 		_MFW_ENUM_SHARED_UNARY_FLAGS_IMPL(acessor, name, ::mfw::stl::underlying_type_t<name>)
@@ -255,7 +255,7 @@
 		{ \
 			struct member final \
 			{
-				
+
 	#define MFW_DECLARE_AS_TO_CHECK_FUNCS_END(name) \
 				MFW_DECLARE_FUNC_CHECK_MEMBER(has_to, void, to_##name, const, _Vp &) \
 			}; \
@@ -283,14 +283,14 @@
 
 	#define MFW_DECLARE_AS_FUNC_GLOBAL(name) \
 		template <typename _Dp, typename _Sp> \
-		_Dp as_##name(const _Sp &__src) noexcept;
+		MFW_VISIBILITY_LOCAL _Dp as_##name(const _Sp &__src) noexcept;
 
 	MFW_MESSAGE("TODO!! remake both below once MFW_DECLARE_FUNC_CHECK_MEMBER/GLOBAL supports templates")
 	#define MFW_IMPLEMENT_TO_FUNC_GLOBAL(name)
 
 	#define _MFW_IMPLEMENT_AS_FUNC_GLOBAL_START(name) \
 		template <typename _Dp, typename _Sp> \
-		_Dp as_##name(const _Sp &__src) noexcept \
+		MFW_VISIBILITY_LOCAL _Dp as_##name(const _Sp &__src) noexcept \
 		{ \
 			using __D = ::mfw::stl::remove_cvref_t<_Dp>; \
 			using __S = ::mfw::stl::remove_cvref_t<_Sp>; \

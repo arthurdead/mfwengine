@@ -21,8 +21,10 @@
 
 namespace mfw::stl
 {
-	namespace __private_string_view_funcs_cpp MFW_VISIBILITY_LOCAL
+	namespace __private_string_view_funcs_cpp
 	{
+		MFW_VISIBILITY_LOCAL_PUSH()
+
 		template <typename _Rp, typename _T2p, typename _SVp, typename _Tp>
 		static bool _to_int_impl_fc(_SVp __src, _Tp &__dst, radix_t __base) noexcept
 		{
@@ -191,6 +193,8 @@ namespace mfw::stl
 			#error
 		#endif
 		}
+
+		MFW_VISIBILITY_LOCAL_POP()
 	}
 
 	MFW_STL_API bool MFW_STL_CALL to_int(string_view __src, int8_t &__dst, radix_t __base) noexcept

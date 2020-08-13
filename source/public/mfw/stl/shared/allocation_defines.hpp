@@ -1,5 +1,5 @@
-#ifndef _MFW_PUBLIC_STL_SHARED_ALLOCATION_DEFINES_H
-#define _MFW_PUBLIC_STL_SHARED_ALLOCATION_DEFINES_H
+#ifndef MFW_PUBLIC_STL_SHARED_ALLOCATION_DEFINES_H
+#define MFW_PUBLIC_STL_SHARED_ALLOCATION_DEFINES_H
 
 #pragma once
 
@@ -69,12 +69,12 @@ namespace MFW_STD_NAMESPACE
 
 	struct nothrow_t;
 	struct nothrow_t {};
-	extern const nothrow_t nothrow;
+	MFW_VISIBILITY_LOCAL extern const nothrow_t nothrow;
 
 	#if MFW_CPP_IS_SUPPORTED(DESTROYING_DELETE)
 	struct destroying_delete_t;
 	struct destroying_delete_t {};
-	inline constexpr destroying_delete_t destroying_delete{};
+	MFW_VISIBILITY_LOCAL inline constexpr destroying_delete_t destroying_delete{};
 	#endif
 }
 

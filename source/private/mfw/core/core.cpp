@@ -29,12 +29,14 @@
 
 namespace mfw::core
 {
-	namespace __private_core_cpp_internal MFW_VISIBILITY_LOCAL
+	namespace __private_core_cpp_internal
 	{
 		using namespace ::MFW_STD_NAMESPACE::chrono;
 
+		MFW_VISIBILITY_LOCAL_PUSH()
+
 	#if MFW_CONFIGURATION_IS(DEBUG)
-		static void debugInit() noexcept
+		static void debug_init() noexcept
 		{
 		#if MFW_OS_IS(WINDOWS)
 			_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
@@ -67,17 +69,21 @@ namespace mfw::core
 
 		static bool should_terminate{false};
 		static os_layer_t os_layer{os_layer_t::native};
+
+		MFW_VISIBILITY_LOCAL_POP()
 	}
+
+	MFW_VISIBILITY_LOCAL_PUSH()
 
 	MFW_CORE_API void MFW_CORE_CALL terminate() noexcept
 	{
 		__private_core_cpp_internal::should_terminate = true;
 	}
 
-	MFW_CORE_API ExitStatus MFW_CORE_CALL initialize() noexcept
+	MFW_CORE_API exit_status MFW_CORE_CALL initialize() noexcept
 	{
 	#if MFW_CONFIGURATION_IS(DEBUG)
-		__private_core_cpp_internal::debugInit();
+		__private_core_cpp_internal::debug_init();
 	#endif
 	
 	#if MFW_LIBC_FLAGGED(UNIX)
@@ -88,30 +94,30 @@ namespace mfw::core
 
 		sortInitializers();
 
-		ExitStatus status{initializeAllGlobals()};
+		exit_status status{initialize_all_globals()};
 		if(__private_core_cpp_internal::should_terminate) {
-			status = ExitStatus::fatal;
+			status = exit_status::fatal;
 		}
 		return status;
 	}
 
-	MFW_CORE_API ExitStatus MFW_CORE_CALL update() noexcept
+	MFW_CORE_API exit_status MFW_CORE_CALL update() noexcept
 	{
-		ExitStatus status{updateAllGlobals()};
+		exit_status status{update_all_globals()};
 		if(__private_core_cpp_internal::should_terminate) {
-			status = ExitStatus::fatal;
+			status = exit_status::fatal;
 		}
 		return status;
 	}
 
-	MFW_CORE_API ExitStatus MFW_CORE_CALL shutdown() noexcept
+	MFW_CORE_API exit_status MFW_CORE_CALL shutdown() noexcept
 	{
-		ExitStatus status{shutdownAllGlobals()};
-		deallocateAllGlobals();
-		//Library::unload_all_libraries();
-		//Library::remove_all_directories();
+		exit_status status{shutdown_all_globals()};
+		deallocate_all_globals();
+		library::unload_all_libraries();
+		library::remove_all_directories();
 		if(__private_core_cpp_internal::should_terminate) {
-			status = ExitStatus::fatal;
+			status = exit_status::fatal;
 		}
 		return status;
 	}
@@ -121,7 +127,7 @@ namespace mfw::core
 	{
 		wordexp_t exp{};
 		wordexp(src.data(), &exp, 0);
-		for(size_t i{0}; i < exp.we_wordc; ++i) {
+		for(stl::size_t i{0}; i < exp.we_wordc; ++i) {
 			stl::osstring &tmp{dst.emplace_back()};
 			tmp.assign(exp.we_wordv[i]);
 		}
@@ -129,7 +135,7 @@ namespace mfw::core
 	}
 #endif
 
-	MFW_CORE_API void MFW_CORE_CALL expandEnvironmentVariables(stl::osstring_view src, stl::osstring &dst) noexcept
+	MFW_CORE_API void MFW_CORE_CALL expand_environment_variables(stl::osstring_view src, stl::osstring &dst) noexcept
 	{
 	#if MFW_OS == MFW_OS_WINDOWS
 		const wchar_t *src_data{c_str(src)};
@@ -142,7 +148,7 @@ namespace mfw::core
 		if(exp.we_wordc) {
 			dst.assign(exp.we_wordv[0]);
 		} else {
-			dst = src;
+			dst.assign(src);
 		}
 		wordfree(&exp);
 	#endif
@@ -190,8 +196,10 @@ namespace mfw::core
 		return time_point.time_since_epoch().count();
 	}
 
-	MFW_CORE_API os_layer_t MFW_CORE_CALL getOSLayer() noexcept
+	MFW_CORE_API os_layer_t MFW_CORE_CALL get_os_layer() noexcept
 	{
 		return __private_core_cpp_internal::os_layer;
 	}
+
+	MFW_VISIBILITY_LOCAL_POP()
 }

@@ -34,20 +34,14 @@ _MFW_MESSAGE("sad file needs to be reworked")
 #ifndef _GNU_SOURCE
 	#define _GNU_SOURCE
 #endif
-#define _ISOC99_SOURCE
 #define _ISOC11_SOURCE
 #define _ISOC2X_SOURCE
-#define _POSIX_SOURCE
-#define _XOPEN_SOURCE
-#define _XOPEN_SOURCE_EXTENDED
 #define _LARGEFILE_SOURCE
-#define _LARGEFILE64_SOURCE
-#define _ATFILE_SOURCE
 #define __STDC_WANT_LIB_EXT2__ 1
 #define __STDC_WANT_IEC_60559_TYPES_EXT__
 #define __STDC_WANT_IEC_60559_BFP_EXT__
 #define __STDC_WANT_IEC_60559_FUNCS_EXT__
 
-#define _BSD_SOURCE
+#define _THREAD_SAFE
 
 #define ANDROID_STRICT

@@ -4,6 +4,8 @@
 
 namespace mfw::stl
 {
+	MFW_VISIBILITY_LOCAL_PUSH()
+
 	template <typename _Tp>
 	bool is_valid(_Tp *__ptr) noexcept(false)
 	{
@@ -15,12 +17,12 @@ namespace mfw::stl
 	}
 
 	template <typename _Tp, typename... _Args>
-	[[nodiscard]] MFW_VISIBILITY_LOCAL _MFW_ALLOC_PRE _Tp *__create(
+	[[nodiscard]] _MFW_ALLOC_PRE MFW_ATTRIBUTE(__malloc__) _Tp *__create(
 #if MFW_CONFIGURATION_IS(DEBUG)
 	const char *__file, size_t __line,
 #endif
 	_Args &&... __args
-	) noexcept //MFW_ATTRIBUTE(__malloc__)
+	) noexcept
 	{
 		#pragma push_macro("new")
 		#undef new
@@ -45,7 +47,7 @@ namespace mfw::stl
 #endif
 
 	template <typename _Tp>
-	MFW_VISIBILITY_LOCAL void __destroy(_Tp *&__ptr
+	void __destroy(_Tp *&__ptr
 #if MFW_CONFIGURATION_IS(DEBUG)
 	,const char *__file, size_t __line
 #endif
@@ -70,6 +72,12 @@ namespace mfw::stl
 #if MFW_COMPILER_FLAGGED(UNIX)
 	MFW_WARNING_POP()
 #endif
+
+	template <typename _Tp, typename _Sp>
+	void to_string(_Tp *__src, _Sp &__dst) noexcept;
+	//{ _MFW_TO_STRING_HELPER(__src, _Tp, __dst, _Sp) }
+
+	MFW_VISIBILITY_LOCAL_POP()
 
 	MFW_WARNING_PUSH()
 #if MFW_COMPILER_FLAGGED(MSVC)
@@ -126,8 +134,4 @@ namespace mfw::stl
 	template <typename _Vp, typename _Tp>
 	constexpr inline _Tp &get_outer(_Vp *__ptr, _Vp *_Tp:: *__var) noexcept
 	{ return *reinterpret_cast<_Tp *>(reinterpret_cast<unsigned char *>(__ptr) - var_offset(__var)); }
-
-	template <typename _Tp, typename _Sp>
-	void to_string(_Tp *__src, _Sp &__dst) noexcept;
-	//{ _MFW_TO_STRING_HELPER(__src, _Tp, __dst, _Sp) }
 }

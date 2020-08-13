@@ -10,8 +10,10 @@
 
 namespace mfw::stl
 {
-	namespace __private_stdint_funcs_cpp MFW_VISIBILITY_LOCAL
+	namespace __private_stdint_funcs_cpp
 	{
+		MFW_VISIBILITY_LOCAL_PUSH()
+
 		template <typename _Rp, typename _T2p, typename _Tp, typename _Sp>
 		static void _to_string_impl_tc(_Tp __src, _Sp &__dst, radix_t __base) noexcept
 		{
@@ -55,6 +57,8 @@ namespace mfw::stl
 		#endif
 			__func(reinterpret_cast<_Rp *>(__dst.data()), static_cast<size_t>(__size+1), __fmt, __src);
 		}
+
+		MFW_VISIBILITY_LOCAL_POP()
 	}
 
 	MFW_STL_API void MFW_STL_CALL to_string(int8_t __src, string &__dst, radix_t __base) noexcept

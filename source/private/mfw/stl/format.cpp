@@ -8,8 +8,10 @@
 
 namespace mfw::stl
 {
-	namespace __private_format_cpp MFW_VISIBILITY_LOCAL
+	namespace __private_format_cpp
 	{
+		MFW_VISIBILITY_LOCAL_PUSH()
+
 		template <typename _Rp, typename _Sp, typename _SVp, typename _Fp>
 		static void _format_impl_3(_Sp &__buffer, _SVp __fmtstr, _Fp __func, va_list __args) noexcept
 		{
@@ -66,6 +68,8 @@ namespace mfw::stl
 
 			return true;
 		}
+
+		MFW_VISIBILITY_LOCAL_POP()
 	}
 
 	MFW_STL_API void MFW_STL_CALL format(string &__buffer, string_view __fmtstr, va_list __args) noexcept

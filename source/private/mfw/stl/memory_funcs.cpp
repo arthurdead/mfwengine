@@ -14,9 +14,9 @@
 
 namespace mfw::stl
 {
-	namespace __private_memory_funcs_cpp MFW_VISIBILITY_LOCAL
+	namespace __private_memory_funcs_cpp
 	{
-		static bool check_bytes(const unsigned char *first, unsigned char value, size_t size) noexcept
+		static MFW_VISIBILITY_LOCAL bool check_bytes(const unsigned char *first, unsigned char value, size_t size) noexcept
 		{
 			const unsigned char *last{first + size};
 			for(const unsigned char *it{first}; it != last; ++it) {

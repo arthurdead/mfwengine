@@ -3,8 +3,10 @@
 
 namespace mfw::stl
 {
-	namespace __private_string_funcs_cpp MFW_VISIBILITY_LOCAL
+	namespace __private_string_funcs_cpp
 	{
+		MFW_VISIBILITY_LOCAL_PUSH()
+
 		template <typename _Sp, typename _Cp>
 		static size_t _replace_all_impl_c_c(_Sp &__str, _Cp __from, _Cp __to) noexcept
 		{
@@ -41,6 +43,8 @@ namespace mfw::stl
 
 			return __count;
 		}
+
+		MFW_VISIBILITY_LOCAL_POP()
 	}
 
 	MFW_STL_API size_t MFW_STL_CALL replace_all(string &__str, char __from, char __to) noexcept

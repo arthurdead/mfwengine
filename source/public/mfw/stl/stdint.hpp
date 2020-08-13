@@ -1,5 +1,5 @@
-#ifndef _MFW_PUBLIC_STL_STDINT_HPP
-#define _MFW_PUBLIC_STL_STDINT_HPP
+#ifndef MFW_PUBLIC_STL_STDINT_HPP
+#define MFW_PUBLIC_STL_STDINT_HPP
 
 #pragma once
 
@@ -80,13 +80,14 @@ namespace mfw::stl
 		sexagesimal = 60,
 	};
 
+	using ::MFW_STD_NAMESPACE::size_t;
+
 #if MFW_LIBC_FLAGGED(UNIX)
 	using ::ssize_t;
 #else
-	using ssize_t = make_signed_t<::MFW_STD_NAMESPACE::size_t>;
+	using ssize_t = make_signed_t<size_t>;
 #endif
 
-	using ::MFW_STD_NAMESPACE::size_t;
 	using ::MFW_STD_NAMESPACE::ptrdiff_t;
 	using ::MFW_STD_NAMESPACE::int16_t;
 	using ::MFW_STD_NAMESPACE::uint16_t;

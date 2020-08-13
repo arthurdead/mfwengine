@@ -36,6 +36,12 @@
 	#define MFW_FLAG_ENUM 
 	#define MFW_DEBUGBREAK() __debugbreak()
 	#define MFW_ABSTRACT_CLASS __declspec(novtable) __single_inheritance
+	#define MFW_ATTRIBUTE_PUSH(x, what) 
+	#define MFW_ATTRIBUTE_POP() 
+	#define MFW_VISIBILITY_LOCAL_PUSH() 
+	#define MFW_VISIBILITY_LOCAL_POP() 
+	#define MFW_INTERNAL_LINKAGE 
+	#define MFW_LTO_PUBLIC 
 #elif MFW_COMPILER_FLAGGED(UNIX)
 	#define MFW_DECLSPEC(x) 
 	#define MFW_NOVTABLE 
@@ -45,7 +51,8 @@
 	#else
 		#define MFW_ATTRIBUTE(x) __attribute__((x))
 	#endif
-	#define MFW_VISIBILITY_PUBLIC __attribute__((__visibility__("default"), __lto_visibility_public__))
+	#define MFW_LTO_PUBLIC __attribute__((__lto_visibility_public__))
+	#define MFW_VISIBILITY_PUBLIC __attribute__((__visibility__("default")))
 	#if MFW_OS_IS(WINDOWS)
 		#define MFW_SHARED_EXPORT __attribute__((__dllexport__)) MFW_VISIBILITY_PUBLIC
 		#define MFW_SHARED_IMPORT __attribute__((__dllimport__)) MFW_VISIBILITY_PUBLIC
@@ -73,10 +80,14 @@
 		#define MFW_RESET_OPTIONS() 
 		#define MFW_PUSH_OPTIONS() 
 		#define MFW_POP_OPTIONS() 
-		#define _MFW_INTERNAL_LINKAGE __attribute__((__internal_linkage__))
+		#define MFW_INTERNAL_LINKAGE __attribute__((__internal_linkage__))
 		#define MFW_NODEBUG __attribute__((__nodebug__))
 		#define MFW_FLAG_ENUM __attribute__((__flag_enum__))
 		#define MFW_DEBUGBREAK() __builtin_debugtrap()
+		#define MFW_ATTRIBUTE_PUSH(name, what) MFW_PRAGMA(_MFW_PRAGMA_ID attribute push(name, apply_to = what))
+		#define MFW_ATTRIBUTE_POP() MFW_PRAGMA(_MFW_PRAGMA_ID attribute pop)
+		#define MFW_VISIBILITY_PUSH(x) MFW_PRAGMA(GCC visibility push(x))
+		#define MFW_VISIBILITY_POP() MFW_PRAGMA(GCC visibility pop)
 	#elif MFW_COMPILER_IS(GCC)
 		#define _MFW_PRAGMA_ID GCC
 		#ifdef MFW_VA_MACROS_SUPPORTED
@@ -89,7 +100,7 @@
 		#define MFW_RESET_OPTIONS() MFW_PRAGMA(_MFW_PRAGMA_ID reset_options)
 		#define MFW_PUSH_OPTIONS() MFW_PRAGMA(_MFW_PRAGMA_ID push_options)
 		#define MFW_POP_OPTIONS() MFW_PRAGMA(_MFW_PRAGMA_ID pop_options)
-		#define _MFW_INTERNAL_LINKAGE 
+		#define MFW_INTERNAL_LINKAGE 
 		#define MFW_NODEBUG 
 		#define MFW_FLAG_ENUM 
 		#if MFW_PROCESSOR_FLAGGED(X86)
@@ -97,12 +108,16 @@
 		#else
 			#define MFW_DEBUGBREAK() __builtin_trap()
 		#endif
+		#define MFW_ATTRIBUTE_PUSH(x, what) 
+		#define MFW_ATTRIBUTE_POP() 
+		#define MFW_VISIBILITY_PUSH(x) MFW_PRAGMA(_MFW_PRAGMA_ID visibility push(x))
+		#define MFW_VISIBILITY_POP() MFW_PRAGMA(_MFW_PRAGMA_ID visibility pop)
 	#else
 		#error
 	#endif
-	#define MFW_VISIBILITY_LOCAL __attribute__((__visibility__("internal"))) _MFW_INTERNAL_LINKAGE
-	#define MFW_VISIBILITY_PUSH(x) MFW_PRAGMA(_MFW_PRAGMA_ID visibility push(x))
-	#define MFW_VISIBILITY_POP() MFW_PRAGMA(_MFW_PRAGMA_ID visibility pop)
+	#define MFW_VISIBILITY_LOCAL_PUSH() MFW_VISIBILITY_PUSH(internal)
+	#define MFW_VISIBILITY_LOCAL_POP() MFW_VISIBILITY_POP()
+	#define MFW_VISIBILITY_LOCAL __attribute__((__visibility__("internal")))
 	#define MFW_WARNING_PUSH() MFW_PRAGMA(_MFW_PRAGMA_ID diagnostic push)
 	#define MFW_WARNING_POP() MFW_PRAGMA(_MFW_PRAGMA_ID diagnostic pop)
 	#define MFW_WARNING_DISABLE(x) MFW_PRAGMA(_MFW_PRAGMA_ID diagnostic ignored x)

@@ -24,21 +24,29 @@
 #define MFW_LIBC_GNU (MFW_LIBC_UNIX_FLAG|_MFW_BIT(_MFW_LIBC_FLAGS_LAST_BIT+2))
 #define MFW_LIBC_MUSL (MFW_LIBC_UNIX_FLAG|_MFW_BIT(_MFW_LIBC_FLAGS_LAST_BIT+3))
 #define MFW_LIBC_BIONIC (MFW_LIBC_UNIX_FLAG|_MFW_BIT(_MFW_LIBC_FLAGS_LAST_BIT+4))
+#define MFW_LIBC_WASI (MFW_LIBC_UNIX_FLAG|_MFW_BIT(_MFW_LIBC_FLAGS_LAST_BIT+5))
+#define MFW_LIBC_CLOUDABI (MFW_LIBC_UNIX_FLAG|_MFW_BIT(_MFW_LIBC_FLAGS_LAST_BIT+6))
+#define MFW_LIBC_UCLIBC (MFW_LIBC_UNIX_FLAG|_MFW_BIT(_MFW_LIBC_FLAGS_LAST_BIT+7))
 
 #define MFW_LIBC_FLAGGED(what) (MFW_LIBC & MFW_LIBC_##what##_FLAG)
 #define MFW_LIBC_IS(what) (MFW_LIBC == MFW_LIBC_##what)
 
-#ifdef _MFW_WEB_DETECTED
-	#define __MUSL__
-#endif
-
+#if defined __wasi_core_h
+	#define MFW_LIBC MFW_LIBC_WASI
+#elif defined __UCLIBC__ || \
+		defined __UCLIBC_MAJOR__ || \
+		defined __UCLIBC_MINOR__ || \
+		defined __UCLIBC_SUBLEVEL__
+	#define MFW_LIBC MFW_LIBC_UCLIBC
+#elif defined __cloudlibc__ || \
+		defined __cloudlibc_major__ || \
+		defined __cloudlibc_minor__
+	#define MFW_LIBC MFW_LIBC_CLOUDABI
 #if defined __BIONIC__
 	#define MFW_LIBC MFW_LIBC_BIONIC
 #elif defined __MUSL__ || \
-	defined __MUSL_VER_MAJOR__ || \
-	defined __MUSL_VER_MINOR__ || \
-	defined __MUSL_VER_PATCH__ || \
-	defined _LIBCPP_HAS_MUSL_LIBC
+		defined __musl__ || \
+		defined _LIBCPP_HAS_MUSL_LIBC
 	#define MFW_LIBC MFW_LIBC_MUSL
 #elif defined __GNU_LIBRARY__ || \
 		defined __GNU_LIBRARY_MINOR__ || \
